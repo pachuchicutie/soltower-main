@@ -764,7 +764,7 @@ export class TownScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const viewWidth = this.scale.width / camera.zoom;
     const viewHeight = this.scale.height / camera.zoom;
-    const mobileBias = this.scale.width < 720 ? 0.54 : 0.5;
+    const mobileBias = 0.5;
     const desiredScrollX = this.player.x - viewWidth * 0.5;
     const desiredScrollY = this.player.y - viewHeight * mobileBias;
     const maxScrollX = Math.max(0, WORLD_WIDTH - viewWidth);
@@ -899,6 +899,11 @@ export class TownScene extends Phaser.Scene {
 
   private updateNearbyInteraction(): void {
     if (this.options.mode !== "game" || !this.player || !this.controlsEnabled()) {
+      this.setCurrentInteraction(null);
+      return;
+    }
+    // Hide E prompt on mobile/tablet (we have the floating Interact button)
+    if (this.scale.width < 720) {
       this.setCurrentInteraction(null);
       return;
     }
