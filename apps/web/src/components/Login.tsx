@@ -35,7 +35,9 @@ export function Login({ onLogin, loading, error }: LoginProps) {
           </button>
           {error ? <span className="form-error">{error}</span> : null}
         </form>
-        <small>DEV_MODE uses mock Test Token only. No wallet or on-chain transaction exists.</small>
+        {(import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test") ? (
+          <small>DEV_MODE uses mock Test Token only. No wallet or on-chain transaction exists.</small>
+        ) : null}
       </section>
     </main>
   );
