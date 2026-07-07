@@ -8,7 +8,7 @@ import {
   useState
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Backpack, BookOpen, Menu, MessageCircle, Settings, Speech, X } from "lucide-react";
+import { Backpack, BookOpen, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
 import { Hud } from "./components/Hud";
 import { LandingPage } from "./components/LandingPage";
@@ -352,6 +352,14 @@ export function App() {
               <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
                 <Settings size={20} />
                 <span>Settings</span>
+              </button>
+              <button type="button" onClick={() => { setMobileActionsOpen(false); window.dispatchEvent(new CustomEvent('soltower:zoom-in')); }}>
+                <ZoomIn size={20} />
+                <span>Zoom In</span>
+              </button>
+              <button type="button" onClick={() => { setMobileActionsOpen(false); window.dispatchEvent(new CustomEvent('soltower:zoom-out')); }}>
+                <ZoomOut size={20} />
+                <span>Zoom Out</span>
               </button>
             </div>
           </div>

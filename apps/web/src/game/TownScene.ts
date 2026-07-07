@@ -265,6 +265,20 @@ export class TownScene extends Phaser.Scene {
       this.userSettings = detail ? { ...this.userSettings, ...detail } : loadUserSettings();
       this.configureCamera(this.scale.width, this.scale.height);
     };
+
+    this.zoomInListener = () => {
+      const cam = this.cameras.main;
+      const newZoom = Phaser.Math.Clamp(cam.zoom * 1.15, 0.68, 1.45);
+      cam.setZoom(newZoom);
+    };
+    this.zoomOutListener = () => {
+      const cam = this.cameras.main;
+      const newZoom = Phaser.Math.Clamp(cam.zoom / 1.15, 0.68, 1.45);
+      cam.setZoom(newZoom);
+    };
+    window.addEventListener('soltower:zoom-in', this.zoomInListener);
+    window.addEventListener('soltower:zoom-out', this.zoomOutListener);
+
     window.addEventListener("soltower:user-settings-changed", this.settingsListener);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, onResize);
@@ -272,6 +286,12 @@ export class TownScene extends Phaser.Scene {
       this.mobileMovementUnsubscribe?.();
       if (this.settingsListener) {
         window.removeEventListener("soltower:user-settings-changed", this.settingsListener);
+      }
+      if (this.zoomInListener) {
+        window.removeEventListener('soltower:zoom-in', this.zoomInListener);
+      }
+      if (this.zoomOutListener) {
+        window.removeEventListener('soltower:zoom-out', this.zoomOutListener);
       }
       this.persistPlayerPosition(this.time.now, true);
       this.options.onNearbyInteraction?.(null);
