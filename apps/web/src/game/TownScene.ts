@@ -240,7 +240,6 @@ export class TownScene extends Phaser.Scene {
         1,
         this.currentHeroAppearance()
       );
-      this.player.body?.setCollideWorldBounds(true);
     }
 
     this.configureCamera(this.scale.width, this.scale.height);
