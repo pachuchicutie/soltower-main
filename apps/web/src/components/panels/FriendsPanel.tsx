@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HeroId, PublicPlayer } from "@soltower/shared";
 import { apiGet, apiPost } from "../../lib/api";
@@ -8,13 +9,35 @@ interface FriendsResponse {
 }
 
 interface ChatResponse {
-  messages: Array<{ id: string; channel: string; fromPlayerId: string | null; message: string; createdAt: string }>;
+  messages: ChatMessage[];
+}
+
+interface ChatMessage {
+  id: string;
+  channel: string;
+  fromPlayerId: string | null;
+  fromDisplayName?: string | null;
+  fromHeroId?: HeroId | null;
+  message: string;
+  createdAt: string;
 }
 
 export function FriendsPanel() {
   const queryClient = useQueryClient();
+  const [panelOpenedAtMs] = useState(() => Date.now());
   const friends = useQuery({ queryKey: ["friends"], queryFn: () => apiGet<FriendsResponse>("/api/friends") });
-  const chat = useQuery({ queryKey: ["chat"], queryFn: () => apiGet<ChatResponse>("/api/chat/recent") });
+  const chat = useQuery({
+    queryKey: ["chat"],
+    queryFn: () => apiGet<ChatResponse>("/api/chat/recent"),
+    refetchInterval: 3500
+  });
+  const tavernMessages = useMemo(
+    () =>
+      (chat.data?.messages ?? [])
+        .filter((message) => Date.parse(message.createdAt) >= panelOpenedAtMs)
+        .slice(-8),
+    [chat.data?.messages, panelOpenedAtMs]
+  );
   const quickMessage = useMutation({
     mutationFn: (message: string) => apiPost("/api/chat/message", { channel: "TOWN", message }),
     onSuccess: async () => {
@@ -43,13 +66,20 @@ export function FriendsPanel() {
       </section>
       <section className="compact-panel full-span">
         <h3>Town Chat</h3>
-        {chat.data?.messages.map((message) => (
-          <div className="row chat-row" key={message.id}>
-            <HeroAppearancePreview heroId="storm-archer" className="mini-hero-avatar" label="Chat avatar" />
-            <span>{message.channel}</span>
-            <strong>{message.message}</strong>
-          </div>
-        ))}
+        {tavernMessages.length ? (
+          tavernMessages.map((message) => {
+            const author = chatAuthorName(message);
+            return (
+              <div className="row chat-row" key={message.id}>
+                <HeroAppearancePreview heroId={chatHeroId(message)} className="mini-hero-avatar" label={author} />
+                <span>{author}</span>
+                <strong>{message.message}</strong>
+              </div>
+            );
+          })
+        ) : (
+          <p className="empty-copy">No fresh tavern messages yet.</p>
+        )}
       </section>
     </div>
   );
@@ -58,4 +88,12 @@ export function FriendsPanel() {
 function friendHeroId(player: PublicPlayer): HeroId {
   const maybeHero = player as PublicPlayer & { selectedHeroId?: HeroId; selectedHero?: HeroId };
   return maybeHero.selectedHeroId ?? maybeHero.selectedHero ?? "storm-archer";
+}
+
+function chatAuthorName(message: ChatMessage): string {
+  return message.fromDisplayName?.trim() || "Guardian";
+}
+
+function chatHeroId(message: ChatMessage): HeroId {
+  return message.fromHeroId ?? "storm-archer";
 }

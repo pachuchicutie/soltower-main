@@ -107,12 +107,16 @@ const stormArcherEightDirectionWalkPath = "/assets/soltower/heroes/storm-archer/
 const tideMageEightDirectionWalkPath = "/assets/soltower/heroes/tide-mage/walk-8dir.png?v=video-all-directions";
 const bombardierIdlePath = "/assets/soltower/heroes/bombardier/idle.png?v=walk-bottom-idle";
 const bombardierEightDirectionWalkPath = "/assets/soltower/heroes/bombardier/walk-8dir.png?v=video-all-directions";
-const coralAlchemistEightDirectionWalkPath = "/assets/soltower/heroes/coral-alchemist/walk-8dir.png?v=video-all-directions";
+const coralAlchemistEightDirectionWalkPath =
+  "/assets/soltower/heroes/coral-alchemist/walk-8dir.png?v=coral-video-bottom-20260707";
+const starcallerEightDirectionWalkPath =
+  "/assets/soltower/heroes/starcaller/walk-8dir.png?v=starcaller-video-all-directions-20260707";
 const eightDirectionWalkPaths: Partial<Record<HeroId, string>> = {
   "storm-archer": stormArcherEightDirectionWalkPath,
   "tide-mage": tideMageEightDirectionWalkPath,
   bombardier: bombardierEightDirectionWalkPath,
-  "coral-alchemist": coralAlchemistEightDirectionWalkPath
+  "coral-alchemist": coralAlchemistEightDirectionWalkPath,
+  starcaller: starcallerEightDirectionWalkPath
 };
 
 type FacingDirection = keyof typeof directionRows;

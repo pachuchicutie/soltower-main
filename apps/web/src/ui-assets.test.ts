@@ -132,6 +132,14 @@ describe("generated Hero character assets", () => {
     expect(pngDimensions(png), assetPath).toEqual({ width: 256, height: 512 });
   });
 
+  it("exports the Starcaller 8-direction walking sheet at the Phaser-ready size", () => {
+    const assetPath = "/assets/soltower/heroes/starcaller/walk-8dir.png";
+    const png = readFileSync(join(publicRoot, assetPath));
+    expect(png.subarray(0, 8), assetPath).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    expect(png[25], assetPath).toBe(6);
+    expect(pngDimensions(png), assetPath).toEqual({ width: 256, height: 512 });
+  });
+
   it("exports the Storm Archer reference idle sheet at the standard Phaser-ready size", () => {
     const assetPath = "/assets/soltower/heroes/storm-archer/idle.png";
     const png = readFileSync(join(publicRoot, assetPath));
@@ -208,7 +216,7 @@ describe("generated Raid Board assets", () => {
       expect([2, 6], chapter.bannerPath).toContain(png[25]);
       expect(pngDimensions(png), chapter.bannerPath).toEqual(
         chapter.id === "map-1-solheart-outskirts"
-          ? { width: 960, height: 320 }
+          ? { width: 1672, height: 941 }
           : chapter.mapNumber === 2
             ? { width: 1707, height: 921 }
             : { width: 640, height: 220 }

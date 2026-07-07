@@ -16,6 +16,8 @@ interface TownChatMessage {
   channel: string;
   townChannel?: string;
   fromPlayerId: string | null;
+  fromDisplayName?: string | null;
+  fromHeroId?: string | null;
   message: string;
   createdAt: string;
 }
@@ -276,6 +278,7 @@ export function TownChat({
         channel: "TOWN",
         townChannel,
         fromPlayerId: playerId,
+        fromDisplayName: displayName,
         message,
         createdAt: new Date().toISOString()
       }
@@ -401,7 +404,7 @@ function TownChatSurface({
                 style={{ opacity: Math.max(0.42, 1 - (messages.length - index - 1) * 0.06) }}
                 key={message.id}
               >
-                <span>{message.fromPlayerId === playerId ? displayName : playerLabel(message.fromPlayerId)}</span>
+                <span>{chatAuthorLabel(message, playerId, displayName)}</span>
                 <p>{message.message}</p>
               </div>
             ))
@@ -489,11 +492,15 @@ function normalizeTownServerId(value: string): TownServerId {
   return townServerIds.find((id) => id === value) ?? "solbloom-1";
 }
 
-function playerLabel(playerId: string | null): string {
-  if (!playerId) {
-    return "System";
+function chatAuthorLabel(message: TownChatMessage, currentPlayerId: string, currentDisplayName: string): string {
+  const displayName = message.fromDisplayName?.trim();
+  if (displayName) {
+    return displayName;
   }
-  return playerId.length > 10 ? `${playerId.slice(0, 6)}...${playerId.slice(-3)}` : playerId;
+  if (message.fromPlayerId === currentPlayerId) {
+    return currentDisplayName;
+  }
+  return "Guardian";
 }
 
 function blurActiveChatInput(): void {

@@ -544,8 +544,31 @@ async function readChat<T>(townChannel: string | null): Promise<T> {
       .order("created_at", { ascending: false })
       .limit(10)
   );
+  const playerIds = [
+    ...new Set(result.data.map((message) => stringValue(message.from_player_id)).filter(Boolean))
+  ];
+  const profilesByPlayerId = new Map<string, JsonRecord>();
+  if (playerIds.length > 0) {
+    const profiles = await checked<Array<JsonRecord>>(
+      client.from("player_profiles").select("player_id,display_name,selected_hero_id").in("player_id", playerIds)
+    );
+    for (const profile of profiles.data) {
+      profilesByPlayerId.set(stringValue(profile.player_id), profile);
+    }
+  }
   return {
-    messages: result.data.map(camelRecord).reverse()
+    messages: result.data
+      .map((message) => {
+        const playerId = stringValue(message.from_player_id);
+        const profile = profilesByPlayerId.get(playerId);
+        const displayName = stringValue(profile?.display_name).trim();
+        return {
+          ...camelRecord(message),
+          fromDisplayName: displayName || null,
+          fromHeroId: stringValue(profile?.selected_hero_id) || null
+        };
+      })
+      .reverse()
   } as T;
 }
 

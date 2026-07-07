@@ -775,33 +775,17 @@ interface SpritePreviewLayout {
 }
 
 function heroPreviewSpriteLayout(heroId: HeroId): SpritePreviewLayout {
-  if (heroId === "storm-archer") {
+  const eightDirectionSpriteVersions: Partial<Record<HeroId, string>> = {
+    "storm-archer": "video-all-directions",
+    "tide-mage": "video-all-directions",
+    bombardier: "video-all-directions",
+    "coral-alchemist": "coral-video-bottom-20260707",
+    starcaller: "starcaller-video-all-directions-20260707"
+  };
+  const spriteVersion = eightDirectionSpriteVersions[heroId];
+  if (spriteVersion) {
     return {
-      spritePath: "/assets/soltower/heroes/storm-archer/walk-8dir.png?v=video-all-directions",
-      rows: 8,
-      row: 7,
-      durationMs: 720
-    };
-  }
-  if (heroId === "tide-mage") {
-    return {
-      spritePath: "/assets/soltower/heroes/tide-mage/walk-8dir.png?v=video-all-directions",
-      rows: 8,
-      row: 7,
-      durationMs: 720
-    };
-  }
-  if (heroId === "bombardier") {
-    return {
-      spritePath: "/assets/soltower/heroes/bombardier/walk-8dir.png?v=video-all-directions",
-      rows: 8,
-      row: 7,
-      durationMs: 720
-    };
-  }
-  if (heroId === "coral-alchemist") {
-    return {
-      spritePath: "/assets/soltower/heroes/coral-alchemist/walk-8dir.png?v=video-all-directions",
+      spritePath: `/assets/soltower/heroes/${heroId}/walk-8dir.png?v=${spriteVersion}`,
       rows: 8,
       row: 7,
       durationMs: 720

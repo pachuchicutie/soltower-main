@@ -819,7 +819,7 @@ export const raidChapters: RaidChapterDefinition[] = [
     levelRange: "Levels 1-10",
     minAccountLevel: 1,
     unlockRequirement: "Available from Account Level 1.",
-    bannerPath: `${raidAssetRoot}/chapters/solheart-outskirts-banner.png`,
+    bannerPath: getRaidStageAssetPath(1, 1) ?? `${raidAssetRoot}/chapters/solheart-outskirts-banner.png`,
     status: "ACTIVE",
     stages: mapOneStages
   },

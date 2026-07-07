@@ -320,12 +320,15 @@ function RaidHeroSprite({
 }
 
 function raidHeroSpriteLayout(heroId: HeroId, facing: "left" | "right" | "up" | "down") {
-  if (
-    heroId === "storm-archer" ||
-    heroId === "tide-mage" ||
-    heroId === "bombardier" ||
-    heroId === "coral-alchemist"
-  ) {
+  const eightDirectionSpriteVersions: Partial<Record<HeroId, string>> = {
+    "storm-archer": "video-all-directions",
+    "tide-mage": "video-all-directions",
+    bombardier: "video-all-directions",
+    "coral-alchemist": "coral-video-bottom-20260707",
+    starcaller: "starcaller-video-all-directions-20260707"
+  };
+  const spriteVersion = eightDirectionSpriteVersions[heroId];
+  if (spriteVersion) {
     const rowByFacing = {
       up: 3,
       left: 1,
@@ -333,7 +336,7 @@ function raidHeroSpriteLayout(heroId: HeroId, facing: "left" | "right" | "up" | 
       down: 7
     } as const;
     return {
-      path: `/assets/soltower/heroes/${heroId}/walk-8dir.png?v=video-all-directions`,
+      path: `/assets/soltower/heroes/${heroId}/walk-8dir.png?v=${spriteVersion}`,
       rows: 8,
       row: rowByFacing[facing]
     };
