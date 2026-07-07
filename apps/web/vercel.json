@@ -1,4 +1,5 @@
 {
+  "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @soltower/shared build && pnpm --filter @soltower/game-engine build && pnpm --filter @soltower/web build",
   "outputDirectory": "dist"
 }

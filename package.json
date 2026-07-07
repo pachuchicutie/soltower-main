@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "concurrently -n web,admin -c green,magenta \"pnpm --filter @soltower/web dev\" \"pnpm --filter @soltower/admin dev\"",
     "dev:web": "pnpm --filter @soltower/web dev",
