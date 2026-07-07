@@ -6608,8 +6608,8 @@ label {
 
 .mobile-premium-interact-btn {
   position: absolute;
-  top: max(76px, env(safe-area-inset-top) + 60px);
-  right: max(16px, env(safe-area-inset-right));
+  bottom: max(120px, env(safe-area-inset-bottom) + 100px);
+  left: max(16px, env(safe-area-inset-left));
   z-index: calc(var(--z-hud) + 3);
   width: 52px;
   height: 52px;
