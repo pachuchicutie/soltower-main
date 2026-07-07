@@ -15,8 +15,6 @@ import type { ModalKey } from "../store/ui";
 import { GameButton, IconButton, StatusPill } from "./ui/GameUi";
 
 interface PublicStats {
-  devMode: boolean;
-  testWorldActive: boolean;
   demoPresenceCount: number;
   activeTownCount: number;
 }
@@ -165,9 +163,6 @@ export function LandingPage({
             <div id="world-status" className="landing-stats" aria-label="World status">
               {stats ? (
                 <>
-                  {stats.devMode && stats.testWorldActive ? (
-                    <StatusPill tone="dev">DEV world active</StatusPill>
-                  ) : null}
                   <StatusPill tone={stats.activeTownCount > 0 ? "success" : "neutral"}>
                     {stats.activeTownCount}{" "}
                     {stats.activeTownCount === 1 ? "player" : "players"} in town
