@@ -78,7 +78,7 @@ export const townServerIds = [
 ] as const;
 export type TownServerId = (typeof townServerIds)[number];
 export const TOWN_SERVER_CAPACITY = 40;
-export const TOWN_PRESENCE_STALE_AFTER_SECONDS = 20;
+export const TOWN_PRESENCE_STALE_AFTER_SECONDS = 10;
 
 export interface BalanceSnapshot {
   EARNED_GOLD: number;
