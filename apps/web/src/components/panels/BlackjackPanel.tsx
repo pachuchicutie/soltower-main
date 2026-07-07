@@ -242,7 +242,7 @@ export function BlackjackPanel() {
           <p>
             {practiceAllowed
               ? "Practice hands are server dealt and recorded with zero wager and zero reward."
-              : "Wagers and outcomes are settled by the game server. Test Token is never used at this table."}
+              : "Wagers and outcomes are settled by the game server. "}
           </p>
         </div>
       </section>
