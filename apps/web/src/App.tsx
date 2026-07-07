@@ -313,7 +313,9 @@ export function App() {
           <Settings size={18} /> Settings
         </button>
       </div>
-      <div className="dev-ribbon">DEV_MODE: Test Token is mock-only. No wallet or on-chain transaction.</div>
+      {(import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test") ? (
+        <div className="dev-ribbon">DEV_MODE: Test Token is mock-only. No wallet or on-chain transaction.</div>
+      ) : null}
       {modal ? (
         <NpcModal
           modal={modal}
