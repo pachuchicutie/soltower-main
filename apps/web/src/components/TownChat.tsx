@@ -98,51 +98,10 @@ export function TownChat({
         capacity: TOWN_SERVER_CAPACITY,
         isFull: false
       }));
-    if (realtimeOnline == null) {
-      return list;
-    }
-    return list.map((server) =>
-      server.id === townChannel
-        ? {
-            ...server,
-            online: realtimeOnline,
-            isFull: realtimeOnline >= server.capacity
-          }
-        : server
-    );
-  }, [
-    realtimeOnline,
-    servers.data?.servers,
-    townChannel
-  ]);
+return list;
+  }, [servers.data?.servers, townChannel]);
 
-  useEffect(() => {
-    if (realtimeOnline == null) {
-      return;
-    }
-    queryClient.setQueryData<TownServersResponse>(["town-servers"], (previous) => {
-      const currentServers =
-        previous?.servers ??
-        townServerIds.map((id, index) => ({
-          id,
-          label: `SolBloom ${index + 1}`,
-          online: 0,
-          capacity: TOWN_SERVER_CAPACITY,
-          isFull: false
-        }));
-      return {
-        servers: currentServers.map((server) =>
-          server.id === townChannel
-            ? {
-                ...server,
-                online: realtimeOnline,
-                isFull: realtimeOnline >= server.capacity
-              }
-            : server
-        )
-      };
-    });
-  }, [queryClient, realtimeOnline, townChannel]);
+
   const visibleMessages = useMemo(() => {
     const confirmedMessages = (chat.data?.messages ?? []).filter((message) => {
       const createdAtMs = Date.parse(message.createdAt);
