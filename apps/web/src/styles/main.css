@@ -251,8 +251,8 @@ label {
 }
 
 .modal-icon-badge {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(243, 201, 105, 0.38);
@@ -421,8 +421,8 @@ label {
 
 .item-icon-frame {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border-radius: var(--radius-lg);
@@ -695,8 +695,8 @@ label {
 }
 
 .brand-mark {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -4099,8 +4099,8 @@ label {
 
 .raid-empty-illustration {
   grid-row: span 2;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   image-rendering: pixelated;
 }
@@ -6588,8 +6588,8 @@ label {
   top: max(16px, env(safe-area-inset-top));
   right: max(16px, env(safe-area-inset-right));
   z-index: calc(var(--z-hud) + 3);
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -6609,10 +6609,10 @@ label {
 .mobile-premium-interact-btn {
   position: absolute;
   bottom: max(120px, env(safe-area-inset-bottom) + 100px);
-  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
   z-index: calc(var(--z-hud) + 3);
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: none;
   align-items: center;
   justify-content: center;
