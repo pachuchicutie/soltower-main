@@ -305,17 +305,16 @@ export function App() {
         <Menu size={22} />
       </button>
 
-      {/* Floating Interact Button (Mobile) - right side */}
-      {nearbyInteraction && (
-        <button
-          type="button"
-          className="mobile-premium-interact-btn"
-          aria-label="Interact"
-          onClick={handleInteract}
-        >
-          <Speech size={22} />
-        </button>
-      )}
+      {/* Floating Interact Button (Mobile) - right side, always visible */}
+      <button
+        type="button"
+        className={`mobile-premium-interact-btn ${!nearbyInteraction ? 'disabled' : ''}`}
+        aria-label="Interact"
+        onClick={nearbyInteraction ? handleInteract : undefined}
+        disabled={!nearbyInteraction}
+      >
+        <Speech size={22} />
+      </button>
 
       {mobileActionsOpen && (
         <div className="mobile-premium-menu-overlay" onClick={() => setMobileActionsOpen(false)}>
