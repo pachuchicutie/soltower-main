@@ -906,21 +906,6 @@ export class TownScene extends Phaser.Scene {
       .setVisible(false);
   }
 
-  private updateNearbyInteraction(): void {
-    if (this.options.mode !== "game" || !this.player || !this.controlsEnabled()) {
-      this.setCurrentInteraction(null);
-      return;
-    }
-    // Hide E prompt on mobile/tablet (we have the floating Interact button)
-    if (this.scale.width < 720) {
-      this.setCurrentInteraction(null);
-      return;
-    }
-    this.setCurrentInteraction(this.findNearestInteraction());
-  }
-
-  private setCurrentInteraction(target: InteractionTarget | null): void {
-    if (this.currentInteraction?.id === target?.id) {
       if (target) {
         this.positionInteractionPrompt(target);
       }
