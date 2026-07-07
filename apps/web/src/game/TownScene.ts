@@ -140,6 +140,8 @@ export class TownScene extends Phaser.Scene {
   private mobileMovement: MobileMovementDetail = { active: false, x: 0, y: 0, running: false };
   private userSettings: UserSettings = loadUserSettings();
   private settingsListener?: (event: Event) => void;
+  private zoomInListener?: () => void;
+  private zoomOutListener?: () => void;
   private playerChatBubble?: Phaser.GameObjects.Container;
   private playerChatBubbleBackground?: Phaser.GameObjects.Graphics;
   private playerChatBubbleText?: Phaser.GameObjects.Text;
