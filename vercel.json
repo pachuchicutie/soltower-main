@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm --filter @soltower/shared build && pnpm --filter @soltower/game-engine build && pnpm --filter @soltower/web build",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "pnpm install"
+}
