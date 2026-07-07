@@ -320,6 +320,9 @@ export class TownScene extends Phaser.Scene {
       return;
     }
 
+    // Always update camera follow so player stays centered on mobile
+    this.updateCameraFollow();
+
     const direction = this.keyboardDirection();
     const mobileDirection = this.mobileDirection();
     const running = this.isRunRequested(direction, mobileDirection);
