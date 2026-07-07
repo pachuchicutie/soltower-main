@@ -858,6 +858,7 @@ export class TownScene extends Phaser.Scene {
 
   private createVillage(): void {
     this.collisionBodies = [];
+    this.collisionBodies = [];
     this.createTileField();
     this.createPaths();
     this.createWorldObjects();
