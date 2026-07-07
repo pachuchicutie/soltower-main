@@ -8,7 +8,7 @@ import {
   useState
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Backpack, BookOpen, MessageCircle, Settings, Speech } from "lucide-react";
+import { Backpack, BookOpen, Menu, MessageCircle, Settings, Speech, X } from "lucide-react";
 import type { PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
 import { Hud } from "./components/Hud";
 import { LandingPage } from "./components/LandingPage";
@@ -48,6 +48,7 @@ export function App() {
   const [chatBubble, setChatBubble] = useState<{ id: string; text: string } | null>(null);
   const [realtimeOnline, setRealtimeOnline] = useState<number | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<TownRealtimeStatus>("connecting");
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const latestTownPositionRef = useRef<TownPosition | undefined>(undefined);
   const setTownChannel = useCallback((nextTownChannel: TownServerId) => {
     saveLocalTownChannel(nextTownChannel);
@@ -294,6 +295,59 @@ export function App() {
         onMobileClose={() => setChatOpen(false)}
         onLocalMessageSent={setChatBubble}
       />
+      {/* Premium Floating Menu Button (Mobile) */}
+      <button
+        type="button"
+        className="mobile-premium-menu-btn"
+        aria-label="Open actions menu"
+        onClick={() => setMobileActionsOpen(true)}
+      >
+        <Menu size={22} />
+      </button>
+
+      {mobileActionsOpen && (
+        <div className="mobile-premium-menu-overlay" onClick={() => setMobileActionsOpen(false)}>
+          <div className="mobile-premium-menu" onClick={e => e.stopPropagation()}>
+            <div className="mobile-premium-menu-header">
+              <strong>Quick Actions</strong>
+              <button type="button" onClick={() => setMobileActionsOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mobile-premium-menu-grid">
+              <button type="button" onClick={() => { setMobileActionsOpen(false); setChatOpen(true); }}>
+                <MessageCircle size={20} />
+                <span>Chat with Locals</span>
+              </button>
+              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("inventory"); }}>
+                <Backpack size={20} />
+                <span>Inventory</span>
+              </button>
+              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("quests"); }}>
+                <BookOpen size={20} />
+                <span>Quests</span>
+              </button>
+              {nearbyInteraction ? (
+                <button
+                  type="button"
+                  className="mobile-premium-interact"
+                  onClick={() => { setMobileActionsOpen(false); handleInteract(); }}
+                >
+                  <Speech size={20} />
+                  <span>{nearbyInteraction.label}</span>
+                </button>
+              ) : null}
+              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
+                <Settings size={20} />
+                <span>Settings</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy rail kept for desktop fallback */}
       <div className="mobile-town-rail" aria-label="Town actions">
         <button type="button" onClick={() => setChatOpen(true)}>
           <MessageCircle size={18} /> Chat

@@ -6581,3 +6581,128 @@ label {
     animation: none;
   }
 }
+
+/* Premium Mobile Menu - SolTower */
+.mobile-premium-menu-btn {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(90px, env(safe-area-inset-bottom) + 72px);
+  z-index: calc(var(--z-hud) + 3);
+  width: 52px;
+  height: 52px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #1f2a44, #111827);
+  border: 1px solid rgba(243, 201, 105, 0.35);
+  color: #f3c969;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (max-width: 768px) {
+  .mobile-premium-menu-btn {
+    display: flex;
+  }
+}
+
+.mobile-premium-menu-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+.mobile-premium-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10, 14, 23, 0.85);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 12px 24px;
+}
+
+.mobile-premium-menu {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #1a243a 0%, #111827 100%);
+  border: 1px solid rgba(243, 201, 105, 0.2);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.mobile-premium-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 12px;
+  border-bottom: 1px solid rgba(243, 201, 105, 0.15);
+  margin-bottom: 12px;
+}
+
+.mobile-premium-menu-header strong {
+  font-size: 15px;
+  color: #f3c969;
+  letter-spacing: 0.5px;
+}
+
+.mobile-premium-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.mobile-premium-menu-grid button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(243, 201, 105, 0.15);
+  border-radius: 14px;
+  color: #e2e8f0;
+  font-size: 15px;
+  transition: all 0.15s ease;
+}
+
+.mobile-premium-menu-grid button:hover {
+  background: rgba(243, 201, 105, 0.08);
+  border-color: rgba(243, 201, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+.mobile-premium-menu-grid button:active {
+  transform: scale(0.985);
+}
+
+.mobile-premium-menu-grid .mobile-premium-interact {
+  background: linear-gradient(90deg, #f9d982, #d9a93f);
+  color: #152033;
+  border-color: #f3c969;
+  font-weight: 600;
+}
+
+.mobile-premium-menu-grid .mobile-premium-interact:hover {
+  box-shadow: 0 0 0 3px rgba(249, 217, 130, 0.3);
+}
+
+@media (max-width: 768px) {
+  .mobile-town-rail {
+    display: none !important;
+  }
+}
+
+/* Force hide old mobile rail and desktop hints on mobile/tablet */
+@media (max-width: 1024px) {
+  .mobile-town-rail,
+  .town-control-hint,
+  .shortcut-hint {
+    display: none !important;
+  }
+  
+  .mobile-premium-menu-btn {
+    display: flex !important;
+  }
+}
