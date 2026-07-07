@@ -6695,7 +6695,7 @@ label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px 12px;
+  padding: 4px 20px 12px 12px;
   border-bottom: 1px solid rgba(243, 201, 105, 0.15);
   margin-bottom: 12px;
 }
