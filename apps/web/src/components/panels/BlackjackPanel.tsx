@@ -105,7 +105,7 @@ export function BlackjackPanel() {
 
   const current = activeHand ?? state.data?.history[0] ?? null;
   const limits = state.data?.limits;
-  const practiceAllowed = Boolean(state.data?.practiceAllowed);
+  const practiceAllowed = false; // Production: real gold only
   const minBet = limits?.minBet ?? 5;
   const maxBet = limits?.actualMaxBet ?? 0;
   const active = current?.status === "ACTIVE";
