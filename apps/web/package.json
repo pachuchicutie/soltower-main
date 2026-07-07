@@ -1,0 +1,43 @@
+{
+  "name": "@soltower/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc -p tsconfig.json && vite build",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "vitest run src"
+  },
+  "dependencies": {
+    "@fontsource/cinzel": "5.2.8",
+    "@fontsource/inter": "5.2.8",
+    "@reown/appkit": "1.8.21",
+    "@reown/appkit-adapter-solana": "1.8.21",
+    "@soltower/game-engine": "workspace:*",
+    "@soltower/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.57.4",
+    "@tanstack/react-query": "^5.81.5",
+    "@tanstack/react-router": "^1.121.34",
+    "bs58": "^6.0.0",
+    "lucide-react": "^0.468.0",
+    "phaser": "^3.90.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.58.1",
+    "zod": "^3.25.67",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19",
+    "vitest": "^3.2.4"
+  }
+}

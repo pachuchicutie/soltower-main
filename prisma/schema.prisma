@@ -1,0 +1,700 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum BalanceType {
+  EARNED_GOLD
+  LOCKED_GOLD
+  TEST_TOKEN
+}
+
+enum LedgerDirection {
+  CREDIT
+  DEBIT
+}
+
+enum GoldSourceType {
+  STARTER_LOCKED_GOLD
+  RAID_REWARD
+  QUEST_REWARD
+  BLACKJACK_WIN
+  BLACKJACK_WAGER
+  BLACKJACK_PUSH
+  TOKEN_PURCHASE
+  MARKET_PURCHASE
+  MARKET_SALE
+  EQUIPMENT_PURCHASE
+  POTION_PURCHASE
+  ADMIN_DEV_GRANT
+  ADMIN_ADJUSTMENT
+  MARKET_TAX
+  BUY_ORDER_ESCROW
+  BUY_ORDER_RELEASE
+  REFUND
+}
+
+enum AccountStatus {
+  ACTIVE
+  MUTED
+  SUSPENDED
+  BANNED
+}
+
+enum AdminRoleName {
+  OWNER
+  ADMIN
+  ECONOMY_MANAGER
+  GAME_DESIGNER
+  MODERATOR
+  SUPPORT
+}
+
+enum MarketListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+  REVOKED
+}
+
+enum BuyOrderStatus {
+  OPEN
+  FILLED
+  CANCELLED
+  EXPIRED
+  REVOKED
+}
+
+enum RaidLobbyStatus {
+  OPEN
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum BlackjackHandStatus {
+  ACTIVE
+  PLAYER_WIN
+  DEALER_WIN
+  PUSH
+  BLACKJACK
+  BUST
+}
+
+model Player {
+  id              String        @id @default(cuid())
+  email           String?       @unique
+  displayName     String        @unique
+  walletPublicKey String?       @unique
+  walletLinkedAt  DateTime?
+  walletPlaceholder String?
+  passwordHash    String?
+  accountLevel    Int           @default(1)
+  xp              Int           @default(0)
+  avatar          String        @default("M")
+  power           Int           @default(0)
+  status          AccountStatus @default(ACTIVE)
+  marketFrozen    Boolean       @default(false)
+  blackjackFrozen Boolean       @default(false)
+  riskFlag        Boolean       @default(false)
+  sessionStatus   String        @default("OFFLINE")
+  presenceStatus  String        @default("OFFLINE")
+  walletRiskFlag  String?
+  lastActiveAt    DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([displayName])
+  @@index([email])
+  @@index([walletPublicKey])
+  @@index([status])
+  @@index([lastActiveAt])
+}
+
+model WalletAuthHistory {
+  id              String   @id @default(cuid())
+  playerId        String
+  publicKey       String
+  walletName      String
+  authenticatedAt DateTime @default(now())
+  ipPlaceholder   String?
+
+  @@index([playerId, authenticatedAt])
+  @@index([publicKey])
+}
+
+model PlayerProfile {
+  id          String   @id @default(cuid())
+  playerId    String   @unique
+  bio         String?
+  townChannel String   @default("solbloom-1")
+  settings    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PlayerBalance {
+  id          String      @id @default(cuid())
+  playerId    String
+  balanceType BalanceType
+  amount      Int         @default(0)
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([playerId, balanceType])
+  @@index([playerId])
+}
+
+model EconomyLedgerEntry {
+  id                  String          @id @default(cuid())
+  playerId             String
+  balanceType          BalanceType
+  sourceType           GoldSourceType
+  amount               Int
+  direction            LedgerDirection
+  beforeBalance        Int
+  afterBalance         Int
+  reason               String
+  idempotencyKey       String          @unique
+  metadata             Json?
+  createdAt            DateTime        @default(now())
+  createdByAdminId     String?
+  referenceEntityType  String?
+  referenceEntityId    String?
+
+  @@index([playerId, createdAt])
+  @@index([balanceType, createdAt])
+  @@index([sourceType, createdAt])
+}
+
+model Hero {
+  id          String   @id
+  name        String
+  role        String
+  ultimate    String
+  stats       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PlayerHero {
+  id        String   @id @default(cuid())
+  playerId  String
+  heroId    String
+  level     Int      @default(1)
+  xp        Int      @default(0)
+  unlocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, heroId])
+  @@index([playerId])
+}
+
+model EquipmentDefinition {
+  id        String   @id
+  name      String
+  slot      String
+  rarity    String
+  bound     Boolean  @default(true)
+  priceGold Int      @default(0)
+  stats     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerEquipment {
+  id           String   @id @default(cuid())
+  playerId     String
+  definitionId String
+  equippedSlot String?
+  bound        Boolean  @default(true)
+  level        Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([playerId])
+  @@index([definitionId])
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  playerId  String
+  itemId    String
+  category  String
+  quantity  Int      @default(1)
+  bound     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, itemId, category])
+  @@index([playerId])
+}
+
+model ConsumableDefinition {
+  id          String   @id
+  name        String
+  description String
+  priceGold   Int
+  maxPerRun   Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PlayerConsumable {
+  id           String   @id @default(cuid())
+  playerId     String
+  definitionId String
+  quantity     Int      @default(0)
+  equipped     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([playerId, definitionId])
+  @@index([playerId])
+}
+
+model MapDefinition {
+  id               String   @id
+  name             String
+  chapter          String
+  recommendedPower Int
+  baseGoldReward   Int
+  baseXpReward     Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PlayerMapUnlock {
+  id        String   @id @default(cuid())
+  playerId  String
+  mapId     String
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, mapId])
+  @@index([playerId])
+}
+
+model RaidLobby {
+  id               String          @id @default(cuid())
+  hostPlayerId     String
+  lobbyType        String
+  mapId            String
+  recommendedPower Int             @default(0)
+  status           RaidLobbyStatus @default(OPEN)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, mapId])
+  @@index([hostPlayerId])
+}
+
+model RaidLobbyMember {
+  id           String   @id @default(cuid())
+  lobbyId      String
+  playerId     String
+  heroId       String
+  accountLevel Int
+  power        Int
+  ready        Boolean  @default(false)
+  host         Boolean  @default(false)
+  joinedAt     DateTime @default(now())
+
+  @@unique([lobbyId, playerId])
+  @@index([lobbyId])
+  @@index([playerId])
+}
+
+model RaidRun {
+  id          String   @id @default(cuid())
+  lobbyId     String?
+  mapId       String
+  status      String
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  success     Boolean  @default(false)
+  rewardGold  Int      @default(0)
+  metadata    Json?
+
+  @@index([mapId, startedAt])
+  @@index([status])
+}
+
+model RaidContribution {
+  id                     String   @id @default(cuid())
+  raidRunId              String
+  playerId               String
+  damage                 Int      @default(0)
+  bossDamage             Int      @default(0)
+  slowValue              Int      @default(0)
+  debuffValue            Int      @default(0)
+  shieldValue            Int      @default(0)
+  buffValue              Int      @default(0)
+  activeSkillUses        Int      @default(0)
+  objectiveParticipation Int      @default(0)
+  secondsInactive        Int      @default(0)
+  rewardGold             Int      @default(0)
+  xp                     Int      @default(0)
+
+  @@index([raidRunId])
+  @@index([playerId])
+}
+
+model MarketListing {
+  id             String              @id @default(cuid())
+  sellerPlayerId String
+  goldAmount     Int
+  pricePerGold   Int
+  totalPrice     Int
+  status         MarketListingStatus @default(ACTIVE)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([sellerPlayerId])
+  @@index([pricePerGold])
+}
+
+model MarketTrade {
+  id             String   @id @default(cuid())
+  listingId      String?
+  buyOrderId     String?
+  buyerPlayerId  String
+  sellerPlayerId String
+  goldAmount     Int
+  grossTestToken Int
+  taxTestToken   Int
+  sellerNet      Int
+  createdAt      DateTime @default(now())
+
+  @@index([buyerPlayerId, createdAt])
+  @@index([sellerPlayerId, createdAt])
+  @@index([createdAt])
+}
+
+model BuyOrder {
+  id              String         @id @default(cuid())
+  buyerPlayerId   String
+  goldAmount      Int
+  openGoldAmount  Int
+  pricePerGold    Int
+  escrowRemaining Int
+  status          BuyOrderStatus @default(OPEN)
+  expiresAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@index([buyerPlayerId])
+  @@index([pricePerGold])
+}
+
+model BuyOrderFill {
+  id             String   @id @default(cuid())
+  buyOrderId     String
+  sellerPlayerId String
+  goldAmount     Int
+  grossTestToken Int
+  taxTestToken   Int
+  sellerNet      Int
+  createdAt      DateTime @default(now())
+
+  @@index([buyOrderId])
+  @@index([sellerPlayerId, createdAt])
+}
+
+model EscrowRecord {
+  id            String   @id @default(cuid())
+  buyOrderId    String
+  playerId      String
+  balanceType   BalanceType
+  amountLocked  Int
+  amountOpen    Int
+  status        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([buyOrderId])
+  @@index([playerId, status])
+}
+
+model BlackjackSession {
+  id        String   @id @default(cuid())
+  playerId  String
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+
+  @@index([playerId, startedAt])
+}
+
+model BlackjackHand {
+  id             String              @id @default(cuid())
+  playerId       String
+  sessionId      String?
+  balanceType    BalanceType
+  bet            Int
+  status         BlackjackHandStatus @default(ACTIVE)
+  playerCards    Json
+  dealerCards    Json
+  shoeSeedHash   String
+  resultMetadata Json?
+  createdAt      DateTime             @default(now())
+  resolvedAt     DateTime?
+
+  @@index([playerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model BlackjackDailyCounter {
+  id                 String   @id @default(cuid())
+  playerId           String
+  day                String
+  earnedProfit       Int      @default(0)
+  handsPlayed        Int      @default(0)
+  updatedAt          DateTime @updatedAt
+
+  @@unique([playerId, day])
+  @@index([day])
+}
+
+model FriendRequest {
+  id             String   @id @default(cuid())
+  fromPlayerId   String
+  toPlayerId     String
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([fromPlayerId])
+  @@index([toPlayerId])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  playerAId   String
+  playerBId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([playerAId, playerBId])
+  @@index([playerAId])
+  @@index([playerBId])
+}
+
+model PlayerBlock {
+  id              String   @id @default(cuid())
+  blockerPlayerId String
+  blockedPlayerId String
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  @@unique([blockerPlayerId, blockedPlayerId])
+  @@index([blockedPlayerId])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  channel        String
+  fromPlayerId   String?
+  targetPlayerId String?
+  message        String
+  moderationState String  @default("VISIBLE")
+  createdAt      DateTime @default(now())
+
+  @@index([channel, createdAt])
+  @@index([fromPlayerId, createdAt])
+  @@index([targetPlayerId, createdAt])
+}
+
+model PlayerReport {
+  id               String   @id @default(cuid())
+  reporterPlayerId String
+  targetPlayerId   String
+  reason           String
+  status           String   @default("OPEN")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([targetPlayerId, status])
+  @@index([status, createdAt])
+}
+
+model ModerationAction {
+  id            String   @id @default(cuid())
+  playerId      String
+  adminUserId   String?
+  action        String
+  reason        String
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([playerId, createdAt])
+  @@index([adminUserId, createdAt])
+}
+
+model PlayerRiskFlag {
+  id          String   @id @default(cuid())
+  playerId    String
+  flagType    String
+  severity    String
+  reason      String
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([playerId, resolvedAt])
+  @@index([severity, createdAt])
+}
+
+model AdminUser {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  role         AdminRoleName
+  displayName  String
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([role])
+  @@index([active])
+}
+
+model AdminRole {
+  id          String        @id @default(cuid())
+  name        AdminRoleName @unique
+  description String
+  permissions Json
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AdminAuditLog {
+  id               String   @id @default(cuid())
+  actorAdminId     String?
+  actorRole        AdminRoleName?
+  actionType       String
+  targetEntityType String
+  targetEntityId   String
+  targetPlayerId   String?
+  before           Json?
+  after            Json?
+  reason           String
+  ipPlaceholder    String?
+  correlationId    String
+  module           String
+  createdAt        DateTime @default(now())
+
+  @@index([actorAdminId, createdAt])
+  @@index([targetPlayerId, createdAt])
+  @@index([actionType, createdAt])
+  @@index([correlationId])
+}
+
+model EconomyConfigVersion {
+  id          String   @id @default(cuid())
+  status      String
+  version     Int
+  config      Json
+  createdById String?
+  approvedById String?
+  reason      String?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([version])
+}
+
+model GameContentVersion {
+  id          String   @id @default(cuid())
+  contentType String
+  status      String
+  version     Int
+  content     Json
+  createdById String?
+  createdAt   DateTime @default(now())
+  publishedAt DateTime?
+
+  @@index([contentType, status])
+  @@index([version])
+}
+
+model QuestDefinition {
+  id          String   @id @default(cuid())
+  title       String
+  questType   String
+  status      String
+  reward      Json
+  requirements Json
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([questType, status])
+}
+
+model PlayerQuestProgress {
+  id          String   @id @default(cuid())
+  playerId    String
+  questId     String
+  progress    Int      @default(0)
+  completed   Boolean  @default(false)
+  claimed     Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([playerId, questId])
+  @@index([playerId])
+}
+
+model EventDefinition {
+  id          String   @id @default(cuid())
+  title       String
+  status      String
+  banner      String?
+  eligibility Json?
+  rewardConfig Json?
+  startsAt    DateTime
+  endsAt      DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, startsAt])
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  status      String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, startsAt])
+}
+
+model SystemJobLog {
+  id          String   @id @default(cuid())
+  jobType     String
+  status      String
+  detail      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([jobType, status, createdAt])
+}
+
+model DevToolAction {
+  id          String   @id @default(cuid())
+  adminUserId String?
+  action      String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([adminUserId, createdAt])
+  @@index([action, createdAt])
+}

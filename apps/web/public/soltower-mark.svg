@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">SolTower placeholder mark</title>
+  <rect width="128" height="128" rx="18" fill="#0b1424"/>
+  <path d="M64 14 96 34 84 104H44L32 34Z" fill="#1f3851" stroke="#f3c969" stroke-width="6"/>
+  <path d="M64 25 75 45 64 64 53 45Z" fill="#77d4f2" stroke="#d9c3ff" stroke-width="3"/>
+  <path d="M48 74h32v30H48z" fill="#17263a"/>
+  <circle cx="64" cy="83" r="8" fill="#f3c969"/>
+</svg>

@@ -1,0 +1,49 @@
+{
+  "name": "soltower",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n web,admin -c green,magenta \"pnpm --filter @soltower/web dev\" \"pnpm --filter @soltower/admin dev\"",
+    "dev:web": "pnpm --filter @soltower/web dev",
+    "dev:admin": "pnpm --filter @soltower/admin dev",
+    "build": "pnpm --filter @soltower/shared build && pnpm --filter @soltower/game-engine build && pnpm --filter @soltower/web build && pnpm --filter @soltower/admin build && pnpm functions:check",
+    "build:web": "pnpm --filter @soltower/web build",
+    "build:admin": "pnpm --filter @soltower/admin build",
+    "functions:check": "vitest run supabase/tests",
+    "supabase:start": "supabase start",
+    "supabase:reset": "supabase db reset",
+    "supabase:push": "supabase db push",
+    "supabase:functions": "supabase functions serve --env-file supabase/functions/.env.local",
+    "smoke:hosted:onboarding": "node --env-file=.env scripts/hosted-onboarding-smoke.mjs",
+    "smoke:hosted:wallet": "node --env-file=.env scripts/hosted-wallet-auth-smoke.mjs",
+    "scan:frontend-secrets": "node --env-file=.env scripts/frontend-secret-scan.mjs",
+    "lint": "eslint .",
+    "test": "vitest run packages apps/web/src apps/admin/src supabase/tests",
+    "format": "prettier --write .",
+    "seed": "supabase db reset"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/node": "^22.15.34",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.35.1",
+    "@typescript-eslint/parser": "^8.35.1",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.30.1",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.2.0",
+    "prettier": "^3.6.2",
+    "supabase": "^2.108.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@soltower/game-engine": "workspace:*",
+    "@soltower/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.57.4",
+    "bs58": "^6.0.0"
+  }
+}

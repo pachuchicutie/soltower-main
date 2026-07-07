@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SolTower Hero Sprite Standard Preview</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #07111d; color: #f5f7fb; }
+      body { margin: 0; padding: 24px; background: #07111d; }
+      header { display: grid; gap: 8px; margin: 0 0 20px; }
+      h1, h2 { margin: 0; font-family: Georgia, serif; color: #fff4d6; }
+      p { margin: 0; color: #b8c7da; max-width: 880px; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 24px; }
+      button { border: 1px solid rgba(243, 201, 105, .45); border-radius: 8px; background: rgba(12, 20, 34, .9); color: #f5f7fb; padding: 8px 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+      button.active { background: linear-gradient(180deg, rgba(243, 201, 105, .28), rgba(48, 33, 11, .66)); color: #fff4d6; }
+      main { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+      article { border: 1px solid rgba(243, 201, 105, .26); border-radius: 8px; background: rgba(12, 20, 34, .86); padding: 16px; display: grid; gap: 14px; }
+      .stage { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
+      .playback { width: 128px; height: 128px; image-rendering: pixelated; background-repeat: no-repeat; background-size: 512px 512px; border: 1px solid rgba(119, 212, 242, .25); border-radius: 8px; background-color: rgba(2, 6, 23, .65); }
+      .grid-image { width: min(100%, 256px); image-rendering: pixelated; border: 1px solid rgba(243, 201, 105, .18); background-image: linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px); background-size: 64px 64px; }
+      dl { display: grid; gap: 6px; margin: 0; }
+      dl div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; }
+      dt { color: #8fa4be; text-transform: uppercase; font-size: 11px; font-weight: 800; }
+      dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+      code { color: #c7ecf7; }
+      @media (max-width: 560px) { body { padding: 16px; } .stage { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>SolTower Hero Sprite Standard Preview</h1>
+      <p>All Hero animation sheets use 64x64 transparent frames, 4 direction rows, 4 animation columns, and Phaser origin 0.5, 0.88.</p>
+      <div class="toolbar"><button type="button" data-action="idle">idle</button><button type="button" data-action="walk">walk</button><button type="button" data-action="run">run</button><button type="button" data-action="attack">attack</button></div>
+    </header>
+    <main><article>
+        <h2>Storm Archer</h2>
+        <div class="stage">
+          <div class="playback" data-hero="storm-archer"></div>
+          <img class="grid-image" src="../storm-archer/idle.png" alt="Storm Archer idle spritesheet" />
+        </div>
+        <dl>
+          <div><dt>Hero</dt><dd>storm-archer</dd></div>
+          <div><dt>Sheet</dt><dd><code>idle.png / walk.png / run.png / attack.png</code></dd></div>
+          <div><dt>Dimensions</dt><dd>256x256</dd></div>
+          <div><dt>Frame</dt><dd>64x64</dd></div>
+          <div><dt>Rows</dt><dd>down, left, right, up</dd></div>
+          <div><dt>Columns</dt><dd>4 animation frames</dd></div>
+          <div><dt>Origin</dt><dd>0.5, 0.88</dd></div>
+        </dl>
+      </article><article>
+        <h2>Tide Mage</h2>
+        <div class="stage">
+          <div class="playback" data-hero="tide-mage"></div>
+          <img class="grid-image" src="../tide-mage/idle.png" alt="Tide Mage idle spritesheet" />
+        </div>
+        <dl>
+          <div><dt>Hero</dt><dd>tide-mage</dd></div>
+          <div><dt>Sheet</dt><dd><code>idle.png / walk.png / run.png / attack.png</code></dd></div>
+          <div><dt>Dimensions</dt><dd>256x256</dd></div>
+          <div><dt>Frame</dt><dd>64x64</dd></div>
+          <div><dt>Rows</dt><dd>down, left, right, up</dd></div>
+          <div><dt>Columns</dt><dd>4 animation frames</dd></div>
+          <div><dt>Origin</dt><dd>0.5, 0.88</dd></div>
+        </dl>
+      </article><article>
+        <h2>Bombardier</h2>
+        <div class="stage">
+          <div class="playback" data-hero="bombardier"></div>
+          <img class="grid-image" src="../bombardier/idle.png" alt="Bombardier idle spritesheet" />
+        </div>
+        <dl>
+          <div><dt>Hero</dt><dd>bombardier</dd></div>
+          <div><dt>Sheet</dt><dd><code>idle.png / walk.png / run.png / attack.png</code></dd></div>
+          <div><dt>Dimensions</dt><dd>256x256</dd></div>
+          <div><dt>Frame</dt><dd>64x64</dd></div>
+          <div><dt>Rows</dt><dd>down, left, right, up</dd></div>
+          <div><dt>Columns</dt><dd>4 animation frames</dd></div>
+          <div><dt>Origin</dt><dd>0.5, 0.88</dd></div>
+        </dl>
+      </article><article>
+        <h2>Coral Alchemist</h2>
+        <div class="stage">
+          <div class="playback" data-hero="coral-alchemist"></div>
+          <img class="grid-image" src="../coral-alchemist/idle.png" alt="Coral Alchemist idle spritesheet" />
+        </div>
+        <dl>
+          <div><dt>Hero</dt><dd>coral-alchemist</dd></div>
+          <div><dt>Sheet</dt><dd><code>idle.png / walk.png / run.png / attack.png</code></dd></div>
+          <div><dt>Dimensions</dt><dd>256x256</dd></div>
+          <div><dt>Frame</dt><dd>64x64</dd></div>
+          <div><dt>Rows</dt><dd>down, left, right, up</dd></div>
+          <div><dt>Columns</dt><dd>4 animation frames</dd></div>
+          <div><dt>Origin</dt><dd>0.5, 0.88</dd></div>
+        </dl>
+      </article><article>
+        <h2>Starcaller</h2>
+        <div class="stage">
+          <div class="playback" data-hero="starcaller"></div>
+          <img class="grid-image" src="../starcaller/idle.png" alt="Starcaller idle spritesheet" />
+        </div>
+        <dl>
+          <div><dt>Hero</dt><dd>starcaller</dd></div>
+          <div><dt>Sheet</dt><dd><code>idle.png / walk.png / run.png / attack.png</code></dd></div>
+          <div><dt>Dimensions</dt><dd>256x256</dd></div>
+          <div><dt>Frame</dt><dd>64x64</dd></div>
+          <div><dt>Rows</dt><dd>down, left, right, up</dd></div>
+          <div><dt>Columns</dt><dd>4 animation frames</dd></div>
+          <div><dt>Origin</dt><dd>0.5, 0.88</dd></div>
+        </dl>
+      </article></main>
+    <script>
+      const actions = ["idle","walk","run","attack"];
+      let action = "idle";
+      let frame = 0;
+      const buttons = [...document.querySelectorAll("button[data-action]")];
+      function render() {
+        buttons.forEach((button) => button.classList.toggle("active", button.dataset.action === action));
+        document.querySelectorAll(".playback").forEach((el) => {
+          el.style.backgroundImage = "url('../" + el.dataset.hero + "/" + action + ".png')";
+          el.style.backgroundPosition = "-" + (frame * 128) + "px 0";
+        });
+        document.querySelectorAll(".grid-image").forEach((img) => {
+          const hero = img.closest("article").querySelector(".playback").dataset.hero;
+          img.src = "../" + hero + "/" + action + ".png";
+        });
+      }
+      buttons.forEach((button) => button.addEventListener("click", () => { action = button.dataset.action; frame = 0; render(); }));
+      setInterval(() => { frame = (frame + 1) % 4; render(); }, 220);
+      render();
+    </script>
+  </body>
+</html>

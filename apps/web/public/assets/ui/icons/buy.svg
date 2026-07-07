@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="coin-plus">
+  <defs>
+    <linearGradient id="bg-coin-plus" x1="12" y1="8" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1f3147" stop-opacity=".98"/>
+      <stop offset="1" stop-color="#070d17" stop-opacity=".98"/>
+    </linearGradient>
+    <radialGradient id="glow-coin-plus" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(33 29) rotate(90) scale(28)">
+      <stop stop-color="#72d49b" stop-opacity=".32"/>
+      <stop offset=".72" stop-color="#72d49b" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#72d49b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft-coin-plus" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#020711" flood-opacity=".58"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#72d49b" flood-opacity=".42"/>
+    </filter>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="12" fill="url(#bg-coin-plus)" stroke="#72d49b" stroke-opacity=".72" stroke-width="2"/>
+  <rect x="9" y="9" width="46" height="46" rx="9" fill="url(#glow-coin-plus)"/>
+  <path d="M15 18C23 11 41 11 49 18" stroke="#fff7df" stroke-opacity=".18" stroke-width="2" stroke-linecap="round"/>
+  <g filter="url(#soft-coin-plus)" stroke="#72d49b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="29" cy="34" r="12"/><path d="M45 21v12M39 27h12"/><path d="M25 34h8"/>
+  </g>
+  <path d="M18 50C27 54 38 54 47 49" stroke="#fff7df" stroke-opacity=".12" stroke-width="2" stroke-linecap="round"/>
+</svg>
