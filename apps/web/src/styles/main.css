@@ -6609,10 +6609,10 @@ label {
 .mobile-premium-interact-btn {
   position: absolute;
   bottom: max(120px, env(safe-area-inset-bottom) + 100px);
-  right: max(16px, env(safe-area-inset-right));
+  right: max(24px, env(safe-area-inset-right));
   z-index: calc(var(--z-hud) + 3);
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   display: none;
   align-items: center;
   justify-content: center;
