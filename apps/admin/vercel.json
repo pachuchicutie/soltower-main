@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && pnpm --filter @soltower/shared build && pnpm --filter @soltower/admin build",
+  "outputDirectory": "dist"
+}
