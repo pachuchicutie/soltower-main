@@ -764,7 +764,7 @@ export class TownScene extends Phaser.Scene {
     if (!this.player || this.options.mode !== "game") {
       return;
     }
-    if (!this.userSettings.cameraFollow && !immediate) {
+    if (!this.userSettings.cameraFollow && !immediate && this.scale.width >= 720) {
       return;
     }
     const camera = this.cameras.main;
