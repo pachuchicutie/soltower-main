@@ -184,7 +184,7 @@ label {
 }
 
 .game-modal {
-  width: min(620px, calc(100vw - 32px));
+  width: min(820px, calc(100vw - 48px));
   max-height: calc(100dvh - 48px);
   overflow: auto;
   display: grid;
@@ -1685,7 +1685,7 @@ label {
   display: flex;
   gap: 10px;
   align-items: center;
-  max-width: min(620px, calc(100vw - 32px));
+  max-width: min(820px, calc(100vw - 48px));
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: rgba(11, 19, 31, 0.9);
@@ -1701,7 +1701,7 @@ label {
 }
 
 .wallet-modal {
-  width: min(620px, calc(100vw - 32px));
+  width: min(820px, calc(100vw - 48px));
   scrollbar-width: thin;
   scrollbar-color: rgba(243, 201, 105, 0.38) rgba(8, 14, 24, 0.55);
 }
@@ -1711,7 +1711,7 @@ label {
 }
 
 .profile-panel {
-  width: min(620px, calc(100vw - 32px));
+  width: min(820px, calc(100vw - 48px));
 }
 
 .wallet-entry-step {
