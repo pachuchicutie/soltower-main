@@ -101,6 +101,7 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     setSuccessMessage(null);
     setError(null);
   };
+const handleDisconnect = async () => { await disconnectReownWallet(); setConnectedAddress(null); setIsPreRegistered(false); setSuccessMessage(null); setError(null); };
   const handleConnectWallet = async () => {
     setError(null);
     try {
