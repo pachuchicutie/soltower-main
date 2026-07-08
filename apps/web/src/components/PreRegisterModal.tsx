@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, LoaderCircle, Wallet, X } from "lucide-react";
 import { GameButton, GameModal, ModalHeader } from "./ui/GameUi";
 import { createBrowserSupabaseClient } from "../lib/supabase";
-import { openReownWalletPicker, useReownWallet } from "../lib/reown";
+import { openReownWalletPicker, useReownWallet, disconnectReownWallet } from "../lib/reown";
 
 interface PreRegisterModalProps {
   onClose: () => void;
