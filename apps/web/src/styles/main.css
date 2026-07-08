@@ -6700,6 +6700,11 @@ label {
   margin-bottom: 12px;
 }
 
+.mobile-premium-menu-header button {
+  padding: 8px;
+  margin-left: 8px;
+}
+
 .mobile-premium-menu-header strong {
   font-size: 15px;
   color: #f3c969;
