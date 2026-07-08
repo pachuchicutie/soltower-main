@@ -6799,7 +6799,18 @@ label {
   letter-spacing: 0.5px;
 }
 
+.rewards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 
+.reward-item {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
 
 .reward-item.gold {
   grid-column: span 2;
@@ -6985,9 +6996,28 @@ label {
   display: inline-block;
 }
 
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
 
+/* Mobile fixes for pre-reg modal */
+@media (max-width: 480px) {
+  .pre-register-modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
   
+  .rewards-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
   
+  .reward-card img {
+    width: 56px;
+    height: 56px;
+  }
   
   .reward-card .reward-name {
     font-size: 11px;
@@ -7067,7 +7097,11 @@ label {
 
 /* Center rewards on desktop */
 @media (min-width: 768px) {
-  
+  .rewards-grid {
+    justify-content: center;
+    margin: 0 auto;
+  }
+}
 
 /* Premium Pre-Register Modal Enhancements */
 .rewards-header {
@@ -7081,7 +7115,19 @@ label {
   letter-spacing: 1px;
 }
 
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  justify-content: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
 
+@media (min-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .reward-card {
@@ -7116,11 +7162,20 @@ label {
 
 /* Full width desktop rewards grid fix */
 @media (min-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 100%;
+    width: 100%;
+    padding: 0 8px;
+  }
   
+  .reward-card {
+    min-width: 0;
+  }
 }
 
 
-/* Clean full-width desktop rewards grid */
+/* Premium full-width desktop rewards grid */
 .rewards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -7133,13 +7188,29 @@ label {
     grid-template-columns: repeat(3, 1fr);
     width: 100%;
   }
-  
-  .reward-card {
-    width: 100%;
-  }
 }
 
 .rewards-section {
   width: 100%;
+}
+
+.reward-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(201, 160, 79, 0.4);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.countdown-value, .countdown-separator {
+  color: #c9a04f;
+  text-shadow: 0 0 12px rgba(201, 160, 79, 0.7);
+}
+
+.rewards-header {
+  background: linear-gradient(90deg, #c9a04f, #e8d5a3, #c9a04f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
