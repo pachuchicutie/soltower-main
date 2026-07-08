@@ -6927,3 +6927,170 @@ label {
   font-size: 10px;
   color: #64748b;
 }
+
+/* Shiny Pre-Register Reward Cards */
+.reward-card {
+  background: linear-gradient(145deg, #1e2937 0%, #0f172a 100%);
+  border: 2px solid #f3c969;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(243, 201, 105, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.reward-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255,255,255,0.15) 0%,
+    rgba(255,255,255,0) 50%,
+    rgba(255,255,255,0.15) 100%
+  );
+  transform: rotate(25deg);
+  animation: shine 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  20% { transform: translateX(100%) rotate(25deg); }
+  100% { transform: translateX(100%) rotate(25deg); }
+}
+
+.reward-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(243, 201, 105, 0.7);
+}
+
+.reward-card img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin: 0 auto 8px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.reward-card .reward-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f3c969;
+  margin-bottom: 4px;
+}
+
+.reward-card .reward-rarity {
+  font-size: 10px;
+  padding: 1px 8px;
+  background: rgba(243, 201, 105, 0.2);
+  border: 1px solid #f3c969;
+  border-radius: 10px;
+  color: #f3c969;
+  display: inline-block;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+/* Mobile fixes for pre-reg modal */
+@media (max-width: 480px) {
+  .pre-register-modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .rewards-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .reward-card img {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .reward-card .reward-name {
+    font-size: 11px;
+  }
+  
+  .connect-wallet-btn,
+  .pre-reg-btn {
+    width: 100%;
+    font-size: 14px;
+  }
+}
+
+/* Countdown Timer - Shiny ticking */
+.countdown-section {
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(243, 201, 105, 0.3);
+  border-radius: 8px;
+}
+
+.countdown-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: monospace;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.countdown-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #f3c969;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(243, 201, 105, 0.6);
+  transition: all 0.1s ease;
+}
+
+.countdown-label-small {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.countdown-separator {
+  font-size: 24px;
+  color: #f3c969;
+  margin-top: -8px;
+  font-weight: 700;
+}
+
+/* Mobile countdown */
+@media (max-width: 480px) {
+  .countdown-value {
+    font-size: 22px;
+  }
+  .countdown-separator {
+    font-size: 18px;
+  }
+}

@@ -8,19 +8,20 @@ interface PreRegisterModalProps {
   onClose: () => void;
 }
 
-interface PreRegRewards {
-  weapons: string[];
-  armors: string[];
-  costumes: string[];
-  gold: number;
+interface PreRegReward {
+  name: string;
+  image: string;
+  rarity: string;
 }
 
-const PRE_REG_REWARDS: PreRegRewards = {
-  weapons: ["Embershot Cannon", "Tidecall Staff", "Starlit Bow"],
-  armors: ["Tideglass Mantle", "Reefguard Plate"],
-  costumes: ["Capybara Vacation", "Banana Guardian", "Midnight Drum Runner"],
+const PRE_REG_REWARDS = {
+  weapon: { name: "Embershot Cannon", image: "/assets/vault/rewards/weapons/embershot-cannon.png", rarity: "RARE" },
+  armor: { name: "Tideglass Mantle", image: "/assets/vault/rewards/armor/tideglass-mantle.png", rarity: "RARE" },
+  costume: { name: "Capybara Vacation", image: "/assets/costumes/capybara-vacation/storm-archer/idle-front.png", rarity: "RARE" },
   gold: 100,
 };
+
+const INITIAL_COUNTDOWN = 3 * 60 * 60; // 3 hours in seconds
 
 export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const reownWallet = useReownWallet();
@@ -31,10 +32,21 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(INITIAL_COUNTDOWN);
 
   const walletAddress = reownWallet.address || connectedAddress;
 
-  // Check if already pre-registered when wallet connects
+  // Live ticking countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (!walletAddress) {
       setIsPreRegistered(false);
@@ -83,7 +95,6 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     setError(null);
     try {
       await openReownWalletPicker();
-      // The hook will update the address
     } catch (e) {
       setError("Failed to open wallet picker");
     }
@@ -114,7 +125,6 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
 
       if (insertError) {
         if (insertError.code === "23505") {
-          // unique violation
           setIsPreRegistered(true);
           setSuccessMessage("Already pre-registered.");
         } else {
@@ -140,6 +150,10 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     onClose();
   };
 
+  const hours = Math.floor(timeLeft / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
+  const seconds = timeLeft % 60;
+
   return (
     <GameModal>
       <div className="game-modal-content pre-register-modal">
@@ -153,21 +167,45 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
         />
 
         <div className="pre-reg-content">
-          {/* Rewards Section - Compact */}
+          {/* Live 3-hour Countdown - ticking per second */}
+          <div className="countdown-section">
+            <div className="countdown-label">LAUNCH IN</div>
+            <div className="countdown-timer">
+              <div className="countdown-unit">
+                <span className="countdown-value">{String(hours).padStart(2, "0")}</span>
+                <span className="countdown-label-small">HRS</span>
+              </div>
+              <div className="countdown-separator">:</div>
+              <div className="countdown-unit">
+                <span className="countdown-value">{String(minutes).padStart(2, "0")}</span>
+                <span className="countdown-label-small">MIN</span>
+              </div>
+              <div className="countdown-separator">:</div>
+              <div className="countdown-unit">
+                <span className="countdown-value">{String(seconds).padStart(2, "0")}</span>
+                <span className="countdown-label-small">SEC</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rewards Section - 3 shiny cards with images */}
           <div className="rewards-section">
             <div className="rewards-header">Pre-Register Rewards</div>
             <div className="rewards-grid">
-              <div className="reward-item">
-                <div className="reward-label">Rare Weapons</div>
-                <div className="reward-list">{PRE_REG_REWARDS.weapons.join(", ")}</div>
+              <div className="reward-card">
+                <img src={PRE_REG_REWARDS.weapon.image} alt={PRE_REG_REWARDS.weapon.name} />
+                <div className="reward-name">{PRE_REG_REWARDS.weapon.name}</div>
+                <div className="reward-rarity">{PRE_REG_REWARDS.weapon.rarity}</div>
               </div>
-              <div className="reward-item">
-                <div className="reward-label">Rare Armors</div>
-                <div className="reward-list">{PRE_REG_REWARDS.armors.join(", ")}</div>
+              <div className="reward-card">
+                <img src={PRE_REG_REWARDS.armor.image} alt={PRE_REG_REWARDS.armor.name} />
+                <div className="reward-name">{PRE_REG_REWARDS.armor.name}</div>
+                <div className="reward-rarity">{PRE_REG_REWARDS.armor.rarity}</div>
               </div>
-              <div className="reward-item">
-                <div className="reward-label">Rare Costumes</div>
-                <div className="reward-list">{PRE_REG_REWARDS.costumes.join(", ")}</div>
+              <div className="reward-card">
+                <img src={PRE_REG_REWARDS.costume.image} alt={PRE_REG_REWARDS.costume.name} />
+                <div className="reward-name">{PRE_REG_REWARDS.costume.name}</div>
+                <div className="reward-rarity">{PRE_REG_REWARDS.costume.rarity}</div>
               </div>
               <div className="reward-item gold">
                 <div className="reward-label">Gold</div>
