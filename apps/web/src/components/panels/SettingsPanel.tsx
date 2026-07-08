@@ -73,6 +73,40 @@ export function SettingsPanel({
   return (
     <div className="settings-panel-v2">
       <ModalTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} label="Settings tabs" />
+      {/* Town Channels - visible on mobile */}
+      <GameCard style={{ marginTop: 12 }}>
+        <div style={{ marginBottom: 8, fontWeight: 600, color: "#e2e8f0" }}>
+          Switch Town Channel
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {(servers.data?.servers ?? []).map((server: any) => (
+            <button
+              key={server.id}
+              onClick={() => {
+                localStorage.setItem("soltower:town-channel", server.id);
+                window.location.reload();
+              }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 16px",
+                background: "#0f172a",
+                border: "1px solid #334155",
+                borderRadius: "8px",
+                color: "#e2e8f0",
+                cursor: "pointer"
+              }}
+            >
+              <span>{server.label}</span>
+              <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                {server.online} / {server.capacity}
+              </span>
+            </button>
+          ))}
+        </div>
+      </GameCard>
+
 
       {activeTab === "audio" ? (
         <section className="settings-tab-panel" aria-label="Audio settings">
