@@ -218,6 +218,51 @@ export const vaultEquipment: EquipmentDefinition[] = [
   },
   {
     id: "forgebound-defender-mail",
+  {
+    id: "obsidian-warden-plate",
+    name: "Obsidian Warden Plate",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 125, bossDamage: 7 }
+  },
+  {
+    id: "emberweave-cloak",
+    name: "Emberweave Cloak",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 110, luck: 8, critChance: 4 }
+  },
+  {
+    id: "tideforged-cuirass",
+    name: "Tideforged Cuirass",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 135, bossDamage: 5, luck: 3 }
+  },
+  {
+    id: "shadowveil-mantle",
+    name: "Shadowveil Mantle",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 118, critChance: 6, luck: 5 }
+  },
+  {
+    id: "stormscale-vest",
+    name: "Stormscale Vest",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 122, attackSpeed: 4, bossDamage: 4 }
+  },
     name: "Forgebound Defender Mail",
     slot: "ARMOR",
     rarity: "RARE",
