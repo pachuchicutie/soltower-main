@@ -21,7 +21,7 @@ const PRE_REG_REWARDS = {
   gold: 100,
 };
 
-const LAUNCH_TIME = new Date("2026-07-11T00:00:00Z").getTime();
+const LAUNCH_TIME = new Date("2026-07-09T12:00:00Z").getTime();
 
 export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const reownWallet = useReownWallet();

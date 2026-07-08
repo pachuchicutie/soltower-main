@@ -7263,3 +7263,30 @@ label {
   }
 }
 
+
+/* Force rewards to full width and center on desktop */
+@media (min-width: 768px) {
+  .rewards-section {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .rewards-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+    justify-content: stretch !important;
+  }
+  
+  .reward-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  
+  .reward-item.gold {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
