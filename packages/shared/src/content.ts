@@ -119,6 +119,51 @@ export const vaultEquipment: EquipmentDefinition[] = [
   },
   {
     id: "embershot-cannon",
+  {
+    id: "voidpiercer-crossbow",
+    name: "Voidpiercer Crossbow",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 35, critChance: 12, range: 16 }
+  },
+  {
+    id: "flameveil-dagger",
+    name: "Flameveil Dagger",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 29, attackSpeed: 14, critChance: 7 }
+  },
+  {
+    id: "ironthorn-spear",
+    name: "Ironthorn Spear",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 41, bossDamage: 9, range: 14 }
+  },
+  {
+    id: "shadowwhisper-blade",
+    name: "Shadowwhisper Blade",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 33, critChance: 10, luck: 5 }
+  },
+  {
+    id: "stormcall-javelin",
+    name: "Stormcall Javelin",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 37, attackSpeed: 5, range: 17, bossDamage: 5 }
+  },
     name: "Embershot Cannon",
     slot: "WEAPON",
     rarity: "RARE",
