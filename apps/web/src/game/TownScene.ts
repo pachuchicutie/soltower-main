@@ -417,17 +417,8 @@ export class TownScene extends Phaser.Scene {
 
       this.target = null;
     }
-    if (
-      this.collisionBodies.some(({ rect }) =>
-        Phaser.Geom.Intersects.RectangleToRectangle(this.playerCollisionRect(), rect)
-      )
-    ) {
-      if (axis === "x") {
-        this.player.x = previousPosition;
-      } else {
-        this.player.y = previousPosition;
-      }
-    }
+    // Removed revert to prevent teleport snap; keep edge position
+    // If still blocked after adjustment, the position is already at the edge
   }
 
   private playerCollisionRect(): Phaser.Geom.Rectangle {
