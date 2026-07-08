@@ -49,6 +49,7 @@ export function App() {
   const [realtimeOnline, setRealtimeOnline] = useState<number | null>(null);
   const [realtimeStatus, setRealtimeStatus] = useState<TownRealtimeStatus>("connecting");
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const [showChannelModal, setShowChannelModal] = useState(false);
   const latestTownPositionRef = useRef<TownPosition | undefined>(undefined);
   const setTownChannel = useCallback((nextTownChannel: TownServerId) => {
     saveLocalTownChannel(nextTownChannel);
@@ -59,6 +60,11 @@ export function App() {
     queryFn: () => apiGet<MeResponse>("/api/player/me"),
     enabled: !disconnected,
     retry: false
+  });
+  const servers = useQuery({
+    queryKey: ["town-servers"],
+    queryFn: () => apiGet<any>("/api/town/servers"),
+    staleTime: 15000
   });
   const [heroAppearance] = useHeroAppearance(me.data?.selectedHeroId ?? "storm-archer");
   const restoredTownPosition = useMemo(() => {
@@ -349,13 +355,13 @@ export function App() {
                   <span>{nearbyInteraction.label}</span>
                 </button>
               ) : null}
+              <button type="button" onClick={() => { setMobileActionsOpen(false); setShowChannelModal(true); }}>
+                <Map size={20} />
+                <span>Switch Channel</span>
+              </button>
               <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
                 <Settings size={20} />
                 <span>Settings</span>
-              </button>
-              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
-                <Map size={20} />
-                <span>Switch Channel</span>
               </button>
               <button type="button" onClick={() => { setMobileActionsOpen(false); window.dispatchEvent(new CustomEvent('soltower:zoom-in')); }}>
                 <ZoomIn size={20} />
@@ -408,6 +414,84 @@ export function App() {
           onOpenModal={handleOpenModal}
         />
       ) : null}
+      {showChannelModal && (
+        <div
+          className="channel-modal-overlay"
+          onClick={() => setShowChannelModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px"
+          }}
+        >
+          <div
+            className="channel-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#0f172a",
+              border: "1px solid #334155",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "340px",
+              padding: "16px",
+              color: "#e2e8f0"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <strong>Switch Channel</strong>
+              <button
+                type="button"
+                onClick={() => setShowChannelModal(false)}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {(servers.data?.servers ?? []).map((server: any) => {
+                const isCurrent = server.id === townChannel;
+                return (
+                  <button
+                    key={server.id}
+                    onClick={() => {
+                      if (!isCurrent) {
+                        setTownChannel(server.id as TownServerId);
+                        setShowChannelModal(false);
+                      }
+                    }}
+                    disabled={isCurrent}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 16px",
+                      background: isCurrent ? "#1e2937" : "#0f172a",
+                      border: isCurrent ? "1px solid #64748b" : "1px solid #334155",
+                      borderRadius: "8px",
+                      color: "#e2e8f0",
+                      cursor: isCurrent ? "default" : "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <span>{server.label}</span>
+                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                      {server.online} / {server.capacity}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ marginTop: "12px", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
+              Switching updates your town instantly
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

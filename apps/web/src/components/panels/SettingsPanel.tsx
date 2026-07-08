@@ -73,39 +73,7 @@ export function SettingsPanel({
   return (
     <div className="settings-panel-v2">
       <ModalTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} label="Settings tabs" />
-      {/* Town Channels - visible on mobile */}
-      <GameCard style={{ marginTop: 12 }}>
-        <div style={{ marginBottom: 8, fontWeight: 600, color: "#e2e8f0" }}>
-          Switch Town Channel
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {(servers.data?.servers ?? []).map((server: any) => (
-            <button
-              key={server.id}
-              onClick={() => {
-                localStorage.setItem("soltower:town-channel", server.id);
-                window.location.reload();
-              }}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px 16px",
-                background: "#0f172a",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                color: "#e2e8f0",
-                cursor: "pointer"
-              }}
-            >
-              <span>{server.label}</span>
-              <span style={{ color: "#94a3b8", fontSize: "13px" }}>
-                {server.online} / {server.capacity}
-              </span>
-            </button>
-          ))}
-        </div>
-      </GameCard>
+
 
 
       {activeTab === "audio" ? (
@@ -268,43 +236,10 @@ export function SettingsPanel({
       {activeTab === "town" ? (
         <section className="settings-tab-panel" aria-label="Town channels">
           <GameCard>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {(servers.data?.servers ?? []).map((server: any) => {
-                const isCurrent = false; // TODO: compare with actual current channel
-                return (
-                  <button
-                    key={server.id}
-                    onClick={() => {
-                      if (!isCurrent) {
-                        localStorage.setItem("soltower:town-channel", server.id);
-                        window.location.reload();
-                      }
-                    }}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 16px",
-                      background: isCurrent ? "#1e2937" : "#0f172a",
-                      border: isCurrent ? "1px solid #64748b" : "1px solid #334155",
-                      borderRadius: "8px",
-                      color: "#e2e8f0",
-                      cursor: isCurrent ? "default" : "pointer"
-                    }}
-                    disabled={isCurrent}
-                  >
-                    <span>{server.label}</span>
-                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>
-                      {server.online} / {server.capacity}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <p style={{ textAlign: "center", color: "#94a3b8", padding: "20px 0" }}>
+              Use Quick Actions → Switch Channel for instant switching.
+            </p>
           </GameCard>
-          <p style={{ marginTop: "12px", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
-            Switching channel will reload the game
-          </p>
         </section>
       ) : null}
 
