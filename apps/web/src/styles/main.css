@@ -7290,3 +7290,32 @@ label {
   }
 }
 
+
+/* FINAL FULL WIDTH FIX - Rewards must fill the modal */
+.rewards-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.rewards-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 16px !important;
+}
+
+.reward-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+}
+
+.reward-item.gold {
+  width: 100% !important;
+  max-width: 100% !important;
+  grid-column: 1 / -1 !important;
+}
+
