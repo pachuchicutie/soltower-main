@@ -500,9 +500,16 @@ export class TownScene extends Phaser.Scene {
   }
 
   applyRemoteMovement(movement: TownMovementBroadcast): void {
-    const runtime = this.remotePlayers.get(movement.playerId);
+    let runtime = this.remotePlayers.get(movement.playerId);
+    
+    // Create remote player if not exists yet (from movement)
+    if (!runtime) {
+      // We don't have full player data from movement alone, so skip for now
+      // In future we can request full state
+      return;
+    }
+    
     if (
-      !runtime ||
       runtime.sessionId !== movement.sessionId ||
       movement.sequence <= runtime.sequence
     ) {
@@ -527,6 +534,11 @@ export class TownScene extends Phaser.Scene {
   }
 
   private upsertRemotePlayer(player: TownRealtimePlayer): void {
+    // Skip self
+    if (player.playerId === this.options.playerId) {
+      return;
+    }
+
     const current = this.remotePlayers.get(player.playerId);
     const heroChanged =
       current?.container.getData("heroId") !== player.heroId ||
@@ -546,6 +558,7 @@ export class TownScene extends Phaser.Scene {
         0.94,
         player.appearance
       );
+      container.setDepth(player.y + 70);
       const facing = new Phaser.Math.Vector2(player.facingX, player.facingY);
       container.setData(
         "lastFacing",
