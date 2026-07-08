@@ -7102,3 +7102,61 @@ label {
     margin: 0 auto;
   }
 }
+
+/* Premium Pre-Register Modal Enhancements */
+.rewards-header {
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #c9a04f, #e8d5a3, #c9a04f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  justify-content: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 480px;
+  }
+}
+
+.reward-card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(201, 160, 79, 0.4);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.reward-card:hover {
+  border-color: #c9a04f;
+  box-shadow: 0 0 20px rgba(201, 160, 79, 0.3);
+  transform: translateY(-2px);
+}
+
+.countdown-value {
+  color: #c9a04f;
+  text-shadow: 0 0 12px rgba(201, 160, 79, 0.7);
+}
+
+.countdown-separator {
+  color: #c9a04f;
+}
+
+.reward-value {
+  color: #c9a04f;
+}
+

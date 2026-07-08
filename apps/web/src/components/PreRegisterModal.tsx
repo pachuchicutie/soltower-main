@@ -22,7 +22,7 @@ const PRE_REG_REWARDS = {
 };
 
 // Fixed global launch time (same for ALL players, survives reload/tab switch)
-const LAUNCH_TIME = new Date("2026-07-12T00:00:00Z").getTime();
+const LAUNCH_TIME = new Date("2026-07-11T00:00:00Z").getTime();
 
 export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const reownWallet = useReownWallet();
