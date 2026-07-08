@@ -8,6 +8,8 @@ import {
   createRouter
 } from "@tanstack/react-router";
 import { App } from "./App";
+import { Docs } from "./pages/Docs";
+import { HowToPlay } from "./pages/HowToPlay";
 import "@fontsource/cinzel/latin-700.css";
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
@@ -30,6 +32,17 @@ const rootRoute = createRootRoute({
 });
 
 const indexRoute = createRoute({
+const docsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs",
+  component: Docs,
+});
+
+const howToPlayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/how-to-play",
+  component: HowToPlay,
+});
   getParentRoute: () => rootRoute,
   path: "/",
   component: () => null
