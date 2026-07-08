@@ -535,9 +535,6 @@ export class TownScene extends Phaser.Scene {
 
   private upsertRemotePlayer(player: TownRealtimePlayer): void {
     // Skip self
-    if (player.playerId === this.options.playerId) {
-      return;
-    }
 
     const current = this.remotePlayers.get(player.playerId);
     const heroChanged =
