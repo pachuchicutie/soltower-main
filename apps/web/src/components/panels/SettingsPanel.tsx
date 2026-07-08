@@ -29,14 +29,15 @@ import {
   townShortcutGroups
 } from "../ui/ShortcutHint";
 
-type SettingsTab = "audio" | "motion" | "accessibility" | "controls" | "account";
+type SettingsTab = "audio" | "motion" | "accessibility" | "controls" | "account" | "town";
 
 const tabs: Array<{ id: SettingsTab; label: string; iconSrc: string }> = [
   { id: "audio", label: "Audio", iconSrc: uiAssetManifest.icons.sound },
   { id: "motion", label: "Motion", iconSrc: uiAssetManifest.icons.settings },
   { id: "accessibility", label: "Accessibility", iconSrc: uiAssetManifest.icons.achievement },
   { id: "controls", label: "Controls", iconSrc: uiAssetManifest.icons.heroLoadout },
-  { id: "account", label: "Account", iconSrc: uiAssetManifest.icons.wallet }
+  { id: "account", label: "Account", iconSrc: uiAssetManifest.icons.wallet },
+  { id: "town", label: "Town", iconSrc: uiAssetManifest.icons.settings }
 ];
 
 const controlGroups: ShortcutGroupDefinition[] = [
@@ -221,6 +222,17 @@ export function SettingsPanel({
               <LogOut size={17} /> Log Out to Landing
             </GameButton>
           </div>
+        </section>
+      ) : null}
+
+
+      {activeTab === "town" ? (
+        <section className="settings-tab-panel" aria-label="Town channels">
+          <GameCard>
+            <p style={{ margin: 0, color: "#94a3b8" }}>
+              Channel switching will be added here soon.
+            </p>
+          </GameCard>
         </section>
       ) : null}
 
