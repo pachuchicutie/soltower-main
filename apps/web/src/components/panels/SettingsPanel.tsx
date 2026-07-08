@@ -46,8 +46,6 @@ const controlGroups: ShortcutGroupDefinition[] = [
 ];
 
 export function SettingsPanel({
-  currentTownChannel,
-  onTownChannelChange,
   onCenterCamera,
   onLogout
 }: {
