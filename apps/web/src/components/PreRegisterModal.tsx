@@ -17,7 +17,7 @@ interface PreRegReward {
 const PRE_REG_REWARDS = {
   weapon: { name: "Rare Weapon", image: "/assets/pre-reg-rewards/rare-weapon.jpg", rarity: "RARE" },
   armor: { name: "Rare Armor", image: "/assets/pre-reg-rewards/rare-armor.jpg", rarity: "RARE" },
-  costume: { name: "Capybara Vacation", image: "/assets/costumes/capybara-vacation/storm-archer/idle-front.png", rarity: "RARE" },
+  costume: { name: "Rare Costume", image: "/assets/pre-reg-rewards/rare-costume.jpg", rarity: "RARE" },
   gold: 100,
 };
 
