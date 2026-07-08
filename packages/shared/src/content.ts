@@ -119,6 +119,13 @@ export const vaultEquipment: EquipmentDefinition[] = [
   },
   {
     id: "embershot-cannon",
+    name: "Embershot Cannon",
+    slot: "WEAPON",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { damage: 38, bossDamage: 6 }
+  },
   {
     id: "voidpiercer-crossbow",
     name: "Voidpiercer Crossbow",
@@ -163,13 +170,6 @@ export const vaultEquipment: EquipmentDefinition[] = [
     bound: true,
     priceGold: 0,
     stats: { damage: 37, attackSpeed: 5, range: 17, bossDamage: 5 }
-  },
-    name: "Embershot Cannon",
-    slot: "WEAPON",
-    rarity: "RARE",
-    bound: true,
-    priceGold: 0,
-    stats: { damage: 38, bossDamage: 6 }
   },
   {
     id: "tidecall-staff",
@@ -218,6 +218,13 @@ export const vaultEquipment: EquipmentDefinition[] = [
   },
   {
     id: "forgebound-defender-mail",
+    name: "Forgebound Defender Mail",
+    slot: "ARMOR",
+    rarity: "RARE",
+    bound: true,
+    priceGold: 0,
+    stats: { power: 130, bossDamage: 4 }
+  },
   {
     id: "obsidian-warden-plate",
     name: "Obsidian Warden Plate",
@@ -262,13 +269,6 @@ export const vaultEquipment: EquipmentDefinition[] = [
     bound: true,
     priceGold: 0,
     stats: { power: 122, attackSpeed: 4, bossDamage: 4 }
-  },
-    name: "Forgebound Defender Mail",
-    slot: "ARMOR",
-    rarity: "RARE",
-    bound: true,
-    priceGold: 0,
-    stats: { power: 130, bossDamage: 4 }
   },
   {
     id: "moonlit-tide-robes",

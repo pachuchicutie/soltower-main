@@ -115,6 +115,10 @@ export const fullCostumeDefinitions = [
   },
   {
     id: "capybara-vacation",
+    name: "Capybara Vacation",
+    rarity: "RARE",
+    theme: "Relaxed travel costume with a cozy tropical vacation feel."
+  },
   {
     id: "desert-nomad",
     name: "Desert Nomad",
@@ -144,10 +148,6 @@ export const fullCostumeDefinitions = [
     name: "Verdant Wildcaller",
     rarity: "RARE",
     theme: "Forest green and earthy tones with living vine and leaf accents."
-  },
-    name: "Capybara Vacation",
-    rarity: "RARE",
-    theme: "Relaxed travel costume with a cozy tropical vacation feel."
   },
   {
     id: "galactic-sigma",
