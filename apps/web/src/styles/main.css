@@ -7094,3 +7094,11 @@ label {
     font-size: 18px;
   }
 }
+
+/* Center rewards on desktop */
+@media (min-width: 768px) {
+  .rewards-grid {
+    justify-content: center;
+    margin: 0 auto;
+  }
+}
