@@ -7127,7 +7127,6 @@ label {
 @media (min-width: 768px) {
   .rewards-grid {
     grid-template-columns: repeat(3, 1fr);
-    max-width: 480px;
   }
 }
 
@@ -7158,5 +7157,20 @@ label {
 
 .reward-value {
   color: #c9a04f;
+}
+
+
+/* Full width desktop rewards grid fix */
+@media (min-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 100%;
+    width: 100%;
+    padding: 0 8px;
+  }
+  
+  .reward-card {
+    min-width: 0;
+  }
 }
 
