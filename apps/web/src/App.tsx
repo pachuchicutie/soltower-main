@@ -359,10 +359,6 @@ export function App() {
                 <Map size={20} />
                 <span>Switch Channel</span>
               </button>
-              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
-                <Settings size={20} />
-                <span>Settings</span>
-              </button>
               <button type="button" onClick={() => { setMobileActionsOpen(false); window.dispatchEvent(new CustomEvent('soltower:zoom-in')); }}>
                 <ZoomIn size={20} />
                 <span>Zoom In</span>
@@ -370,6 +366,10 @@ export function App() {
               <button type="button" onClick={() => { setMobileActionsOpen(false); window.dispatchEvent(new CustomEvent('soltower:zoom-out')); }}>
                 <ZoomOut size={20} />
                 <span>Zoom Out</span>
+              </button>
+              <button type="button" onClick={() => { setMobileActionsOpen(false); handleOpenModal("settings"); }}>
+                <Settings size={20} />
+                <span>Settings</span>
               </button>
             </div>
           </div>
