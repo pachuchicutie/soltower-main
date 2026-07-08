@@ -21,7 +21,6 @@ const PRE_REG_REWARDS = {
   gold: 100,
 };
 
-// Fixed global launch time (same for ALL players, survives reload/tab switch)
 const LAUNCH_TIME = new Date("2026-07-11T00:00:00Z").getTime();
 
 export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
@@ -37,7 +36,6 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
 
   const walletAddress = reownWallet.address || connectedAddress;
 
-  // Global ticking countdown (same for everyone)
   useEffect(() => {
     const updateTimer = () => {
       const now = Date.now();
@@ -94,42 +92,35 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     void checkRegistration();
   }, [walletAddress]);
 
-  const handleDisconnect = async () => {
-    await disconnectReownWallet();
-    setConnectedAddress(null);
-    setIsPreRegistered(false);
-    setSuccessMessage(null);
-    setError(null);
-  };
-const handleDisconnect = async () => { await disconnectReownWallet(); setConnectedAddress(null); setIsPreRegistered(false); setSuccessMessage(null); setError(null); };
-  const handleDisconnect = async () => {
-    await disconnectReownWallet();
-    setConnectedAddress(null);
-    setIsPreRegistered(false);
-    setSuccessMessage(null);
-    setError(null);
-  };
-
   const handleConnectWallet = async () => {
     setError(null);
     try {
       await openReownWalletPicker();
     } catch (e) {
-      setError("Failed to open wallet picker");
+      setError("Failed to connect wallet");
     }
   };
 
-  const handlePreRegister = () => {
+  const handleDisconnect = async () => {
+    await disconnectReownWallet();
+    setConnectedAddress(null);
+    setIsPreRegistered(false);
+    setSuccessMessage(null);
+    setError(null);
+  };
+
+  const handlePreRegister = async () => {
     if (!walletAddress) return;
+
     setShowConfirm(true);
   };
 
   const confirmPreRegister = async () => {
     if (!walletAddress) return;
 
+    setShowConfirm(false);
     setIsRegistering(true);
     setError(null);
-    setShowConfirm(false);
 
     try {
       const supabase = createBrowserSupabaseClient();
@@ -145,17 +136,17 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
       if (insertError) {
         if (insertError.code === "23505") {
           setIsPreRegistered(true);
-          setSuccessMessage("Already pre-registered.");
+          setSuccessMessage("This wallet is already pre-registered.");
         } else {
-          setError("Registration failed. Try again.");
+          setError("Failed to pre-register");
         }
         return;
       }
 
       setIsPreRegistered(true);
-      setSuccessMessage("Congrats! Wallet pre-registered. Rewards at launch.");
+      setSuccessMessage("Pre-registration successful! Rewards will be sent at launch.");
     } catch (e) {
-      setError("Registration error");
+      setError("Registration failed");
     } finally {
       setIsRegistering(false);
     }
@@ -186,7 +177,6 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
         />
 
         <div className="pre-reg-content">
-          {/* Live Global Countdown - same for all players */}
           <div className="countdown-section">
             <div className="countdown-label">LAUNCH IN</div>
             <div className="countdown-timer">
@@ -207,7 +197,6 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
             </div>
           </div>
 
-          {/* Rewards Section - 3 shiny cards with images */}
           <div className="rewards-section">
             <div className="rewards-header">1 Rare Weapon • 1 Rare Armor • 1 Rare Costume • 100 Gold</div>
             <div className="rewards-grid">
@@ -233,7 +222,6 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
             </div>
           </div>
 
-          {/* Wallet Connection Section */}
           <div className="wallet-section">
             {!walletAddress ? (
               <GameButton
@@ -245,8 +233,15 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
               </GameButton>
             ) : (
               <div className="wallet-connected">
-                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}</div>
+                <div className="wallet-address">
                   {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                  <button 
+                    onClick={handleDisconnect} 
+                    className="disconnect-btn"
+                    title="Disconnect wallet"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
                 {isChecking ? (
                   <div className="status">Checking...</div>
@@ -275,7 +270,6 @@ const handleDisconnect = async () => { await disconnectReownWallet(); setConnect
           {error && <div className="error-text">{error}</div>}
           {successMessage && <div className="success-text">{successMessage}</div>}
 
-          {/* Confirmation Dialog */}
           {showConfirm && (
             <div className="confirm-overlay">
               <div className="confirm-box">
