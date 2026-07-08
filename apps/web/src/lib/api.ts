@@ -499,7 +499,7 @@ async function readFriends<T>(): Promise<T> {
 async function readTownServers<T>(): Promise<T> {
   const client = getSupabaseClient();
   await requireExistingSession(client);
-  const freshSince = new Date(Date.now() - TOWN_PRESENCE_STALE_AFTER_SECONDS * 1000).toISOString();
+  const freshSince = new Date(Date.now() - 30 * 1000).toISOString(); // Only count players seen in last 30 seconds
   const result = await checked<Array<JsonRecord>>(
     client
       .from("player_presence")
