@@ -32,6 +32,11 @@ const rootRoute = createRootRoute({
 });
 
 const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: () => <App />
+});
+
 const docsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs",
@@ -43,13 +48,9 @@ const howToPlayRoute = createRoute({
   path: "/how-to-play",
   component: HowToPlay,
 });
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: () => null
-});
 
 const router = createRouter({
-  routeTree: rootRoute.addChildren([indexRoute])
+  routeTree: rootRoute.addChildren([indexRoute, docsRoute, howToPlayRoute])
 });
 
 declare module "@tanstack/react-router" {
