@@ -15,8 +15,8 @@ interface PreRegReward {
 }
 
 const PRE_REG_REWARDS = {
-  weapon: { name: "Embershot Cannon", image: "/assets/vault/rewards/weapons/embershot-cannon.png", rarity: "RARE" },
-  armor: { name: "Tideglass Mantle", image: "/assets/vault/rewards/armor/tideglass-mantle.png", rarity: "RARE" },
+  weapon: { name: "Rare Weapon", image: "/assets/pre-reg-rewards/rare-weapon.jpg", rarity: "RARE" },
+  armor: { name: "Rare Armor", image: "/assets/pre-reg-rewards/rare-armor.jpg", rarity: "RARE" },
   costume: { name: "Capybara Vacation", image: "/assets/costumes/capybara-vacation/storm-archer/idle-front.png", rarity: "RARE" },
   gold: 100,
 };
@@ -201,12 +201,12 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
             <div className="rewards-header">1 Rare Weapon • 1 Rare Armor • 1 Rare Costume • 100 Gold</div>
             <div className="rewards-grid">
               <div className="reward-card">
-                <img src={PRE_REG_REWARDS.weapon.image} alt="Rare Weapon" />
+                <img src={PRE_REG_REWARDS.weapon.image = "/assets/pre-reg-rewards/rare-weapon.jpg";
                 <div className="reward-name">Rare Weapon</div>
                 <div className="reward-rarity">{PRE_REG_REWARDS.weapon.rarity}</div>
               </div>
               <div className="reward-card">
-                <img src={PRE_REG_REWARDS.armor.image} alt="Rare Armor" />
+                <img src={PRE_REG_REWARDS.armor.image = "/assets/pre-reg-rewards/rare-armor.jpg";
                 <div className="reward-name">Rare Armor</div>
                 <div className="reward-rarity">{PRE_REG_REWARDS.armor.rarity}</div>
               </div>
