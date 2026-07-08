@@ -7319,3 +7319,16 @@ label {
   grid-column: 1 / -1 !important;
 }
 
+
+/* Mobile: 1 reward per row (stacked) */
+@media (max-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .reward-card {
+    width: 100% !important;
+  }
+}
+
