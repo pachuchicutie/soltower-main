@@ -7332,3 +7332,12 @@ label {
   }
 }
 
+
+/* Center the play button icon */
+.nav-play-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
