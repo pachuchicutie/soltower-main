@@ -21,7 +21,8 @@ const PRE_REG_REWARDS = {
   gold: 100,
 };
 
-const INITIAL_COUNTDOWN = 3 * 60 * 60; // 3 hours in seconds
+// Fixed global launch time (same for ALL players, survives reload/tab switch)
+const LAUNCH_TIME = new Date("2026-07-12T00:00:00Z").getTime();
 
 export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const reownWallet = useReownWallet();
@@ -32,18 +33,20 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(INITIAL_COUNTDOWN);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const walletAddress = reownWallet.address || connectedAddress;
 
-  // Live ticking countdown
+  // Global ticking countdown (same for everyone)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) return 0;
-        return prev - 1;
-      });
-    }, 1000);
+    const updateTimer = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((LAUNCH_TIME - now) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -167,7 +170,7 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
         />
 
         <div className="pre-reg-content">
-          {/* Live 3-hour Countdown - ticking per second */}
+          {/* Live Global Countdown - same for all players */}
           <div className="countdown-section">
             <div className="countdown-label">LAUNCH IN</div>
             <div className="countdown-timer">
