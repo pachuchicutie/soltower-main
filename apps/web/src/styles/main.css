@@ -7233,3 +7233,33 @@ label {
   min-width: 0 !important;
 }
 
+
+/* Force full width on rewards section - desktop only */
+@media (min-width: 768px) {
+  .rewards-section {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
+  
+  .rewards-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+  }
+  
+  .reward-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 18px 12px !important;
+  }
+  
+  .reward-item.gold {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-column: 1 / -1 !important;
+  }
+}
+
