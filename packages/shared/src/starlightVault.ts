@@ -115,6 +115,36 @@ export const fullCostumeDefinitions = [
   },
   {
     id: "capybara-vacation",
+  {
+    id: "desert-nomad",
+    name: "Desert Nomad",
+    rarity: "RARE",
+    theme: "Sun-bleached robes with golden sand sigils and flowing scarves."
+  },
+  {
+    id: "frostveil-guardian",
+    name: "Frostveil Guardian",
+    rarity: "RARE",
+    theme: "Icy white and silver ceremonial armor with crystal frost details."
+  },
+  {
+    id: "crimson-duelist",
+    name: "Crimson Duelist",
+    rarity: "RARE",
+    theme: "Bold red and black dueling attire with ornate gold trim."
+  },
+  {
+    id: "mystic-lantern-keeper",
+    name: "Mystic Lantern Keeper",
+    rarity: "RARE",
+    theme: "Deep purple robes with glowing lantern motifs and star embroidery."
+  },
+  {
+    id: "verdant-wildcaller",
+    name: "Verdant Wildcaller",
+    rarity: "RARE",
+    theme: "Forest green and earthy tones with living vine and leaf accents."
+  },
     name: "Capybara Vacation",
     rarity: "RARE",
     theme: "Relaxed travel costume with a cozy tropical vacation feel."
