@@ -6585,7 +6585,7 @@ label {
 /* Premium Mobile Menu - SolTower */
 .mobile-premium-menu-btn {
   position: absolute;
-  top: max(16px, env(safe-area-inset-top));
+  top: max(60px, env(safe-area-inset-top));
   right: max(16px, env(safe-area-inset-right));
   z-index: calc(var(--z-hud) + 3);
   width: 48px;
