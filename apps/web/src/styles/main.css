@@ -7214,3 +7214,22 @@ label {
   -webkit-text-fill-color: transparent;
 }
 
+
+/* Force full width rewards on desktop */
+.rewards-section {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.rewards-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 12px !important;
+}
+
+.reward-card {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
