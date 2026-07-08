@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Camera, Copy, LogOut, Unplug } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { uiAssetManifest, type PlayerBootstrapData } from "@soltower/shared";
+import { uiAssetManifest, type PlayerBootstrapData, type TownServerId, type TownServersResponse } from "@soltower/shared";
 import {
   applyAudioSettings,
   playAmbience,
@@ -46,6 +46,8 @@ const controlGroups: ShortcutGroupDefinition[] = [
 ];
 
 export function SettingsPanel({
+  currentTownChannel,
+  onTownChannelChange,
   onCenterCamera,
   onLogout
 }: {
@@ -55,6 +57,11 @@ export function SettingsPanel({
   const [activeTab, setActiveTab] = useState<SettingsTab>("audio");
   const [settings, updateSettings] = useUserSettings();
   const [confirmation, setConfirmation] = useState<"disconnect" | "logout" | null>(null);
+  const servers = useQuery({
+    queryKey: ["town-servers"],
+    queryFn: () => apiGet<TownServersResponse>("/api/town/servers"),
+    staleTime: 15000
+  });
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => apiGet<PlayerBootstrapData>("/api/player/me")
@@ -229,10 +236,43 @@ export function SettingsPanel({
       {activeTab === "town" ? (
         <section className="settings-tab-panel" aria-label="Town channels">
           <GameCard>
-            <p style={{ margin: 0, color: "#94a3b8" }}>
-              Channel switching will be added here soon.
-            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {(servers.data?.servers ?? []).map((server) => {
+                const isCurrent = server.id === currentTownChannel;
+                return (
+                  <button
+                    key={server.id}
+                    onClick={() => {
+                      if (!isCurrent) {
+                        localStorage.setItem("soltower:town-channel", server.id);
+                        window.location.reload();
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 16px",
+                      background: isCurrent ? "#1e2937" : "#0f172a",
+                      border: isCurrent ? "1px solid #64748b" : "1px solid #334155",
+                      borderRadius: "8px",
+                      color: "#e2e8f0",
+                      cursor: isCurrent ? "default" : "pointer"
+                    }}
+                    disabled={isCurrent}
+                  >
+                    <span>{server.label}</span>
+                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                      {server.online} / {server.capacity}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </GameCard>
+          <p style={{ marginTop: "12px", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
+            Switching channel will reload the game
+          </p>
         </section>
       ) : null}
 
