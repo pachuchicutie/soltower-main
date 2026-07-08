@@ -29,6 +29,11 @@ import type { ModalKey } from "./store/ui";
 import { useUiStore } from "./store/ui";
 
 type MeResponse = PlayerBootstrapData;
+const PreRegisterModal = lazy(async () => {
+  const module = await import("./components/PreRegisterModal");
+  return { default: module.PreRegisterModal };
+});
+
 const WalletOnboardingModal = lazy(async () => {
   const module = await import("./components/WalletOnboardingModal");
   return { default: module.WalletOnboardingModal };
@@ -38,6 +43,7 @@ export function App() {
   const queryClient = useQueryClient();
   const { modal, openModal, closeModal } = useUiStore();
   const [walletOpen, setWalletOpen] = useState(false);
+  const [preRegisterOpen, setPreRegisterOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [disconnected, setDisconnected] = useState(false);
   const [spectating, setSpectating] = useState(false);
@@ -234,10 +240,16 @@ export function App() {
     return (
       <>
         <LandingPage
-          onPlay={() => setWalletOpen(true)}
+          onPlay={() => setPreRegisterOpen(true)}
           spectating={spectating}
           onSpectatingChange={setSpectating}
         />
+        {preRegisterOpen ? (
+          <Suspense fallback={<div className="wallet-modal-loading">Opening pre-register...</div>}>
+            <PreRegisterModal onClose={() => setPreRegisterOpen(false)} />
+          </Suspense>
+        ) : null}
+
         {walletOpen ? (
           <Suspense fallback={<div className="wallet-modal-loading">Opening wallet gate...</div>}>
             <WalletOnboardingModal

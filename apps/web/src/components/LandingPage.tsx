@@ -91,7 +91,7 @@ export function LandingPage({
               <X size={17} /> Exit Spectate
             </GameButton>
             <GameButton variant="primary" onClick={onPlay}>
-              <Play size={17} /> Play Now
+              <Play size={17} /> Pre Register
             </GameButton>
           </div>
         </header>
@@ -116,7 +116,7 @@ export function LandingPage({
                 </IconButton>
               </div>
               <GameButton variant="primary" className="nav-play-button" onClick={onPlay}>
-                <Play size={17} /> Play Now
+                <Play size={17} /> Pre Register
               </GameButton>
               <IconButton
                 className="landing-menu-button"
@@ -154,7 +154,7 @@ export function LandingPage({
             </div>
             <div className="landing-cta-row">
               <GameButton variant="primary" onClick={onPlay}>
-                <Play size={18} /> Play Now
+                <Play size={18} /> Pre Register
               </GameButton>
               <GameButton variant="secondary" onClick={() => setSpectating(true)}>
                 <Eye size={18} /> Spectate
