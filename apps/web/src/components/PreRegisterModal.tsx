@@ -94,6 +94,13 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     void checkRegistration();
   }, [walletAddress]);
 
+  const handleDisconnect = async () => {
+    await disconnectReownWallet();
+    setConnectedAddress(null);
+    setIsPreRegistered(false);
+    setSuccessMessage(null);
+    setError(null);
+  };
   const handleConnectWallet = async () => {
     setError(null);
     try {
@@ -229,7 +236,7 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
               </GameButton>
             ) : (
               <div className="wallet-connected">
-                <div className="wallet-address">
+                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}</div>
                   {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
                 </div>
                 {isChecking ? (
