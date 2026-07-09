@@ -7466,32 +7466,8 @@ label {
   opacity: 1;
 }
 
-@media (max-width: 480px) {
-  .wallet-address {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: monospace;
-  font-size: 13px;
-  color: #64748b;
-  background: rgba(15, 23, 42, 0.8);
-  padding: 10px 16px;
-  border-radius: 6px;
 
-/* Mobile wallet address fix */
-@media (max-width: 480px) {
-  .wallet-address {
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-  .disconnect-btn {
-    padding: 4px;
-  }
-}
-
-/* Force wallet address full width on mobile */
+/* Mobile wallet address full width fix */
 @media (max-width: 480px) {
   .wallet-connected,
   .wallet-address {
@@ -7499,12 +7475,16 @@ label {
     max-width: 100% !important;
     box-sizing: border-box;
   }
-  
+
   .wallet-address {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
     font-size: 13px;
     padding: 10px 14px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
   }
 }
