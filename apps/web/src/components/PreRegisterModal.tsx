@@ -183,7 +183,14 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
 
   return (
     <GameModal>
-      <div className="game-modal-content pre-register-modal">
+      <div 
+        className="game-modal-content pre-register-modal" 
+        style={{ 
+          maxWidth: "min(520px, 95vw)", 
+          overflowX: "hidden",
+          overflowY: "auto"
+        }}
+      >
         <ModalHeader
           eyebrow="LAUNCH"
           title="Pre-Register"
