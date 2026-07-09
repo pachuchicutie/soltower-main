@@ -158,8 +158,8 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("challengeId");
     expect(actions).toContain("assertWalletTowerBalance(");
     expect(actions).not.toContain("if (isDevMode()) {\n    return;\n  }\n  if (!walletPublicKey)");
-    expect(edgeContent).toContain('mint: "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"');
-    expect(edgeContent).toContain("https://jup.ag/swap/SOL-J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump");
+    expect(edgeContent).toContain('mint: "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"');
+    expect(edgeContent).toContain("https://jup.ag/swap/SOL-93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump");
   });
 
   it("adds server-authoritative item gift transfers while blocking pre-registration rewards", () => {

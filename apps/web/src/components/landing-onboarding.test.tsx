@@ -254,7 +254,7 @@ describe("public landing and Spectate mode", () => {
     expect(await screen.findByRole("heading", { name: "Hold 1,000 $TOWER to play" })).toBeTruthy();
     expect(screen.getByText(/you need more tower to play/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
-      "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
+      "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
     );
     expect(screen.getByRole("button", { name: "Check Again" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Disconnect Wallet" })).toBeTruthy();
@@ -466,7 +466,7 @@ describe("wallet onboarding", () => {
     await openConnectedWallet();
     expect(await screen.findByText(/you need at least 1,000 \$TOWER/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
-      "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
+      "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
     );
     expect(screen.queryByRole("heading", { name: "Create Your Guardian" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Choose Your First Guardian" })).toBeNull();

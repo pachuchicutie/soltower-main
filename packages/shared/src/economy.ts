@@ -6,8 +6,8 @@ export const economyConfig = {
   treasuryPlayerId: "treasury",
   towerToken: {
     symbol: "$TOWER",
-    mint: "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump",
-    jupiterSwapUrl: "https://jup.ag/swap/SOL-J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
+    mint: "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump",
+    jupiterSwapUrl: "https://jup.ag/swap/SOL-93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
   },
   tokenGate: {
     playMinimumTower: 1000,

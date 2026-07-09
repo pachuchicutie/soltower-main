@@ -25,7 +25,7 @@ Selecting a town NPC shows a wallet-entry prompt rather than opening the protect
 
 Play Now creates or reuses an anonymous Supabase Auth session, detects injected Solana wallets, signs a plain-text login message, and verifies ownership through `create-wallet-nonce` and `verify-wallet-signature`.
 
-Entering authenticated town requires at least `1,000 $TOWER` in the connected wallet. The official mint is `J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump`.
+Entering authenticated town requires at least `1,000 $TOWER` in the connected wallet. The official mint is `93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump`.
 
 For a first-time wallet, profile creation is intentionally separate from signature verification:
 

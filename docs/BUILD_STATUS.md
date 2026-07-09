@@ -41,7 +41,7 @@ Updated: 2026-07-09
 ## Official TOWER Token Access Gates
 
 - Added wallet token checks for the official `$TOWER` mint:
-  - Mint: `J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump`.
+  - Mint: `93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump`.
   - Entering SolBloom Village requires at least `1,000 $TOWER` in the connected wallet.
   - Creating Gold listings and fulfilling buy orders require Level 10 plus at least `10,000 $TOWER`.
   - Token-gate failures now return structured Edge Function codes (`tower_token_gate` and `tower_token_check_unavailable`) so wallet login does not misreport them as signature failures.
