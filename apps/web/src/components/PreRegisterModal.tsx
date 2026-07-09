@@ -33,6 +33,7 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [preRegCount, setPreRegCount] = useState(0);
 
   const walletAddress = reownWallet.address || connectedAddress;
 
@@ -46,6 +47,21 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
     updateTimer();
     const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch pre-registration count
+  useEffect(() => {
+    const fetchCount = async () => {
+      const supabase = createBrowserSupabaseClient();
+      if (!supabase) return;
+      const { count, error } = await supabase
+        .from("pre_registrations")
+        .select("*", { count: "exact", head: true });
+      if (!error && count !== null) {
+        setPreRegCount(count);
+      }
+    };
+    void fetchCount();
   }, []);
 
   useEffect(() => {
@@ -219,6 +235,12 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
                 <div className="reward-label">Gold</div>
                 <div className="reward-value">{PRE_REG_REWARDS.gold} Gold</div>
               </div>
+            </div>
+          </div>
+
+          <div className="pre-reg-stats">
+            <div className="pre-reg-badge">
+              {preRegCount.toLocaleString()} wallets pre-registered
             </div>
           </div>
 
