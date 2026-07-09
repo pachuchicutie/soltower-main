@@ -3,9 +3,7 @@ import {
   Eye,
   LockKeyhole,
   Menu,
-  MessageCircle,
   Play,
-  Send,
   X
 } from "lucide-react";
 import { apiGet } from "../lib/api";
@@ -107,14 +105,17 @@ export function LandingPage({
               <a href="/docs">Docs</a>
             </nav>
             <div className="landing-nav-actions">
-              <div className="landing-social-actions">
-                <IconButton title="Discord placeholder" aria-label="Discord placeholder">
-                  <MessageCircle size={18} />
+              <a 
+                href="https://x.com/PlaySolTower" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="landing-social-actions"
+                aria-label="X (Twitter)"
+              >
+                <IconButton title="Follow on X" aria-label="Follow on X">
+                  <X size={18} />
                 </IconButton>
-                <IconButton title="Telegram placeholder" aria-label="Telegram placeholder">
-                  <Send size={18} />
-                </IconButton>
-              </div>
+              </a>
               <GameButton variant="primary" className="nav-play-button" onClick={onPlay}>
                 <Play size={17} /> Pre Register
               </GameButton>
