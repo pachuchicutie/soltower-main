@@ -116,7 +116,7 @@ export function LandingPage({
                 </IconButton>
               </a>
               <a 
-                href="https://discord.gg/cgvjjEKgx" 
+                href="https://discord.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="landing-social-actions"
@@ -156,7 +156,7 @@ export function LandingPage({
                   X
                 </a>
               <a 
-                href="https://discord.gg/cgvjjEKgx" 
+                href="https://discord.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="landing-social-actions"
