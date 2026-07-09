@@ -191,6 +191,7 @@ const bootstrapRequestSchema = z.discriminatedUnion("section", [
   z.object({ section: z.literal("me") }),
   z.object({ section: z.literal("blackjack") }),
   z.object({ section: z.literal("public-stats") }),
+  z.object({ section: z.literal("open-lobbies") }),
   z.object({
     section: z.literal("raid-leaderboard"),
     period: z.enum(["daily", "weekly", "all-time"]).default("weekly")
@@ -636,6 +637,9 @@ async function getPlayerBootstrapData(context: EdgeContext): Promise<JsonRecord>
   }
   if (body.section === "blackjack") {
     return loadBlackjackState(context, user.id);
+  }
+  if (body.section === "open-lobbies") {
+    return listOpenLobbies(context);
   }
   if (body.section === "raid-leaderboard") {
     return loadRaidLeaderboard(context, body.period);
@@ -2528,6 +2532,86 @@ function isExpiredLobby(lobby: JsonRecord): boolean {
   return Number.isFinite(createdAt) && Date.now() - createdAt >= 60 * 60 * 1000;
 }
 
+async function listOpenLobbies(context: EdgeContext): Promise<JsonRecord> {
+  // Service-role path: browser RLS only allows reading your own profile, so client-side
+  // lobby lists could not resolve other players' display names (everything became Unknown).
+  await expireStaleRaidLobbies(context);
+  const activeSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const lobbiesResult = await checked(
+    context.service
+      .from("raid_lobbies")
+      .select("*")
+      .eq("status", "OPEN")
+      .gte("created_at", activeSince)
+      .order("created_at", { ascending: false })
+      .limit(100)
+  );
+  const lobbyRows = rows(lobbiesResult.data);
+  if (lobbyRows.length === 0) {
+    return { lobbies: [] };
+  }
+  const lobbyIds = lobbyRows.map((lobby) => toStringValue(lobby.id)).filter(Boolean);
+  const membersResult = await checked(
+    context.service.from("raid_lobby_members").select("*").in("lobby_id", lobbyIds)
+  );
+  const memberRows = rows(membersResult.data);
+  const memberPlayerIds = [
+    ...new Set(memberRows.map((row) => toStringValue(row.player_id)).filter(Boolean))
+  ];
+  const profilesResult = memberPlayerIds.length
+    ? await checked(
+        context.service
+          .from("player_profiles")
+          .select("player_id,display_name,account_level,power,selected_hero_id")
+          .in("player_id", memberPlayerIds)
+      )
+    : { data: [] };
+  const profileByPlayerId = new Map(
+    rows(profilesResult.data).map((profile) => [toStringValue(profile.player_id), profile])
+  );
+  const membersByLobby = new Map<string, JsonRecord[]>();
+  for (const row of memberRows) {
+    const lobbyId = toStringValue(row.lobby_id);
+    const playerId = toStringValue(row.player_id);
+    if (!lobbyId || !playerId) {
+      continue;
+    }
+    const profile = profileByPlayerId.get(playerId);
+    const member = {
+      playerId,
+      displayName: resolveLobbyDisplayName(profile?.display_name, playerId),
+      heroId:
+        toStringValue(row.hero_id) ||
+        toStringValue(profile?.selected_hero_id) ||
+        "storm-archer",
+      accountLevel: toNumber(row.account_level ?? profile?.account_level, 1),
+      power: toNumber(row.power ?? profile?.power),
+      ready: toBoolean(row.ready),
+      host: toBoolean(row.host)
+    };
+    const current = membersByLobby.get(lobbyId) ?? [];
+    current.push(member);
+    membersByLobby.set(lobbyId, current);
+  }
+  const lobbies = lobbyRows
+    .map((lobby) => {
+      const id = toStringValue(lobby.id);
+      const members = membersByLobby.get(id) ?? [];
+      return {
+        ...camelRecord(asRecord(lobby, "lobby")),
+        neededHeroIds: parseNeededHeroIds(lobby.needed_hero_ids),
+        members
+      };
+    })
+    .filter(
+      (lobby) =>
+        Array.isArray(lobby.members) &&
+        lobby.members.length > 0 &&
+        lobby.members.some((member) => toBoolean((member as JsonRecord).host))
+    );
+  return { lobbies };
+}
+
 async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRecord> {
   const lobbyResult = await checked(context.service.from("raid_lobbies").select("*").eq("id", lobbyId).single());
   const membersResult = await checked(context.service.from("raid_lobby_members").select("*").eq("lobby_id", lobbyId));
@@ -2544,14 +2628,15 @@ async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRec
   const profileByPlayerId = new Map(rows(profilesResult.data).map((profile) => [toStringValue(profile.player_id), profile]));
   return {
     ...camelRecord(asRecord(lobbyResult.data, "lobby")),
+    neededHeroIds: parseNeededHeroIds(asRecord(lobbyResult.data, "lobby").needed_hero_ids),
     members: memberRows.map((row) => {
       const playerId = toStringValue(row.player_id);
       const profile = profileByPlayerId.get(playerId);
       return {
         playerId,
-        displayName: safeLobbyDisplayName(profile?.display_name),
+        displayName: resolveLobbyDisplayName(profile?.display_name, playerId),
         heroId: toStringValue(row.hero_id) || toStringValue(profile?.selected_hero_id) || "storm-archer",
-        accountLevel: toNumber(row.account_level ?? profile?.account_level),
+        accountLevel: toNumber(row.account_level ?? profile?.account_level, 1),
         power: toNumber(row.power ?? profile?.power),
         ready: toBoolean(row.ready),
         host: toBoolean(row.host)
@@ -2560,12 +2645,35 @@ async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRec
   };
 }
 
-function safeLobbyDisplayName(value: unknown): string {
-  const displayName = toStringValue(value);
-  if (!displayName || /^player[-_]/i.test(displayName)) {
-    return "Unknown Guardian";
+function parseNeededHeroIds(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((entry): entry is string => typeof entry === "string");
   }
-  return displayName;
+  if (typeof value !== "string" || value.length === 0) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function resolveLobbyDisplayName(value: unknown, playerId = ""): string {
+  const displayName = toStringValue(value).trim();
+  // Real guardian names only — never surface raw player ids as "names".
+  if (displayName && !/^player[-_]/i.test(displayName)) {
+    return displayName;
+  }
+  if (playerId && !/^player[-_]/i.test(playerId)) {
+    return playerId;
+  }
+  return "Guardian";
+}
+
+function safeLobbyDisplayName(value: unknown): string {
+  return resolveLobbyDisplayName(value);
 }
 
 async function applyBalance(

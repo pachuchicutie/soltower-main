@@ -112,7 +112,7 @@ describe("RaidPanel", () => {
     expect((screen.getByRole("button", { name: /Start Raid/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("falls back to Unknown Guardian instead of rendering raw lobby player IDs", async () => {
+  it("never renders raw lobby player IDs as display names", async () => {
     mockLobbies([
       {
         id: "lobby-unknown",
@@ -133,7 +133,7 @@ describe("RaidPanel", () => {
     ]);
     renderRaidPanel();
 
-    expect(await screen.findByText("Unknown Guardian")).toBeTruthy();
+    expect(await screen.findByText("Guardian")).toBeTruthy();
     expect(screen.queryByText("player-raw")).toBeNull();
     expect(screen.getByText("Tide Mage · Level 2")).toBeTruthy();
   });
@@ -199,7 +199,7 @@ describe("RaidPanel", () => {
     expect((screen.getByRole("button", { name: /Start Raid/i }) as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it("starts solo raid battles without stale Unknown Guardian combatants", async () => {
+  it("starts party raid battles with every member and never shows raw player ids", async () => {
     mockLobbies([
       {
         id: "4f6643a1-7b58-4e54-9213-a537044be465",
@@ -217,8 +217,8 @@ describe("RaidPanel", () => {
             host: true
           },
           {
-            playerId: "player-stale-one",
-            displayName: "player-stale-one",
+            playerId: "player-ally-one",
+            displayName: "Reef Runner",
             heroId: "tide-mage",
             accountLevel: 1,
             power: 420,
@@ -226,8 +226,8 @@ describe("RaidPanel", () => {
             host: false
           },
           {
-            playerId: "player-stale-two",
-            displayName: "player-stale-two",
+            playerId: "player-ally-two",
+            displayName: "Ash Cannon",
             heroId: "bombardier",
             accountLevel: 1,
             power: 430,
@@ -235,8 +235,8 @@ describe("RaidPanel", () => {
             host: false
           },
           {
-            playerId: "player-stale-three",
-            displayName: "player-stale-three",
+            playerId: "player-ally-three",
+            displayName: "Star Scout",
             heroId: "starcaller",
             accountLevel: 1,
             power: 440,
@@ -253,8 +253,12 @@ describe("RaidPanel", () => {
 
     const dialog = await screen.findByRole("dialog", { name: /Sproutling Path raid battle/i });
     expect(within(dialog).getByText("Marky")).toBeTruthy();
+    expect(within(dialog).getByText("Reef Runner")).toBeTruthy();
+    expect(within(dialog).getByText("Ash Cannon")).toBeTruthy();
+    expect(within(dialog).getByText("Star Scout")).toBeTruthy();
     expect(within(dialog).queryByText("Unknown Guardian")).toBeNull();
-    expect(dialog.querySelectorAll(".raid-guardian")).toHaveLength(1);
+    expect(within(dialog).queryByText(/player-/i)).toBeNull();
+    expect(dialog.querySelectorAll(".raid-guardian")).toHaveLength(4);
   });
 
   it("blocks joining or creating another party while the player is already in one", async () => {

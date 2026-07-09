@@ -404,89 +404,14 @@ async function readBuyOrders<T>(): Promise<T> {
 }
 
 async function readLobbies<T>(): Promise<T> {
-  const client = getSupabaseClient();
-  await requireExistingSession(client);
-  const activeSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const [lobbies, members] = await Promise.all([
-    checked<Array<JsonRecord>>(
-      client
-        .from("raid_lobbies")
-        .select("*")
-        .eq("status", "OPEN")
-        .gte("created_at", activeSince)
-        .order("created_at", { ascending: false })
-        .limit(50)
-    ),
-    checked<Array<JsonRecord>>(client.from("raid_lobby_members").select("*"))
-  ]);
-  const memberPlayerIds = [...new Set(members.data.map((member) => stringValue(member.player_id)).filter(Boolean))];
-  const profiles = memberPlayerIds.length
-    ? await checked<Array<JsonRecord>>(
-        client.from("player_profiles").select("player_id,display_name,account_level,power,selected_hero_id").in("player_id", memberPlayerIds)
-      )
-    : { data: [] };
-  const profileByPlayerId = new Map(profiles.data.map((profile) => [stringValue(profile.player_id), profile]));
-  const readableLobbies = lobbies.data
-    .map((lobby) => {
-      const id = stringValue(lobby.id);
-      const lobbyMembers = members.data
-        .filter((member) => stringValue(member.lobby_id) === id)
-        .map((member) => ({
-          playerId: stringValue(member.player_id),
-          displayName: safeLobbyDisplayName(profileByPlayerId.get(stringValue(member.player_id))?.display_name),
-          heroId: stringValue(member.hero_id) || stringValue(profileByPlayerId.get(stringValue(member.player_id))?.selected_hero_id) || "storm-archer",
-          accountLevel:
-            typeof member.account_level === "number"
-              ? member.account_level
-              : numberValue(profileByPlayerId.get(stringValue(member.player_id))?.account_level),
-          power:
-            typeof member.power === "number"
-              ? member.power
-              : numberValue(profileByPlayerId.get(stringValue(member.player_id))?.power),
-          ready: Boolean(member.ready),
-          host: Boolean(member.host)
-        }));
-      return {
-        ...camelRecord(lobby),
-        neededHeroIds: parseHeroIdList(lobby.needed_hero_ids),
-        members: lobbyMembers
-      };
-    })
-    .filter((lobby) => lobby.members.length > 0 && lobby.members.some((member) => member.host));
-  return {
-    lobbies: readableLobbies
-  } as T;
-}
-
-function parseHeroIdList(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((entry): entry is string => typeof entry === "string");
-  }
-  if (typeof value !== "string") {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function safeLobbyDisplayName(value: unknown): string {
-  const displayName = stringValue(value);
-  if (!displayName || /^player[-_]/i.test(displayName)) {
-    return "Unknown Guardian";
-  }
-  return displayName;
+  // Service-role edge path resolves every member's real display name. Direct table reads cannot —
+  // RLS only lets a player read their own player_profiles row, so other hosts became "Unknown Guardian"
+  // and party lists looked empty/broken until a local create forced a partial refresh.
+  return invokeFunction<T>("get-player-bootstrap-data", { section: "open-lobbies" });
 }
 
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : value == null ? "" : String(value);
-}
-
-function numberValue(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
 }
 
 async function readFriends<T>(): Promise<T> {

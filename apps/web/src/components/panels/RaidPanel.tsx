@@ -114,14 +114,38 @@ export function RaidPanel() {
   const visibleStages = getPaginatedRaidStages(currentChapter.stages, stagePage, stagePageSize);
   const selectedStage = currentChapter.stages.find((stage) => stage.id === selectedStageId) ?? visibleStages[0] ?? currentChapter.stages[0];
   const selectedUnlock = getRaidStageUnlockState(selectedStage, accountLevel, completedStageIds);
-  const validOpenLobbies = useMemo(() => (lobbies.data?.lobbies ?? []).filter(isRenderableLobby), [lobbies.data?.lobbies]);
-  const openLobbiesForStage = validOpenLobbies.filter((lobby) => lobby.mapId === selectedStage.id);
-  const sortedLobbiesForStage = useMemo(
-    () => sortLobbies(openLobbiesForStage, lobbySortMode, selectedHeroId),
-    [lobbySortMode, openLobbiesForStage, selectedHeroId]
+  const stageById = useMemo(() => {
+    const map = new Map<string, RaidStageDefinition>();
+    for (const chapter of raidChapters) {
+      for (const stage of chapter.stages) {
+        map.set(stage.id, stage);
+      }
+    }
+    return map;
+  }, []);
+  const validOpenLobbies = useMemo(
+    () => (lobbies.data?.lobbies ?? []).filter(isRenderableLobby),
+    [lobbies.data?.lobbies]
   );
-  const lobbyPageCount = Math.max(1, Math.ceil(sortedLobbiesForStage.length / lobbyPageSize));
-  const visibleLobbiesForStage = sortedLobbiesForStage.slice(lobbyPage * lobbyPageSize, lobbyPage * lobbyPageSize + lobbyPageSize);
+  // Always list every open party (all stages). Selected stage parties stay on top so the board
+  // is never empty just because the player hasn't created a lobby on the focused stage.
+  const sortedOpenLobbies = useMemo(() => {
+    const selected = validOpenLobbies.filter((lobby) => lobby.mapId === selectedStage.id);
+    const others = validOpenLobbies.filter((lobby) => lobby.mapId !== selectedStage.id);
+    return [
+      ...sortLobbies(selected, lobbySortMode, selectedHeroId),
+      ...sortLobbies(others, lobbySortMode, selectedHeroId)
+    ];
+  }, [lobbySortMode, selectedHeroId, selectedStage.id, validOpenLobbies]);
+  const openLobbiesForStage = useMemo(
+    () => validOpenLobbies.filter((lobby) => lobby.mapId === selectedStage.id),
+    [selectedStage.id, validOpenLobbies]
+  );
+  const lobbyPageCount = Math.max(1, Math.ceil(sortedOpenLobbies.length / lobbyPageSize));
+  const visibleOpenLobbies = sortedOpenLobbies.slice(
+    lobbyPage * lobbyPageSize,
+    lobbyPage * lobbyPageSize + lobbyPageSize
+  );
   const currentOpenLobby = currentPlayerId
     ? validOpenLobbies.find((lobby) => lobby.members.some((member) => member.playerId === currentPlayerId))
     : undefined;
@@ -129,9 +153,13 @@ export function RaidPanel() {
   currentOpenLobbyRef.current = currentOpenLobby;
   const quickJoinLobby = currentOpenLobby
     ? undefined
-    : openLobbiesForStage.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4);
-  const myHostedLobby = openLobbiesForStage.find((lobby) => lobby.members.some((member) => member.host && member.playerId === currentPlayerId));
+    : openLobbiesForStage.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4) ??
+      validOpenLobbies.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4);
+  const myHostedLobby = validOpenLobbies.find((lobby) =>
+    lobby.members.some((member) => member.host && member.playerId === currentPlayerId)
+  );
   const activeRaidMembers = activeRaid ? getRaidBattleMembers(activeRaid.lobby, currentPlayerId) : [];
+  const otherStagePartyCount = Math.max(0, validOpenLobbies.length - openLobbiesForStage.length);
 
   useEffect(() => {
     const client = createBrowserSupabaseClient();
@@ -557,7 +585,15 @@ export function RaidPanel() {
           <div>
             <span className="raid-eyebrow">LOBBIES</span>
             <h3>Open Parties</h3>
-            <p>Parties recruit for 1 hour. Expired parties are removed before anyone can join.</p>
+            <p>
+              {validOpenLobbies.length > 0
+                ? `${validOpenLobbies.length} open ${validOpenLobbies.length === 1 ? "party" : "parties"} live now${
+                    otherStagePartyCount > 0
+                      ? ` · ${openLobbiesForStage.length} on this stage, ${otherStagePartyCount} on other stages`
+                      : " · parties recruit for 1 hour"
+                  }.`
+                : "Parties recruit for 1 hour. Expired parties are removed before anyone can join."}
+            </p>
           </div>
           <div className="raid-lobby-sort" role="group" aria-label="Sort open parties">
             <button type="button" className={lobbySortMode === "recent" ? "active" : ""} onClick={() => changeLobbySort("recent")}>
@@ -576,30 +612,38 @@ export function RaidPanel() {
           </div>
         </div>
         <div className="raid-lobby-list">
-          {visibleLobbiesForStage.length > 0 ? (
-            visibleLobbiesForStage.map((lobby) => (
-              <LobbyCard
-                key={lobby.id}
-                lobby={lobby}
-                stage={selectedStage}
-                now={now}
-                currentPlayerId={currentPlayerId}
-                currentOpenLobbyId={currentOpenLobby?.id}
-                canJoin={selectedUnlock.unlocked}
-                onJoin={() => quickJoin.mutate(lobby.id)}
-                onLeave={() => leaveLobby.mutate(lobby.id)}
-                onReady={(ready) => setReadyState.mutate({ lobbyId: lobby.id, ready })}
-                onKick={(playerId) => kickMember.mutate({ lobbyId: lobby.id, playerId })}
-                onStart={() => {
-                  beginRaid(lobby);
-                }}
-                joining={quickJoin.isPending}
-                leaving={leaveLobby.isPending}
-                readying={setReadyState.isPending}
-                kicking={kickMember.isPending}
-                starting={startRun.isPending}
-              />
-            ))
+          {visibleOpenLobbies.length > 0 ? (
+            visibleOpenLobbies.map((lobby) => {
+              const lobbyStage = stageById.get(lobby.mapId) ?? selectedStage;
+              const onSelectedStage = lobby.mapId === selectedStage.id;
+              return (
+                <LobbyCard
+                  key={lobby.id}
+                  lobby={lobby}
+                  stage={lobbyStage}
+                  now={now}
+                  currentPlayerId={currentPlayerId}
+                  currentOpenLobbyId={currentOpenLobby?.id}
+                  canJoin={
+                    onSelectedStage
+                      ? selectedUnlock.unlocked
+                      : getRaidStageUnlockState(lobbyStage, accountLevel, completedStageIds).unlocked
+                  }
+                  onJoin={() => quickJoin.mutate(lobby.id)}
+                  onLeave={() => leaveLobby.mutate(lobby.id)}
+                  onReady={(ready) => setReadyState.mutate({ lobbyId: lobby.id, ready })}
+                  onKick={(playerId) => kickMember.mutate({ lobbyId: lobby.id, playerId })}
+                  onStart={() => {
+                    beginRaid(lobby);
+                  }}
+                  joining={quickJoin.isPending}
+                  leaving={leaveLobby.isPending}
+                  readying={setReadyState.isPending}
+                  kicking={kickMember.isPending}
+                  starting={startRun.isPending}
+                />
+              );
+            })
           ) : (
             <div className="raid-empty-state">
               <img src="/assets/soltower/environment/props/campfire.png" alt="" className="raid-empty-illustration" />
@@ -608,7 +652,7 @@ export function RaidPanel() {
             </div>
           )}
         </div>
-        {sortedLobbiesForStage.length > lobbyPageSize ? (
+        {sortedOpenLobbies.length > lobbyPageSize ? (
           <div className="raid-lobby-pager" aria-label="Open parties page">
             <button type="button" disabled={lobbyPage === 0} onClick={() => setLobbyPage((page) => Math.max(0, page - 1))}>
               <ChevronLeft size={16} /> Newer
@@ -726,7 +770,7 @@ function LobbyCard({
   const nonHostMembersReady = lobby.members.every((member) => member.host || member.ready);
   const canStart = isHost && lobby.members.length >= 1 && nonHostMembersReady;
   const lobbyType = lobby.lobbyType === "PRIVATE" ? "Private" : "Public";
-  const hostName = safeGuardianName(host?.displayName);
+  const hostName = safeGuardianName(host?.displayName, host?.playerId);
   const remainingNeededHeroIds = getRemainingNeededHeroIds(lobby);
   return (
     <article className="raid-lobby-card">
@@ -767,7 +811,7 @@ function LobbyCard({
       </div>
       <div className="raid-member-list">
         {lobby.members.map((member) => {
-          const displayName = safeGuardianName(member.displayName);
+          const displayName = safeGuardianName(member.displayName, member.playerId);
           const heroName = heroNameById.get(member.heroId) ?? "Guardian";
           return (
             <article className={`raid-member-card${member.host ? " host" : ""}`} key={`${lobby.id}-${member.playerId ?? displayName}`}>
@@ -838,55 +882,49 @@ function LobbyCard({
   );
 }
 
-function safeGuardianName(value?: string): string {
-  if (!value || /^player[-_]/i.test(value)) {
-    return "Unknown Guardian";
+function safeGuardianName(value?: string, playerId?: string): string {
+  if (value && !/^player[-_]/i.test(value)) {
+    return value;
   }
-  return value;
+  if (playerId && !/^player[-_]/i.test(playerId)) {
+    return playerId;
+  }
+  return "Guardian";
 }
 
 function getRaidBattleMembers(lobby: Lobby, currentPlayerId?: string): RaidBattleMember[] {
-  const membersByPlayerId = new Map<string, RaidBattleMember & { knownName: boolean; currentPlayer: boolean }>();
+  const membersByPlayerId = new Map<string, RaidBattleMember>();
   for (const member of lobby.members) {
     if (!member.playerId) {
       continue;
     }
-    const displayName = safeGuardianName(member.displayName);
-    const knownName = displayName !== "Unknown Guardian";
-    const currentPlayer = member.playerId === currentPlayerId;
-    if (!knownName && !currentPlayer) {
-      continue;
-    }
+    const displayName = safeGuardianName(member.displayName, member.playerId);
     const battleMember = {
       playerId: member.playerId,
       displayName,
       heroId: member.heroId,
-      power: member.power ?? lobby.recommendedPower,
-      knownName,
-      currentPlayer
+      power: member.power ?? lobby.recommendedPower
     };
     const existing = membersByPlayerId.get(member.playerId);
-    if (!existing || (!existing.knownName && knownName) || (!existing.currentPlayer && currentPlayer)) {
+    // Prefer the current local player entry / better labels if duplicates ever appear.
+    if (!existing || member.playerId === currentPlayerId) {
       membersByPlayerId.set(member.playerId, battleMember);
     }
   }
-  const battleMembers = Array.from(membersByPlayerId.values(), ({ playerId, displayName, heroId, power }) => ({
-    playerId,
-    displayName,
-    heroId,
-    power
-  }));
+  const battleMembers = Array.from(membersByPlayerId.values());
   if (battleMembers.length > 0) {
     return battleMembers.slice(0, 4);
   }
-  const fallbackMember = lobby.members.find((member) => member.host && member.playerId) ?? lobby.members.find((member) => member.playerId);
+  const fallbackMember =
+    lobby.members.find((member) => member.host && member.playerId) ??
+    lobby.members.find((member) => member.playerId);
   if (!fallbackMember?.playerId) {
     return [];
   }
   return [
     {
       playerId: fallbackMember.playerId,
-      displayName: safeGuardianName(fallbackMember.displayName),
+      displayName: safeGuardianName(fallbackMember.displayName, fallbackMember.playerId),
       heroId: fallbackMember.heroId,
       power: fallbackMember.power ?? lobby.recommendedPower
     }
