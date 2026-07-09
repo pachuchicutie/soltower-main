@@ -9,7 +9,7 @@
 - Private schema for hidden wallet nonce metadata, Blackjack state, and economy RPC helpers.
 - Append-only economy ledger with idempotency keys and before/after balances.
 - Admin audit logs for privileged actions.
-- Launch-mode wallet-token gates for town entry and seller actions.
+- Launch-mode wallet-token gates for seller actions.
 
 ## Trust Boundaries
 
@@ -38,7 +38,7 @@ Wallet connection never requests seed phrases, private keys, transactions, token
 
 The current token gates are server-side only:
 
-- Town entry requires at least `1,000 $TOWER` in the connected wallet.
+- Town entry does not require a `$TOWER` balance.
 - Creating Gold listings and fulfilling buy orders require account Level 10 plus at least `10,000 $TOWER`.
 - Future auction item listings must use the same Level 10 plus `10,000 $TOWER` seller gate before any server mutation is added.
 - Buying Gold or future auction items does not require the seller gate.

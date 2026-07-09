@@ -38,22 +38,21 @@ Updated: 2026-07-09
 - Added missing Rare reward artwork for the hero-specific launch weapons and armors, and upgraded owned equipment rows with rarity frame treatment so Rare items read clearly in Inventory.
 - Added audited item gift/transfer plumbing for eligible future items. Bound and launch-reward sourced items are rejected server-side.
 
-## Official TOWER Token Access Gates
+## Official TOWER Token And Market Seller Gates
 
-- Added wallet token checks for the official `$TOWER` mint:
+- Updated wallet token checks for the official `$TOWER` mint:
   - Mint: `93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump`.
-  - Entering SolBloom Village requires at least `1,000 $TOWER` in the connected wallet.
+  - Entering SolBloom Village no longer requires a `$TOWER` balance.
   - Creating Gold listings and fulfilling buy orders require Level 10 plus at least `10,000 $TOWER`.
-  - Token-gate failures now return structured Edge Function codes (`tower_token_gate` and `tower_token_check_unavailable`) so wallet login does not misreport them as signature failures.
-- The Edge Function gate checks SPL token accounts through Solana JSON-RPC.
+  - Seller token-gate failures return structured Edge Function codes (`tower_token_gate` and `tower_token_check_unavailable`) so wallet login does not misreport them as signature failures.
+- The Edge Function seller gate checks SPL token accounts through Solana JSON-RPC.
   - `SOLANA_RPC_URL` can be configured; otherwise the default mainnet-beta RPC endpoint is used.
-  - Browser balances are not trusted for access decisions.
-- Market and onboarding UX now explain the 1k/10k requirements and link to Jupiter for the official `$TOWER` mint.
-- Hardened the launch blocker gate after a no-token wallet reached character creation:
-  - New-wallet onboarding now runs a client-side SPL token preflight before showing `Create Your Guardian`; the server check remains authoritative.
-  - Protected Edge Function errors now preserve `tower_token_gate` / `tower_token_check_unavailable` codes for profile creation and player bootstrap, not only signature verification.
-  - The app ignores cached `me` bootstrap data when a token-gate refetch fails, shows a hard access-required screen with the Jupiter link, and stops rendering playable town mode.
-  - The player bootstrap query refetches every 15 seconds, on reconnect, and on window focus so a wallet that no longer satisfies the gate is kicked back to the gated access screen.
+  - Browser balances are not trusted for seller gate decisions.
+- Removed the Play Now / town-entry `$TOWER` gate after wallet-balance false negatives blocked valid players.
+  - Wallet verification no longer checks `$TOWER` before returning existing profiles or first-time profile setup.
+  - Profile creation no longer checks `$TOWER`.
+  - Player bootstrap no longer checks `$TOWER`, so returning players are not kicked out for token-balance reads.
+  - Wallet onboarding no longer shows the 1,000 `$TOWER` entry requirement or runs a client-side token preflight.
 - Added a Market Board `Auction House` tab that displays the Level 10 plus `10,000 $TOWER` seller requirement.
   - Buying auction items is documented as not requiring this seller gate.
   - A server-side auction listing mutation is not present yet, so there is no auction listing backend path to enforce in this pass.
