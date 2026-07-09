@@ -229,38 +229,6 @@ describe("public landing and Spectate mode", () => {
     ).toBeTruthy();
   });
 
-  it("blocks the playable town when the active session fails the TOWER gate", async () => {
-    const { WalletAuthError } = await import("../lib/api");
-    apiMocks.get.mockImplementation((path: string) => {
-      if (path === "/api/player/me") {
-        return Promise.reject(new WalletAuthError(
-          "tower_token_gate",
-          "Sorry, entering solbloom village requires at least 1,000 $TOWER"
-        ));
-      }
-      if (path === "/api/town/servers") {
-        return Promise.resolve(mockTownServers());
-      }
-      return Promise.resolve({
-        devMode: false,
-        testWorldActive: true,
-        demoPresenceCount: 0,
-        activeTownCount: 0
-      });
-    });
-
-    renderApp();
-
-    expect(await screen.findByRole("heading", { name: "Hold 1,000 $TOWER to play" })).toBeTruthy();
-    expect(screen.getByText(/you need more tower to play/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
-      "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
-    );
-    expect(screen.getByRole("button", { name: "Check Again" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Disconnect Wallet" })).toBeTruthy();
-    expect(document.querySelector('[data-testid="town-canvas"][data-mode="game"]')).toBeNull();
-  });
-
   it("keeps Spectate read-only and turns NPC clicks into wallet entry prompts", async () => {
     apiMocks.get.mockResolvedValue({
       devMode: true,
@@ -297,8 +265,7 @@ describe("wallet onboarding", () => {
       />
     );
 
-    expect(screen.getByText(/1,000 \$TOWER required to enter SolBloom Village/)).toBeTruthy();
-    expect(screen.getByText(/10,000 \$TOWER/)).toBeTruthy();
+    expect(screen.queryByText(/1,000 \$TOWER required to enter SolBloom Village/)).toBeNull();
     expect(screen.queryByText(/required to enter in production/i)).toBeNull();
     await openConnectedWallet();
     expect(await screen.findByRole("alert")).toBeTruthy();
@@ -436,94 +403,15 @@ describe("wallet onboarding", () => {
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain(String(firstVerifyPayload.signatureBase64));
   });
 
-  it("blocks token-gated wallets before character creation", async () => {
-    const { WalletAuthError } = await import("../lib/api");
-    apiMocks.post.mockImplementation((path: string, body: Record<string, unknown>) => {
-      if (path === "/api/auth/wallet/nonce") {
-        return Promise.resolve(walletChallenge(
-          bootstrapWalletPublicKey,
-          body.requestId,
-          "SolTower wallet login message for token gate"
-        ));
-      }
-      if (path === "/api/auth/wallet/verify") {
-        return Promise.reject(new WalletAuthError(
-          "tower_token_gate",
-          "Sorry, entering solbloom village requires at least 1,000 $TOWER"
-        ));
-      }
-      return Promise.reject(new Error(`Unexpected path ${path}`));
-    });
-
-    render(
-      <WalletOnboardingModal
-        onClose={vi.fn()}
-        onEntered={vi.fn()}
-        onSpectate={vi.fn()}
-      />
-    );
-
-    await openConnectedWallet();
-    expect(await screen.findByText(/you need at least 1,000 \$TOWER/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
-      "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
-    );
-    expect(screen.queryByRole("heading", { name: "Create Your Guardian" })).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Choose Your First Guardian" })).toBeNull();
-  });
-
-  it("fails closed before character creation if a new-wallet token preflight has no TOWER", async () => {
-    mockTowerBalanceFetch(0);
-    apiMocks.post.mockImplementation((path: string, body: Record<string, unknown>) => {
-      if (path === "/api/auth/wallet/nonce") {
-        return Promise.resolve(walletChallenge(
-          bootstrapWalletPublicKey,
-          body.requestId,
-          "SolTower wallet login message for new wallet token preflight"
-        ));
-      }
-      if (path === "/api/auth/wallet/verify") {
-        return Promise.resolve({
-          isNewPlayer: true,
-          requiresProfile: true,
-          intro: "Wallet verified.",
-          verifiedWallet: {
-            publicKey: bootstrap.player.walletPublicKey,
-            nonce: "nonce-123456789012",
-            expiresAt: "2026-06-29T12:05:00.000Z"
-          }
-        });
-      }
-      return Promise.reject(new Error(`Unexpected path ${path}`));
-    });
-
-    render(
-      <WalletOnboardingModal
-        onClose={vi.fn()}
-        onEntered={vi.fn()}
-        onSpectate={vi.fn()}
-      />
-    );
-
-    await openConnectedWallet();
-    expect(await screen.findByText(/you need at least 1,000 \$TOWER/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Buy on Jupiter/i })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Create Your Guardian" })).toBeNull();
-  });
-
   it("does not refetch the player bootstrap merely because the browser tab regains focus", () => {
     const main = readFileSync(join(webRoot, "src/main.tsx"), "utf8");
     const app = readFileSync(join(webRoot, "src/App.tsx"), "utf8");
     expect(main).toContain("refetchOnWindowFocus: false");
     expect(main).toContain("refetchOnReconnect: false");
     expect(app).toContain("!activeBootstrap && me.isLoading");
-    expect(app).toContain("refetchInterval: 15000");
-    expect(app).toContain("refetchOnWindowFocus: true");
-    expect(app).toContain("refetchOnReconnect: true");
   });
 
   it("creates a first-time profile once after name availability succeeds", async () => {
-    mockTowerBalanceFetch(1000);
     const newPlayer = {
       ...bootstrap,
       player: {
@@ -1085,25 +973,6 @@ async function openConnectedWallet() {
   } as never;
   reownMocks.state.walletName = "Test Wallet";
   await userEvent.click(screen.getByRole("button", { name: "Connect Wallet" }));
-}
-
-function mockTowerBalanceFetch(uiAmount: number) {
-  const value = uiAmount > 0
-    ? [
-        {
-          account: {
-            data: {
-              parsed: {
-                info: {
-                  tokenAmount: { uiAmount, uiAmountString: String(uiAmount), amount: String(uiAmount * 1_000_000), decimals: 6 }
-                }
-              }
-            }
-          }
-        }
-      ]
-    : [];
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: { value } }))));
 }
 
 function mockAuthenticatedMarketData() {

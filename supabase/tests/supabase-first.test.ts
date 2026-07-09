@@ -157,6 +157,7 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("Request ID:");
     expect(actions).toContain("challengeId");
     expect(actions).toContain("assertWalletTowerBalance(");
+    expect(actions).not.toContain("economyConfig.tokenGate.playMinimumTower");
     expect(actions).not.toContain("if (isDevMode()) {\n    return;\n  }\n  if (!walletPublicKey)");
     expect(edgeContent).toContain('mint: "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"');
     expect(edgeContent).toContain("https://jup.ag/swap/SOL-93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump");
