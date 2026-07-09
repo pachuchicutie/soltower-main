@@ -6862,18 +6862,18 @@ label {
 }
 
 .wallet-address {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: monospace;
   font-size: 13px;
   color: #64748b;
   background: rgba(15, 23, 42, 0.8);
-  padding: 4px 12px;
-  border-radius: 4px;
+  padding: 10px 16px;
+  border-radius: 6px;
   border: 1px solid rgba(100, 116, 139, 0.3);
-}
-
-.status {
-  font-size: 12px;
-  color: #94a3b8;
+  
 }
 
 .error-text {
@@ -7358,17 +7358,17 @@ label {
 }
 
 .wallet-address {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   font-family: monospace;
-  background: rgba(15, 23, 42, 0.6);
-  padding: 6px 12px;
+  font-size: 13px;
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 10px 16px;
   border-radius: 6px;
-  font-size: 14px;
-  word-break: break-all;
-}
-
+  border: 1px solid rgba(100, 116, 139, 0.3);
 .disconnect-btn {
   background: none;
   border: none;
@@ -7389,13 +7389,13 @@ label {
 
 @media (max-width: 480px) {
   .wallet-address {
-    font-size: 13px;
-    padding: 6px 10px;
-    max-width: 100%;
-  }
-  
-  .disconnect-btn {
-    padding: 4px;
-  }
-}
-
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: monospace;
+  font-size: 13px;
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 10px 16px;
+  border-radius: 6px;
