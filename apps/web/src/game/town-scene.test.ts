@@ -37,22 +37,17 @@ describe("authenticated town scene UX", () => {
     expect(canvas).toContain("antialias: false");
   });
 
-  it("anchors player-mode wheel zoom to the active hero", () => {
+  it("supports settings and HUD zoom controls for player-mode camera zoom", () => {
     const scene = read("src/game/TownScene.ts");
-    const wheelHandler = scene.slice(
-      scene.indexOf('this.input.on(\n      "wheel"'),
-      scene.indexOf("private configureCamera")
-    );
-    const gameBranch = wheelHandler.slice(
-      wheelHandler.indexOf('if (this.options.mode === "game")'),
-      wheelHandler.indexOf("const before = camera.getWorldPoint")
-    );
-
-    expect(gameBranch).toContain("camera.setZoom(nextZoom)");
-    expect(gameBranch).toContain("this.saveCameraZoomFromActual(nextZoom)");
-    expect(gameBranch).toContain("this.updateCameraFollow(true)");
-    expect(gameBranch).toContain("return");
-    expect(gameBranch).not.toContain("getWorldPoint");
+    expect(scene).toContain("this.zoomInListener = () =>");
+    expect(scene).toContain("this.zoomOutListener = () =>");
+    expect(scene).toContain('window.addEventListener("soltower:zoom-in", this.zoomInListener)');
+    expect(scene).toContain('window.addEventListener("soltower:zoom-out", this.zoomOutListener)');
+    expect(scene).toContain("cam.setZoom(newZoom)");
+    expect(scene).toContain("this.saveCameraZoomFromActual(newZoom)");
+    expect(scene).toContain("this.updateCameraFollow(true)");
+    expect(scene).toContain("Wheel zoom disabled");
+    expect(/(^|\n)\s*this\.input\.on\(\s*\n\s*"wheel"/.test(scene)).toBe(false);
   });
 
   it("centralizes input safety and movement clearing", () => {
@@ -469,8 +464,7 @@ describe("authenticated town scene UX", () => {
     expect(chat).toContain("players / {server.capacity} max");
     expect(chat).toContain("/ {activeServer?.capacity ?? TOWN_SERVER_CAPACITY} max");
     expect(chat).toContain("refetchInterval: realtimeOnline == null ? 5000 : 15000");
-    expect(chat).toContain("queryClient.setQueryData<TownServersResponse>([\"town-servers\"]");
-    expect(chat).toContain("if (realtimeOnline == null)");
+    expect(chat).toContain("queryClient.setQueryData([\"town-servers\"], { servers: data.servers })");
     expect(chat).toContain("townServerIds");
     expect(chat).toContain("/api/town/server");
     expect(chat).toContain("/api/chat/message");
