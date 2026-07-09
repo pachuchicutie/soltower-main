@@ -278,7 +278,6 @@ label {
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
 }
@@ -6882,39 +6881,31 @@ label {
 }
 
 .connect-wallet-btn,
-  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
 .pre-reg-btn {
-  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
   min-width: 180px;
-  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
   display: flex;
-  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
   align-items: center;
@@ -6930,7 +6921,6 @@ label {
   width: 100%;
 }
 
-.wallet-address {
   width: 100%;
   display: flex;
   align-items: center;
@@ -7093,12 +7083,10 @@ label {
     font-size: 14px;
   }
 
-  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
 
-  .disconnect-btn {
     padding: 4px;
   }
 }
@@ -7436,7 +7424,6 @@ label {
   align-items: flex-start;
 }
 
-.wallet-address {
   width: 100%;
   display: flex;
   align-items: center;
@@ -7448,7 +7435,9 @@ label {
   padding: 10px 16px;
   border-radius: 6px;
   border: 1px solid rgba(100, 116, 139, 0.3);
-.disconnect-btn {
+}
+}
+
   background: none;
   border: none;
   color: #94a3b8;
@@ -7466,6 +7455,17 @@ label {
   opacity: 1;
 }
 
+
+/* Mobile wallet address full width fix */
+@media (max-width: 480px) {
+  .wallet-connected,
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+    display: flex !important;
+    align-items: center;
 
 /* Mobile wallet address full width fix */
 @media (max-width: 480px) {
