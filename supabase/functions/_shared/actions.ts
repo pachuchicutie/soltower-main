@@ -2432,10 +2432,20 @@ async function loadBlackjackState(context: EdgeContext, authUserId: string): Pro
       .order("created_at", { ascending: false })
       .limit(20)
   );
+  const earnedLimits = getBlackjackLimits(player.accountLevel, balances.EARNED_GOLD);
+  const lockedLimits = getBlackjackLimits(player.accountLevel, balances.LOCKED_GOLD);
   return {
     // Live village table only — never advertise practice mode to clients.
     practiceAllowed: false,
-    limits: getBlackjackLimits(player.accountLevel, balances.EARNED_GOLD),
+    // Keep `limits` as earned-gold defaults for older clients; UI prefers earnedLimits/lockedLimits.
+    limits: earnedLimits,
+    earnedLimits,
+    lockedLimits,
+    balances: {
+      EARNED_GOLD: balances.EARNED_GOLD,
+      LOCKED_GOLD: balances.LOCKED_GOLD
+    },
+    maxBetBalanceRate: 0.2,
     profitCap: getBlackjackEarnedProfitCap(player.accountLevel),
     profitProgress: counters.data ? toNumber(asRecord(counters.data, "blackjack counter").earned_profit) : 0,
     history: rows(hands.data).map(safeHand)

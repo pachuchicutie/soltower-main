@@ -2797,6 +2797,23 @@ label {
   gap: 8px;
 }
 
+.blackjack-limit-grid-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 720px) {
+  .blackjack-limit-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.blackjack-wager-note {
+  margin: 0;
+  color: #8fa3b8;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .blackjack-limit-grid > div {
   min-width: 0;
   min-height: 60px;

@@ -411,14 +411,27 @@ export function actOnBlackjackHand(
 
 export function getBlackjackState(store: DevStore, playerId: string): {
   limits: ReturnType<typeof getBlackjackLimits>;
+  earnedLimits: ReturnType<typeof getBlackjackLimits>;
+  lockedLimits: ReturnType<typeof getBlackjackLimits>;
+  balances: { EARNED_GOLD: number; LOCKED_GOLD: number };
+  maxBetBalanceRate: number;
   profitCap: number;
   profitProgress: number;
   history: BlackjackHandRecord[];
 } {
   const player = getPlayerOrThrow(store, playerId);
   const counter = getCounter(store, playerId);
+  const earnedLimits = getBlackjackLimits(player.accountLevel, player.balances.EARNED_GOLD);
+  const lockedLimits = getBlackjackLimits(player.accountLevel, player.balances.LOCKED_GOLD);
   return {
-    limits: getBlackjackLimits(player.accountLevel, player.balances.EARNED_GOLD),
+    limits: earnedLimits,
+    earnedLimits,
+    lockedLimits,
+    balances: {
+      EARNED_GOLD: player.balances.EARNED_GOLD,
+      LOCKED_GOLD: player.balances.LOCKED_GOLD
+    },
+    maxBetBalanceRate: 0.2,
     profitCap: getBlackjackEarnedProfitCap(player.accountLevel),
     profitProgress: counter.earnedProfit,
     history: Array.from(store.blackjackHands.values())

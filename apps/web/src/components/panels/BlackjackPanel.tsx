@@ -1,7 +1,7 @@
-import { useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUp, History, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
-import { uiAssetManifest, type BalanceType } from "@soltower/shared";
+import { blackjackConfig, uiAssetManifest, type BalanceType } from "@soltower/shared";
 import { apiGet, apiPost, idempotencyKey } from "../../lib/api";
 import { playUiSound } from "../../lib/audio";
 import { AssetIcon, GameButton } from "../ui/GameUi";
@@ -24,9 +24,23 @@ interface Hand {
   createdAt?: string;
 }
 
+interface BlackjackLimitsView {
+  minBet: number;
+  tableMaxBet: number;
+  balanceMaxBet: number;
+  actualMaxBet: number;
+}
+
 interface BlackjackState {
   practiceAllowed: boolean;
-  limits: { minBet: number; tableMaxBet: number; balanceMaxBet: number; actualMaxBet: number };
+  limits: BlackjackLimitsView;
+  earnedLimits?: BlackjackLimitsView;
+  lockedLimits?: BlackjackLimitsView;
+  balances?: {
+    EARNED_GOLD: number;
+    LOCKED_GOLD: number;
+  };
+  maxBetBalanceRate?: number;
   profitCap: number;
   profitProgress: number;
   history: Hand[];
@@ -104,11 +118,25 @@ export function BlackjackPanel() {
   });
 
   const current = activeHand ?? state.data?.history[0] ?? null;
-  const limits = state.data?.limits;
+  const limits = resolveLimitsForBalance(state.data, balanceType);
+  const selectedBalance = state.data?.balances?.[balanceType] ?? null;
   const minBet = limits?.minBet ?? 5;
   const maxBet = limits?.actualMaxBet ?? 0;
+  const tableMaxBet = limits?.tableMaxBet ?? 25;
+  const maxBetRatePercent = Math.round(
+    (state.data?.maxBetBalanceRate ?? blackjackConfig.maxBetBalanceRate) * 100
+  );
   const active = current?.status === "ACTIVE";
   const validBet = Number.isFinite(bet) && bet >= minBet && bet <= maxBet;
+
+  useEffect(() => {
+    if (maxBet <= 0) return;
+    setBet((currentBet) => {
+      if (!Number.isFinite(currentBet) || currentBet < minBet) return minBet;
+      if (currentBet > maxBet) return maxBet;
+      return currentBet;
+    });
+  }, [balanceType, minBet, maxBet]);
 
   return (
     <div className="blackjack-layout blackjack-panel-v2">
@@ -122,24 +150,36 @@ export function BlackjackPanel() {
         </header>
 
         <div className="blackjack-balance-toggle" role="group" aria-label="Choose wager source">
-          {balanceOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={balanceType === option.id}
-              className={balanceType === option.id ? "active" : ""}
-              onClick={() => setBalanceType(option.id)}
-            >
-              <AssetIcon src={option.icon} />
-              <span>{option.label}</span>
-            </button>
-          ))}
+          {balanceOptions.map((option) => {
+            const amount = state.data?.balances?.[option.id];
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={balanceType === option.id}
+                className={balanceType === option.id ? "active" : ""}
+                onClick={() => setBalanceType(option.id)}
+              >
+                <AssetIcon src={option.icon} />
+                <span>
+                  {option.label}
+                  {amount != null ? ` · ${amount}` : ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <label className="blackjack-bet-field">
           <span>Wager</span>
           <div className="blackjack-bet-input">
-            <AssetIcon src={uiAssetManifest.currencies.earnedGold} />
+            <AssetIcon
+              src={
+                balanceType === "LOCKED_GOLD"
+                  ? uiAssetManifest.currencies.lockedGold
+                  : uiAssetManifest.currencies.earnedGold
+              }
+            />
             <input
               type="number"
               min={minBet}
@@ -152,11 +192,16 @@ export function BlackjackPanel() {
           </div>
         </label>
 
-        <div className="blackjack-limit-grid" aria-label="Table limits">
+        <div className="blackjack-limit-grid blackjack-limit-grid-4" aria-label="Table limits">
+          <LimitStat label="Your balance" value={selectedBalance ?? 0} unavailable={selectedBalance == null} />
           <LimitStat label="Minimum" value={minBet} />
-          <LimitStat label="Table limit" value={limits?.tableMaxBet ?? 25} />
-          <LimitStat label="Available now" value={maxBet} unavailable={maxBet <= 0} />
+          <LimitStat label="Table limit" value={tableMaxBet} />
+          <LimitStat label="Max wager" value={maxBet} unavailable={maxBet <= 0} />
         </div>
+        <p className="blackjack-wager-note">
+          Max wager is {maxBetRatePercent}% of your selected balance (capped by the table limit). Your full
+          balance stays yours — only the wager is at risk each hand.
+        </p>
 
         <div className="blackjack-profit-meter">
           <div>
@@ -342,6 +387,17 @@ export function BlackjackPanel() {
   );
 }
 
+function resolveLimitsForBalance(
+  state: BlackjackState | undefined,
+  balanceType: Extract<BalanceType, "EARNED_GOLD" | "LOCKED_GOLD">
+): BlackjackLimitsView | undefined {
+  if (!state) return undefined;
+  if (balanceType === "LOCKED_GOLD") {
+    return state.lockedLimits ?? state.limits;
+  }
+  return state.earnedLimits ?? state.limits;
+}
+
 function LimitStat({
   label,
   value,
@@ -354,7 +410,7 @@ function LimitStat({
   return (
     <div>
       <span>{label}</span>
-      <strong>{unavailable ? "Unavailable" : `${value} Gold`}</strong>
+      <strong>{unavailable ? "—" : `${value} Gold`}</strong>
     </div>
   );
 }

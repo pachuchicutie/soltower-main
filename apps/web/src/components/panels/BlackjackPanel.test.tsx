@@ -38,6 +38,10 @@ beforeEach(() => {
   apiMocks.get.mockResolvedValue({
     practiceAllowed: false,
     limits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+    earnedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 8, actualMaxBet: 8 },
+    lockedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+    balances: { EARNED_GOLD: 40, LOCKED_GOLD: 100 },
+    maxBetBalanceRate: 0.2,
     profitCap: 100,
     profitProgress: 20,
     history: [activeHand]
@@ -89,6 +93,10 @@ describe("BlackjackPanel", () => {
     apiMocks.get.mockResolvedValue({
       practiceAllowed: true,
       limits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+      earnedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 8, actualMaxBet: 8 },
+      lockedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+      balances: { EARNED_GOLD: 40, LOCKED_GOLD: 100 },
+      maxBetBalanceRate: 0.2,
       profitCap: 100,
       profitProgress: 20,
       history: []
@@ -106,7 +114,7 @@ describe("BlackjackPanel", () => {
     expect(await screen.findByText("Village Table")).toBeTruthy();
     expect(screen.queryByText("Practice mode is active")).toBeNull();
     expect(screen.queryByText("Deal Practice Hand")).toBeNull();
-    expect(screen.getByRole("button", { name: "Earned Gold" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Earned Gold/i })).toBeTruthy();
     const dealButton = await screen.findByRole("button", { name: /Deal Hand/i });
     await waitFor(() => expect((dealButton as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(dealButton);
@@ -122,6 +130,18 @@ describe("BlackjackPanel", () => {
       )
     );
     expect(apiMocks.post.mock.calls.some((call) => call[1]?.bet === 5 || call[1]?.bet > 0)).toBe(true);
+  });
+
+  it("shows full balance separately from max wager (20% rule)", async () => {
+    renderBlackjack();
+
+    expect(await screen.findByText("40 Gold")).toBeTruthy();
+    expect(screen.getByText("Your balance")).toBeTruthy();
+    expect(screen.getByText("Max wager")).toBeTruthy();
+    expect(screen.getByText("8 Gold")).toBeTruthy();
+    expect(screen.getByText(/Earned Gold · 40/i)).toBeTruthy();
+    expect(screen.queryByText("Available now")).toBeNull();
+    expect(screen.getByText(/20% of your selected balance/i)).toBeTruthy();
   });
 });
 
