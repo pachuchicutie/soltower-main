@@ -283,7 +283,7 @@ export class TownScene extends Phaser.Scene {
     this.zoomInListener = () => {
       const cam = this.cameras.main;
       const minZoom = this.options.mode === "game" ? this.gameMinZoom() : 0.68;
-      const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
+      const maxZoom = this.options.mode === "game" ? Math.max(GAME_ZOOM_MAX, minZoom) : 1.45;
       const newZoom = Phaser.Math.Clamp(cam.zoom * 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
       if (this.options.mode === "game") {
@@ -294,7 +294,8 @@ export class TownScene extends Phaser.Scene {
     this.zoomOutListener = () => {
       const cam = this.cameras.main;
       const minZoom = this.options.mode === "game" ? this.gameMinZoom() : 0.68;
-      const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
+      const maxZoom = this.options.mode === "game" ? Math.max(GAME_ZOOM_MAX, minZoom) : 1.45;
+      // Clamped by gameMinZoom (cover zoom) so zoom-out never reveals outside the map.
       const newZoom = Phaser.Math.Clamp(cam.zoom / 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
       if (this.options.mode === "game") {

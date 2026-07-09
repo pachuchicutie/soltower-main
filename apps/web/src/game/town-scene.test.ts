@@ -33,13 +33,15 @@ describe("authenticated town scene UX", () => {
     expect(scene).toContain("GAME_ZOOM_MIN");
     expect(scene).toContain("GAME_ZOOM_MAX");
     expect(scene).toContain("DESKTOP_GAME_ZOOM = 1.46");
-    expect(scene).toContain("GAME_CAMERA_WORLD_PADDING_X");
-    expect(scene).toContain("GAME_CAMERA_WORLD_PADDING_Y");
     expect(scene).toContain("GAME_CAMERA_FOLLOW_SCREEN_X = 0.5");
     expect(scene).toContain("GAME_CAMERA_FOLLOW_SCREEN_Y = 0.5");
     expect(scene).toContain("PLAYER_WORLD_MIN_X");
     expect(scene).toContain("gameMinZoom");
-    expect(scene).toContain("width / (WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2)");
+    // Camera must stay inside map art — no padded void, min zoom is cover zoom.
+    expect(scene).not.toContain("GAME_CAMERA_WORLD_PADDING");
+    expect(scene).toContain("Math.max(GAME_ZOOM_MIN, this.coverZoom(width, height))");
+    expect(scene).toContain("Never allow a zoom that would expose empty space");
+    expect(scene).toContain("Hard-clamp the camera to the map rectangle");
     // Zoom must NOT be baked into scroll math — Phaser applies zoom around viewport center.
     expect(scene).not.toContain("this.scale.width / camera.zoom");
     expect(scene).not.toContain("this.scale.height / camera.zoom");
