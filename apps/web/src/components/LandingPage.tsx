@@ -114,9 +114,7 @@ export function LandingPage({
                 aria-label="X (Twitter)"
               >
                 <IconButton title="Follow on X" aria-label="Follow on X">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
-                  </svg>
+                  <img src="/x-icon.png" alt="X" width="18" height="18" />
                 </IconButton>
               </a>
               <a 
@@ -159,9 +157,7 @@ export function LandingPage({
                   rel="noopener noreferrer"
                   style={{ display: "flex", alignItems: "center", gap: "6px" }}
                 >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
-                  </svg>
+                  <img src="/x-icon.png" alt="X" width="17" height="17" />
                   X
                 </a>
               <a 
