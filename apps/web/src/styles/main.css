@@ -5622,7 +5622,7 @@ label {
   .quest-journal .panel-tabs,
   .modal-tabs,
   .settings-panel-v2 .modal-tabs {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .token-access-note,
@@ -5835,7 +5835,7 @@ label {
 .event-season-status-grid {
   min-width: min(620px, 58%);
   display: grid;
-  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 10px;
 }
 
@@ -6772,7 +6772,7 @@ label {
 
 /* Pre-Register Modal Styles - Compact, minimal */
 .pre-register-modal {
-  max-width: 420px;
+  max-width: 620px;
   width: 95%;
 }
 
@@ -6801,8 +6801,8 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .reward-item {
@@ -6813,7 +6813,7 @@ label {
 }
 
 .reward-item.gold {
-  grid-column: span 2;
+  grid-column: 1 / -1;
   background: linear-gradient(90deg, rgba(243, 201, 105, 0.15), rgba(243, 201, 105, 0.05));
   border: 1px solid rgba(243, 201, 105, 0.3);
 }
@@ -6998,7 +6998,7 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
 
@@ -7010,7 +7010,7 @@ label {
   }
   
   .rewards-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
   }
   
@@ -7117,7 +7117,7 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   justify-content: center;
   max-width: 420px;
