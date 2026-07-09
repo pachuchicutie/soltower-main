@@ -102,8 +102,6 @@ export function LandingPage({
               <span>BETA</span>
             </div>
             <nav className="landing-desktop-links" aria-label="Public navigation">
-              <a href="#how-to-play">How to Play</a>
-              <a href="/docs">Docs</a>
             </nav>
             <div className="landing-nav-actions">
               <a 
@@ -147,10 +145,7 @@ export function LandingPage({
             </div>
             {mobileMenuOpen ? (
               <nav className="landing-mobile-menu" aria-label="Mobile navigation">
-                <a href="#how-to-play" onClick={() => setMobileMenuOpen(false)}>
-                  How to Play
-                </a>
-                <a href="/docs">Docs</a>
+
                 <a 
                   href="https://x.com/PlaySolTower" 
                   target="_blank" 
