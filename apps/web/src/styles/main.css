@@ -245,6 +245,11 @@ label {
   width: 22px;
   height: 22px;
   display: inline-block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 /* Mobile fixes for pre-reg modal */
 @media (max-width: 480px) {
   .pre-register-modal {
@@ -256,6 +261,10 @@ label {
   .rewards-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .reward-card {
+    padding: 4px;
   }
 
   .reward-card img {
@@ -277,13 +286,6 @@ label {
     font-size: 12px;
     padding: 8px 12px;
   }
-
-    padding: 4px;
-  }
-}
-  flex: 0 0 auto;
-  object-fit: contain;
-  vertical-align: middle;
 }
 
 .modal-icon-badge {
@@ -6881,33 +6883,9 @@ label {
 }
 
 .connect-wallet-btn,
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-    padding: 4px;
-  }
 .pre-reg-btn {
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-    padding: 4px;
-  }
   min-width: 180px;
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-    padding: 4px;
-  }
   display: flex;
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-    padding: 4px;
-  }
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -6921,6 +6899,7 @@ label {
   width: 100%;
 }
 
+.wallet-address {
   width: 100%;
   display: flex;
   align-items: center;
@@ -6932,7 +6911,6 @@ label {
   padding: 10px 16px;
   border-radius: 6px;
   border: 1px solid rgba(100, 116, 139, 0.3);
-  
 }
 
 .error-text {
@@ -7055,6 +7033,8 @@ label {
   border-radius: 10px;
   color: #f3c969;
   display: inline-block;
+}
+
 /* Mobile fixes for pre-reg modal */
 @media (max-width: 480px) {
   .pre-register-modal {
@@ -7066,6 +7046,10 @@ label {
   .rewards-grid {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .reward-card {
+    padding: 4px;
   }
 
   .reward-card img {
@@ -7083,13 +7067,10 @@ label {
     font-size: 14px;
   }
 
+  .wallet-address {
     font-size: 12px;
     padding: 8px 12px;
   }
-
-    padding: 4px;
-  }
-}
 }
 
 .rewards-grid {
@@ -7422,8 +7403,10 @@ label {
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  width: 100%;
 }
 
+.wallet-address {
   width: 100%;
   display: flex;
   align-items: center;
@@ -7436,8 +7419,8 @@ label {
   border-radius: 6px;
   border: 1px solid rgba(100, 116, 139, 0.3);
 }
-}
 
+.disconnect-btn {
   background: none;
   border: none;
   color: #94a3b8;
@@ -7454,18 +7437,6 @@ label {
   color: #ef4444;
   opacity: 1;
 }
-
-
-/* Mobile wallet address full width fix */
-@media (max-width: 480px) {
-  .wallet-connected,
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
-  }
-
-    display: flex !important;
-    align-items: center;
 
 /* Mobile wallet address full width fix */
 @media (max-width: 480px) {
