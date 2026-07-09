@@ -7459,3 +7459,42 @@ label {
     padding: 4px;
   }
 }
+
+/* Better spacing for pre-register rewards + gold */
+.pre-register-modal .rewards-section {
+  padding: 36px 28px !important;
+}
+
+.pre-register-modal .rewards-grid {
+  gap: 24px !important;
+}
+
+.pre-register-modal .reward-card {
+  padding-top: 34px !important;
+  padding-bottom: 34px !important;
+}
+
+.pre-register-modal .reward-item.gold {
+  margin-top: 10px !important;
+  padding: 22px 18px !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .pre-register-modal .rewards-section {
+    padding: 24px 16px !important;
+  }
+
+  .pre-register-modal .rewards-grid {
+    gap: 14px !important;
+  }
+
+  .pre-register-modal .reward-card {
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .pre-register-modal .reward-item.gold {
+    padding: 18px 14px !important;
+  }
+}
