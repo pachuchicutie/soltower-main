@@ -135,12 +135,13 @@ export function LandingPage({
                   How to Play
                 </a>
                 <a href="/docs">Docs</a>
-                <button type="button">
-                  <MessageCircle size={17} /> Discord
-                </button>
-                <button type="button">
-                  <Send size={17} /> Telegram
-                </button>
+                <a 
+                  href="https://x.com/PlaySolTower" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <X size={17} /> X
+                </a>
               </nav>
             ) : null}
           </header>
