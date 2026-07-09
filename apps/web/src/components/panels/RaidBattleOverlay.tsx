@@ -21,12 +21,18 @@ export interface RaidBattleMember {
   power: number;
 }
 
+export interface RaidSettlementRewards {
+  rewardEarnedGold?: number;
+  rewardXp?: number;
+}
+
 interface RaidBattleOverlayProps {
   stage: RaidStageDefinition;
   members: RaidBattleMember[];
   startsAt: number;
   settling?: boolean;
   settlementError?: string | null;
+  settlementRewards?: RaidSettlementRewards | null;
   onVictory: () => void;
   onExit: () => void;
 }
@@ -37,6 +43,7 @@ export function RaidBattleOverlay({
   startsAt,
   settling = false,
   settlementError,
+  settlementRewards = null,
   onVictory,
   onExit
 }: RaidBattleOverlayProps) {
@@ -228,6 +235,12 @@ export function RaidBattleOverlay({
                 ? `${battle.defeated} enemies stopped across ${waveCount} waves.`
                 : `${battle.escaped} enemies breached the wardstone.`}
             </p>
+            {battle.status === "VICTORY" && settlementRewards ? (
+              <p className="raid-settlement-rewards" data-testid="raid-settlement-rewards">
+                Rewards secured: +{settlementRewards.rewardEarnedGold ?? 0} Earned Gold · +
+                {settlementRewards.rewardXp ?? 0} XP
+              </p>
+            ) : null}
             {settling ? <small>Securing server rewards...</small> : null}
             {settlementError ? <small className="raid-settlement-error">{settlementError}</small> : null}
             <GameButton

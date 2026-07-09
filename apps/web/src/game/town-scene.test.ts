@@ -22,6 +22,9 @@ describe("authenticated town scene UX", () => {
     expect(scene).toContain('this.options.mode === "game"');
     expect(scene).toContain("updateCameraFollow");
     expect(scene).toContain("Phaser.Math.Linear(camera.scrollX, nextX, 0.28)");
+    expect(scene).toContain("camera.centerOn(this.player.x, this.player.y)");
+    expect(scene).toContain("camera.width * GAME_CAMERA_FOLLOW_SCREEN_X");
+    expect(scene).toContain("camera.height * GAME_CAMERA_FOLLOW_SCREEN_Y");
     expect(scene).toContain("camera.stopFollow()");
     expect(scene).toContain("setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)");
     expect(scene).toContain("camera.roundPixels = true");
@@ -37,7 +40,9 @@ describe("authenticated town scene UX", () => {
     expect(scene).toContain("PLAYER_WORLD_MIN_X");
     expect(scene).toContain("gameMinZoom");
     expect(scene).toContain("width / (WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2)");
-    expect(scene).toContain("PLAYER_WORLD_MAX_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X");
+    // Zoom must NOT be baked into scroll math — Phaser applies zoom around viewport center.
+    expect(scene).not.toContain("this.scale.width / camera.zoom");
+    expect(scene).not.toContain("this.scale.height / camera.zoom");
     expect(scene).toContain("gameZoomFromSetting");
     expect(scene).toContain("saveCameraZoomFromActual");
     expect(scene).toContain("this.updateCameraFollow(true);");

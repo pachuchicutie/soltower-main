@@ -221,15 +221,25 @@ export function RaidPanel() {
 
   const startRun = useMutation({
     mutationFn: (lobby: Lobby) =>
-      apiPost("/api/raids/prototype/run", {
+      apiPost<{
+        raid?: {
+          rewardEarnedGold?: number;
+          rewardXp?: number;
+          mapId?: string;
+        };
+      }>("/api/raids/prototype/run", {
         lobbyId: lobby.id,
         mapId: lobby.mapId,
         idempotencyKey: idempotencyKey("raid")
       }),
     onSuccess: async () => {
+      playUiSound("success");
+      // Force a fresh player bootstrap so HUD XP/level and balances update immediately.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me"] }),
-        queryClient.invalidateQueries({ queryKey: ["lobbies"] })
+        queryClient.refetchQueries({ queryKey: ["me"] }),
+        queryClient.invalidateQueries({ queryKey: ["lobbies"] }),
+        queryClient.invalidateQueries({ queryKey: ["quests"] })
       ]);
     },
     onError: () => {
@@ -307,6 +317,14 @@ export function RaidPanel() {
           members={activeRaidMembers}
           startsAt={activeRaid.startsAt}
           settling={startRun.isPending}
+          settlementRewards={
+            startRun.data?.raid
+              ? {
+                  rewardEarnedGold: startRun.data.raid.rewardEarnedGold,
+                  rewardXp: startRun.data.raid.rewardXp
+                }
+              : null
+          }
           settlementError={
             startRun.isError
               ? startRun.error instanceof Error

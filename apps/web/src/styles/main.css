@@ -6467,6 +6467,12 @@ label {
   color: #aebed0;
 }
 
+.raid-result-modal .raid-settlement-rewards {
+  margin: 0;
+  color: #fde68a;
+  font-weight: 700;
+}
+
 .raid-result-modal .raid-settlement-error {
   color: #fda4af;
 }

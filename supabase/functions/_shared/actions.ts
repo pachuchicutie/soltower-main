@@ -1376,18 +1376,20 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
       amount: earnedGold,
       reason: "Synchronized raid victory reward",
       idempotencyKey: `${memberRaidKey}:earned-gold`,
-      referenceEntityType: "raid"
+      referenceEntityType: "raid",
+      referenceEntityId: body.mapId
     });
-    await checked(
-      context.service.schema("private").rpc("add_player_xp", {
-        p_player_id: memberId,
-        p_reward_xp: xp,
-        p_idempotency_key: `${memberRaidKey}:xp`,
-        p_source_type: "RAID_REWARD",
-        p_reference_entity_type: "raid",
-        p_reference_entity_id: body.mapId
-      })
-    );
+    // Account XP must always land on victory. Prefer ledger RPC, fall back to profile write.
+    await awardPlayerXp(context, {
+      playerId: memberId,
+      rewardXp: xp,
+      idempotencyKey: `${memberRaidKey}:xp`,
+      sourceType: "RAID_REWARD",
+      referenceEntityType: "raid",
+      referenceEntityId: body.mapId,
+      currentAccountLevel: toNumber(profile.account_level, 1),
+      currentXp: toNumber(profile.xp)
+    });
     const raidResult = await checked(
       context.service
         .from("raid_history")
@@ -2597,6 +2599,122 @@ async function applyBalance(
     })
   );
   return asRecord(result.data, "ledger");
+}
+
+/** Shared account XP curve: 100 + 50 * (level - 1). Mirrors packages/shared progression. */
+function getXpRequiredForAccountLevel(accountLevel: number): number {
+  const level = Math.max(1, Math.floor(accountLevel || 1));
+  return 100 + (level - 1) * 50;
+}
+
+function applyAccountXpProgress(accountLevel: number, currentXp: number, earnedXp: number): {
+  accountLevel: number;
+  xp: number;
+} {
+  let level = Math.max(1, Math.floor(accountLevel || 1));
+  let xp = Math.max(0, Math.floor(currentXp || 0)) + Math.max(0, Math.floor(earnedXp || 0));
+  while (xp >= getXpRequiredForAccountLevel(level)) {
+    xp -= getXpRequiredForAccountLevel(level);
+    level += 1;
+  }
+  return { accountLevel: level, xp };
+}
+
+/**
+ * Awards account XP after a raid victory.
+ * Prefers private.add_player_xp (ledger + normalize trigger). Falls back to a direct
+ * player_profiles write with the shared level curve so rewards still land if the XP
+ * migration/RPC is missing on a host.
+ */
+async function awardPlayerXp(
+  context: EdgeContext,
+  input: {
+    playerId: string;
+    rewardXp: number;
+    idempotencyKey: string;
+    sourceType: string;
+    referenceEntityType?: string;
+    referenceEntityId?: string;
+    currentAccountLevel: number;
+    currentXp: number;
+  }
+): Promise<{ accountLevel: number; xp: number; applied: boolean }> {
+  if (input.rewardXp <= 0) {
+    return {
+      accountLevel: Math.max(1, Math.floor(input.currentAccountLevel || 1)),
+      xp: Math.max(0, Math.floor(input.currentXp || 0)),
+      applied: false
+    };
+  }
+
+  try {
+    const rpcResult = await context.service.schema("private").rpc("add_player_xp", {
+      p_player_id: input.playerId,
+      p_reward_xp: input.rewardXp,
+      p_idempotency_key: input.idempotencyKey,
+      p_source_type: input.sourceType,
+      p_reference_entity_type: input.referenceEntityType ?? null,
+      p_reference_entity_id: input.referenceEntityId ?? null
+    });
+
+    if (!rpcResult.error) {
+      const row = Array.isArray(rpcResult.data)
+        ? (rpcResult.data[0] as JsonRecord | undefined)
+        : isRecord(rpcResult.data)
+          ? rpcResult.data
+          : null;
+      if (row) {
+        return {
+          accountLevel: toNumber(row.account_level, input.currentAccountLevel),
+          xp: toNumber(row.xp, input.currentXp),
+          applied: toBoolean(row.applied, true)
+        };
+      }
+      // RPC succeeded with empty payload — still re-read profile for canonical values.
+      const refreshed = await checked(
+        context.service
+          .from("player_profiles")
+          .select("account_level,xp")
+          .eq("player_id", input.playerId)
+          .single()
+      );
+      const profile = asRecord(refreshed.data, "player profile");
+      return {
+        accountLevel: toNumber(profile.account_level, input.currentAccountLevel),
+        xp: toNumber(profile.xp, input.currentXp),
+        applied: true
+      };
+    }
+  } catch {
+    // Fall through to direct profile award when the RPC is missing or unreachable.
+  }
+
+  // Fallback when private.add_player_xp is unavailable (migration not applied / schema cache).
+  // Re-read latest progression so concurrent awards cannot clobber newer XP.
+  const latestResult = await checked(
+    context.service
+      .from("player_profiles")
+      .select("account_level,xp")
+      .eq("player_id", input.playerId)
+      .single()
+  );
+  const latest = asRecord(latestResult.data, "player profile");
+  const progressed = applyAccountXpProgress(
+    toNumber(latest.account_level, input.currentAccountLevel),
+    toNumber(latest.xp, input.currentXp),
+    input.rewardXp
+  );
+  await checked(
+    context.service
+      .from("player_profiles")
+      .update({
+        account_level: progressed.accountLevel,
+        xp: progressed.xp,
+        updated_at: new Date().toISOString()
+      })
+      .eq("player_id", input.playerId)
+  );
+  return { ...progressed, applied: true };
 }
 
 async function settleBlackjackLedger(

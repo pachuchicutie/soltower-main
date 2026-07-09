@@ -263,6 +263,7 @@ describe("Supabase-first MVP architecture", () => {
 
   it("guards raid lobby create, join, and run start with server-side stage access checks", () => {
     const actions = read("supabase/functions/_shared/actions.ts");
+    const xpMigration = read("supabase/migrations/20260706000100_account_xp_progression.sql");
     expect(actions).toContain("activeRaidStageIds");
     expect(actions).toContain("raidStageRequirement");
     expect(actions).toContain("assertRaidStageAccess");
@@ -279,6 +280,13 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain('status: "COMPLETED"');
     expect(actions).toContain("for (const memberId of partyPlayerIds)");
     expect(actions).toContain("recordQuestProgressFromRaid(context, { id: memberId }, raid)");
+    expect(actions).toContain("awardPlayerXp");
+    expect(actions).toContain('rpc("add_player_xp"');
+    expect(actions).toContain("applyAccountXpProgress");
+    expect(actions).toContain("raidBaseXpReward");
+    expect(actions).toContain("reward_xp: xp");
+    expect(xpMigration).toContain("create or replace function private.add_player_xp");
+    expect(xpMigration).toContain("private.player_xp_ledger");
   });
 
   it("uses an atomic server-side equipment swap and blocks direct core-slot unequip", () => {

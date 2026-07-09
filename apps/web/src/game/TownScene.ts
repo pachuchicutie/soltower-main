@@ -87,8 +87,6 @@ const GAME_DEBUG = import.meta.env.VITE_GAME_DEBUG === "true";
 const DESKTOP_GAME_ZOOM = 1.46;
 const GAME_ZOOM_MIN = DESKTOP_GAME_ZOOM - 0.28;
 const GAME_ZOOM_MAX = DESKTOP_GAME_ZOOM + 0.3;
-const GAME_CAMERA_WORLD_PADDING_X = 1600;
-const GAME_CAMERA_WORLD_PADDING_Y = 1200;
 const GAME_CAMERA_FOLLOW_SCREEN_X = 0.5;
 const GAME_CAMERA_FOLLOW_SCREEN_Y = 0.5;
 const PLAYER_WORLD_MIN_X = 54;
@@ -338,12 +336,10 @@ export class TownScene extends Phaser.Scene {
       this.target = null;
       this.publishRealtimePosition(false, false);
       this.updateNearbyInteraction();
+      // Keep camera locked on the hero even while UI/modals disable movement.
       this.updateCameraFollow();
       return;
     }
-
-    // Always update camera follow so player stays centered on mobile
-    this.updateCameraFollow();
 
     const direction = this.keyboardDirection();
     const mobileDirection = this.mobileDirection();
@@ -391,6 +387,7 @@ export class TownScene extends Phaser.Scene {
     this.player.setDepth(this.player.y + 80);
     this.updateHeroSpriteFrame(this.player, time, moving);
     this.updateNearbyInteraction();
+    // Follow after movement so the hero stays screen-centered every frame.
     this.updateCameraFollow();
   }
 
@@ -732,27 +729,24 @@ export class TownScene extends Phaser.Scene {
   private configureCamera(width: number, height: number): void {
     const coverZoom = this.coverZoom(width, height);
     const isMobile = width < 720;
+    const minZoom =
+      this.options.mode === "game" ? this.gameMinZoom(width, height) : coverZoom;
     const targetZoom =
       this.options.mode === "game" && !isMobile
-        ? Math.max(this.gameMinZoom(width, height), this.gameZoomFromSetting())
-        : isMobile
-          ? Math.max(width / 900, height / 1000)
+        ? Math.max(minZoom, this.gameZoomFromSetting())
+        : this.options.mode === "game" && isMobile
+          ? Math.max(minZoom, width / 900, height / 1000)
           : coverZoom;
     const maxZoom =
-      this.options.mode === "game" && !isMobile ? GAME_ZOOM_MAX : Math.max(1.25, coverZoom);
-    const zoom = Phaser.Math.Clamp(targetZoom, 0.68, maxZoom);
+      this.options.mode === "game"
+        ? Math.max(GAME_ZOOM_MAX, minZoom)
+        : Math.max(1.25, coverZoom);
+    // Never allow a zoom that would expose empty space past the town art.
+    const zoom = Phaser.Math.Clamp(targetZoom, minZoom, maxZoom);
     const camera = this.cameras.main;
     camera.roundPixels = true;
-    if (this.options.mode === "game") {
-      camera.setBounds(
-        -GAME_CAMERA_WORLD_PADDING_X,
-        -GAME_CAMERA_WORLD_PADDING_Y,
-        WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2,
-        WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2
-      );
-    } else {
-      camera.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    }
+    // Hard-clamp the camera to the map rectangle so players only ever see town art.
+    camera.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     camera.setZoom(zoom);
     if (this.options.mode === "game" && this.player) {
       this.updateCameraFollow(true);
@@ -763,15 +757,14 @@ export class TownScene extends Phaser.Scene {
   }
 
   private coverZoom(width = this.scale.width, height = this.scale.height): number {
+    // Smallest zoom that still fully covers the viewport with map art (no letterbox void).
     return Math.max(width / WORLD_WIDTH, height / WORLD_HEIGHT);
   }
 
   private gameMinZoom(width = this.scale.width, height = this.scale.height): number {
-    return Math.max(
-      GAME_ZOOM_MIN,
-      width / (WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2),
-      height / (WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2)
-    );
+    // Floor is cover zoom so zooming out cannot reveal outside-the-map void.
+    // GAME_ZOOM_MIN still applies on small viewports where cover is already below it.
+    return Math.max(GAME_ZOOM_MIN, this.coverZoom(width, height));
   }
 
   private gameZoomFromSetting(): number {
@@ -791,27 +784,25 @@ export class TownScene extends Phaser.Scene {
     if (!this.player || this.options.mode !== "game") {
       return;
     }
+    // Desktop can disable follow via settings; mobile always keeps the hero centered.
     if (!this.userSettings.cameraFollow && !immediate && this.scale.width >= 720) {
       return;
     }
     const camera = this.cameras.main;
-    const viewWidth = this.scale.width / camera.zoom;
-    const viewHeight = this.scale.height / camera.zoom;
-    const desiredScrollX = this.player.x - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
-    const desiredScrollY = this.player.y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
-    const minScrollX = PLAYER_WORLD_MIN_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
-    const maxScrollX = PLAYER_WORLD_MAX_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
-    const minScrollY = PLAYER_WORLD_MIN_Y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
-    const maxScrollY = PLAYER_WORLD_MAX_Y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
-    const nextX = Phaser.Math.Clamp(desiredScrollX, minScrollX, maxScrollX);
-    const nextY = Phaser.Math.Clamp(desiredScrollY, minScrollY, maxScrollY);
-    if (immediate) {
-      camera.scrollX = Math.round(nextX);
-      camera.scrollY = Math.round(nextY);
+    // Phaser scroll is viewport-pixel based. Zoom is applied around the viewport center, so
+    // centering must use camera.width/height (NOT width/zoom). Bounds clamp keeps the view
+    // inside the map; near edges the hero may sit off-center rather than showing void.
+    const nextX = this.player.x - camera.width * GAME_CAMERA_FOLLOW_SCREEN_X;
+    const nextY = this.player.y - camera.height * GAME_CAMERA_FOLLOW_SCREEN_Y;
+    if (immediate || this.userSettings.reducedMotion) {
+      camera.centerOn(this.player.x, this.player.y);
       return;
     }
-    camera.scrollX = Math.round(Phaser.Math.Linear(camera.scrollX, nextX, 0.28));
-    camera.scrollY = Math.round(Phaser.Math.Linear(camera.scrollY, nextY, 0.28));
+    // setScroll + useBounds ensures Phaser clamps to the map rectangle every frame.
+    camera.setScroll(
+      Phaser.Math.Linear(camera.scrollX, nextX, 0.28),
+      Phaser.Math.Linear(camera.scrollY, nextY, 0.28)
+    );
   }
 
   private keyboardDirection(): Phaser.Math.Vector2 {
@@ -1026,16 +1017,7 @@ export class TownScene extends Phaser.Scene {
 
   private createTileField(): void {
     const ground = townAssetManifest.townGround;
-    this.add
-      .rectangle(
-        WORLD_WIDTH / 2,
-        WORLD_HEIGHT / 2,
-        WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2,
-        WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2,
-        0x2f4327,
-        1
-      )
-      .setDepth(-130);
+    // Only the real town ground art — no padded void rectangle outside the map.
     this.add
       .image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, environmentAssetKey("townGround"))
       .setOrigin(ground.originX, ground.originY)
