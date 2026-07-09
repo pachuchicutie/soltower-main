@@ -2617,20 +2617,76 @@ async function loadOpenLobbyMembership(
 }
 
 async function expireStaleRaidLobbies(context: EdgeContext): Promise<void> {
-  const staleResult = await checked(
+  const nowIso = new Date().toISOString();
+  const openCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const inProgressCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+  const staleOpenResult = await checked(
     context.service
       .from("raid_lobbies")
-      .select("id,created_at")
+      .select("id")
       .eq("status", "OPEN")
-      .lt("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString())
-      .limit(50)
+      .lt("created_at", openCutoff)
+      .limit(100)
   );
-  const staleLobbyIds = rows(staleResult.data).map((lobby) => toStringValue(lobby.id)).filter(Boolean);
-  if (staleLobbyIds.length === 0) {
-    return;
+  const stuckInProgressResult = await checked(
+    context.service
+      .from("raid_lobbies")
+      .select("id")
+      .eq("status", "IN_PROGRESS")
+      .lt("updated_at", inProgressCutoff)
+      .limit(100)
+  );
+  const openLobbiesResult = await checked(
+    context.service
+      .from("raid_lobbies")
+      .select("id,host_player_id,created_at")
+      .eq("status", "OPEN")
+      .order("created_at", { ascending: false })
+      .limit(200)
+  );
+
+  const staleOpenIds = rows(staleOpenResult.data).map((lobby) => toStringValue(lobby.id)).filter(Boolean);
+  const stuckIds = rows(stuckInProgressResult.data).map((lobby) => toStringValue(lobby.id)).filter(Boolean);
+
+  // Per host: keep only the newest OPEN lobby; close older duplicates.
+  const seenHosts = new Set<string>();
+  const duplicateOpenIds: string[] = [];
+  for (const lobby of rows(openLobbiesResult.data)) {
+    const id = toStringValue(lobby.id);
+    const hostId = toStringValue(lobby.host_player_id);
+    if (!id || !hostId) {
+      continue;
+    }
+    if (staleOpenIds.includes(id)) {
+      continue;
+    }
+    if (seenHosts.has(hostId)) {
+      duplicateOpenIds.push(id);
+      continue;
+    }
+    seenHosts.add(hostId);
   }
-  await checked(context.service.from("raid_lobbies").update({ status: "EXPIRED", updated_at: new Date().toISOString() }).in("id", staleLobbyIds));
-  await checked(context.service.from("raid_lobby_members").delete().in("lobby_id", staleLobbyIds));
+
+  const expireIds = [...new Set([...staleOpenIds, ...duplicateOpenIds])];
+  if (expireIds.length > 0) {
+    await checked(
+      context.service
+        .from("raid_lobbies")
+        .update({ status: "EXPIRED", updated_at: nowIso })
+        .in("id", expireIds)
+    );
+    await checked(context.service.from("raid_lobby_members").delete().in("lobby_id", expireIds));
+  }
+  if (stuckIds.length > 0) {
+    await checked(
+      context.service
+        .from("raid_lobbies")
+        .update({ status: "COMPLETED", updated_at: nowIso })
+        .in("id", stuckIds)
+    );
+    await checked(context.service.from("raid_lobby_members").delete().in("lobby_id", stuckIds));
+  }
 }
 
 async function expireRaidLobby(context: EdgeContext, lobbyId: string): Promise<void> {
