@@ -3,8 +3,7 @@ import {
   Eye,
   LockKeyhole,
   Menu,
-  Play,
-  X
+  Play
 } from "lucide-react";
 import { apiGet } from "../lib/api";
 import { isEditableTarget } from "../lib/gameInput";
@@ -113,7 +112,9 @@ export function LandingPage({
                 aria-label="X (Twitter)"
               >
                 <IconButton title="Follow on X" aria-label="Follow on X">
-                  <X size={18} />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
+                  </svg>
                 </IconButton>
               </a>
               <GameButton variant="primary" className="nav-play-button" onClick={onPlay}>
@@ -139,8 +140,12 @@ export function LandingPage({
                   href="https://x.com/PlaySolTower" 
                   target="_blank" 
                   rel="noopener noreferrer"
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
                 >
-                  <X size={17} /> X
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
+                  </svg>
+                  X
                 </a>
               </nav>
             ) : null}
