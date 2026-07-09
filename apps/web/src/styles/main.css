@@ -6772,11 +6772,12 @@ label {
 
 /* Pre-Register Modal Styles - Compact, minimal */
 .pre-register-modal {
-  max-width: 720px;
-  width: 95%;
+  width: min(780px, calc(100vw - 80px));
+  max-width: none;
 }
 
 .pre-reg-content {
+  width: 100%;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -7006,8 +7007,8 @@ label {
 /* Mobile fixes for pre-reg modal */
 @media (max-width: 480px) {
   .pre-register-modal {
-    max-width: 95vw;
-    margin: 10px;
+  width: min(780px, calc(100vw - 80px));
+  max-width: none;
   }
   
   .rewards-grid {
