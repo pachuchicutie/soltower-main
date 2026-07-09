@@ -182,155 +182,140 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
   const seconds = timeLeft % 60;
 
   return (
-    <GameModal>
-      <div className="game-modal-content pre-register-modal" style={{ overflowX: "hidden" }}>
-        <ModalHeader
-          eyebrow="LAUNCH"
-          title="Pre-Register"
-          description="Secure exclusive rewards"
-          onClose={handleClose}
-          titleId="pre-reg-title"
-          closeLabel="Close pre-register"
-        />
+    <GameModal
+      className="pre-register-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pre-reg-title"
+    >
+      <ModalHeader
+        eyebrow="LAUNCH"
+        title="Pre-Register"
+        description="Secure exclusive rewards"
+        onClose={handleClose}
+        titleId="pre-reg-title"
+        closeLabel="Close pre-register"
+      />
 
-        <div className="pre-reg-content">
-          <div className="countdown-section">
-            <div className="countdown-label">LAUNCH IN</div>
-            <div className="countdown-timer">
-              <div className="countdown-unit">
-                <span className="countdown-value">{String(hours).padStart(2, "0")}</span>
-                <span className="countdown-label-small">HRS</span>
-              </div>
-              <div className="countdown-separator">:</div>
-              <div className="countdown-unit">
-                <span className="countdown-value">{String(minutes).padStart(2, "0")}</span>
-                <span className="countdown-label-small">MIN</span>
-              </div>
-              <div className="countdown-separator">:</div>
-              <div className="countdown-unit">
-                <span className="countdown-value">{String(seconds).padStart(2, "0")}</span>
-                <span className="countdown-label-small">SEC</span>
-              </div>
+      <div className="pre-reg-content">
+        <div className="countdown-section">
+          <div className="countdown-label">LAUNCH IN</div>
+          <div className="countdown-timer">
+            <div className="countdown-unit">
+              <span className="countdown-value">{String(hours).padStart(2, "0")}</span>
+              <span className="countdown-label-small">HRS</span>
+            </div>
+            <div className="countdown-separator">:</div>
+            <div className="countdown-unit">
+              <span className="countdown-value">{String(minutes).padStart(2, "0")}</span>
+              <span className="countdown-label-small">MIN</span>
+            </div>
+            <div className="countdown-separator">:</div>
+            <div className="countdown-unit">
+              <span className="countdown-value">{String(seconds).padStart(2, "0")}</span>
+              <span className="countdown-label-small">SEC</span>
             </div>
           </div>
+        </div>
 
-          <div className="rewards-section">
-            <div className="rewards-grid">
-              <div className="reward-card">
-                <img src={PRE_REG_REWARDS.weapon.image} alt="Rare Weapon" />
-                <div className="reward-name">Rare Weapon</div>
-                <div className="reward-rarity">{PRE_REG_REWARDS.weapon.rarity}</div>
-              </div>
-              <div className="reward-card">
-                <img src={PRE_REG_REWARDS.armor.image} alt="Rare Armor" />
-                <div className="reward-name">Rare Armor</div>
-                <div className="reward-rarity">{PRE_REG_REWARDS.armor.rarity}</div>
-              </div>
-              <div className="reward-card">
-                <img src={PRE_REG_REWARDS.costume.image} alt="Rare Costume" />
-                <div className="reward-name">Rare Costume</div>
-                <div className="reward-rarity">{PRE_REG_REWARDS.costume.rarity}</div>
-              </div>
-              <div className="reward-item gold">
-                <div className="reward-label">Gold</div>
-                <div className="reward-value">{PRE_REG_REWARDS.gold} Gold</div>
-              </div>
+        <div className="rewards-section">
+          <div className="rewards-grid">
+            <div className="reward-card">
+              <img src={PRE_REG_REWARDS.weapon.image} alt="Rare Weapon" />
+              <div className="reward-name">Rare Weapon</div>
+              <div className="reward-rarity">{PRE_REG_REWARDS.weapon.rarity}</div>
+            </div>
+            <div className="reward-card">
+              <img src={PRE_REG_REWARDS.armor.image} alt="Rare Armor" />
+              <div className="reward-name">Rare Armor</div>
+              <div className="reward-rarity">{PRE_REG_REWARDS.armor.rarity}</div>
+            </div>
+            <div className="reward-card">
+              <img src={PRE_REG_REWARDS.costume.image} alt="Rare Costume" />
+              <div className="reward-name">Rare Costume</div>
+              <div className="reward-rarity">{PRE_REG_REWARDS.costume.rarity}</div>
+            </div>
+            <div className="reward-item gold">
+              <div className="reward-label">Gold</div>
+              <div className="reward-value">{PRE_REG_REWARDS.gold} Gold</div>
             </div>
           </div>
+        </div>
 
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "16px"
-          }}>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "rgba(250, 204, 21, 0.1)",
-              border: "1px solid #facc15",
-              color: "#facc15",
-              padding: "6px 16px",
-              borderRadius: "9999px",
-              fontSize: "13px",
-              fontWeight: 600,
-              letterSpacing: "0.5px"
-            }}>
-              <span style={{ color: "#fde047", fontWeight: 700, fontSize: "15px" }}>
-                {preRegCount.toLocaleString()}
-              </span>
-              <span>wallets pre-registered</span>
-            </div>
+        <div className="pre-reg-count-wrap">
+          <div className="pre-reg-count-badge">
+            <span className="pre-reg-count-value">{preRegCount.toLocaleString()}</span>
+            <span>wallets pre-registered</span>
           </div>
+        </div>
 
-          <div className="wallet-section">
-            {!walletAddress ? (
-              <GameButton
-                variant="primary"
-                onClick={handleConnectWallet}
-                className="connect-wallet-btn"
-              >
-                <Wallet size={16} /> Connect Wallet
-              </GameButton>
-            ) : (
-              <div className="wallet-connected">
-                <div className="wallet-address">
-                  {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
-                  <button 
-                    onClick={handleDisconnect} 
-                    className="disconnect-btn"
-                    title="Disconnect wallet"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                {isChecking ? (
-                  <div className="status">Checking...</div>
-                ) : isPreRegistered ? (
-                  <GameButton variant="secondary" disabled className="pre-reg-btn">
-                    <Check size={16} /> Pre Registered
-                  </GameButton>
-                ) : (
-                  <GameButton
-                    variant="primary"
-                    onClick={handlePreRegister}
-                    disabled={isRegistering}
-                    className="pre-reg-btn"
-                  >
-                    {isRegistering ? (
-                      <LoaderCircle size={16} className="animate-spin" />
-                    ) : (
-                      "Pre Register"
-                    )}
-                  </GameButton>
-                )}
+        <div className="wallet-section">
+          {!walletAddress ? (
+            <GameButton
+              variant="primary"
+              onClick={handleConnectWallet}
+              className="connect-wallet-btn"
+            >
+              <Wallet size={16} /> Connect Wallet
+            </GameButton>
+          ) : (
+            <div className="wallet-connected">
+              <div className="wallet-address">
+                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                <button
+                  onClick={handleDisconnect}
+                  className="disconnect-btn"
+                  title="Disconnect wallet"
+                >
+                  <X size={14} />
+                </button>
               </div>
-            )}
-          </div>
-
-          {error && <div className="error-text">{error}</div>}
-          {successMessage && <div className="success-text">{successMessage}</div>}
-
-          {showConfirm && (
-            <div className="confirm-overlay">
-              <div className="confirm-box">
-                <div className="confirm-text">Confirm pre-register with this wallet?</div>
-                <div className="confirm-actions">
-                  <GameButton variant="secondary" onClick={cancelConfirm}>
-                    Cancel
-                  </GameButton>
-                  <GameButton variant="primary" onClick={confirmPreRegister}>
-                    Confirm
-                  </GameButton>
-                </div>
-              </div>
+              {isChecking ? (
+                <div className="status">Checking...</div>
+              ) : isPreRegistered ? (
+                <GameButton variant="secondary" disabled className="pre-reg-btn">
+                  <Check size={16} /> Pre Registered
+                </GameButton>
+              ) : (
+                <GameButton
+                  variant="primary"
+                  onClick={handlePreRegister}
+                  disabled={isRegistering}
+                  className="pre-reg-btn"
+                >
+                  {isRegistering ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    "Pre Register"
+                  )}
+                </GameButton>
+              )}
             </div>
           )}
         </div>
 
-        <div className="pre-reg-footer">
-          <div className="note">Rewards distributed at launch. One wallet per pre-reg.</div>
-        </div>
+        {error && <div className="error-text">{error}</div>}
+        {successMessage && <div className="success-text">{successMessage}</div>}
+
+        {showConfirm && (
+          <div className="confirm-overlay">
+            <div className="confirm-box">
+              <div className="confirm-text">Confirm pre-register with this wallet?</div>
+              <div className="confirm-actions">
+                <GameButton variant="secondary" onClick={cancelConfirm}>
+                  Cancel
+                </GameButton>
+                <GameButton variant="primary" onClick={confirmPreRegister}>
+                  Confirm
+                </GameButton>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="pre-reg-footer">
+        <div className="note">Rewards distributed at launch. One wallet per pre-reg.</div>
       </div>
     </GameModal>
   );
