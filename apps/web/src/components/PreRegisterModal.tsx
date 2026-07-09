@@ -134,11 +134,12 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
         .insert({ wallet_address: walletAddress });
 
       if (insertError) {
+        console.error("Pre-reg insert error:", insertError);
         if (insertError.code === "23505") {
           setIsPreRegistered(true);
           setSuccessMessage("This wallet is already pre-registered.");
         } else {
-          setError("Failed to pre-register");
+          setError(insertError.message || "Failed to pre-register");
         }
         return;
       }
