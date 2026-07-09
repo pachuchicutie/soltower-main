@@ -522,6 +522,16 @@ label {
   accent-color: var(--color-gold);
 }
 
+.settings-zoom-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.settings-zoom-actions .game-button {
+  min-width: 0;
+}
+
 .toggle-row {
   min-height: 48px;
   border: 1px solid rgba(148, 163, 184, 0.2);

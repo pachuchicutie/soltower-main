@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PlayerBootstrapData } from "@soltower/shared";
@@ -764,6 +764,11 @@ describe("authenticated town", () => {
     expect(localStorage.getItem("soltower:user-settings:v1")).toContain('"masterVolume":0.33');
     await userEvent.click(screen.getByRole("tab", { name: "Motion" }));
     fireEvent.change(screen.getByLabelText(/Camera Height/), { target: { value: "0.72" } });
+    expect(localStorage.getItem("soltower:user-settings:v1")).toContain('"cameraZoom":0.72');
+    const zoomControls = within(screen.getByRole("group", { name: "Camera zoom controls" }));
+    await userEvent.click(zoomControls.getByRole("button", { name: "Zoom Out" }));
+    expect(localStorage.getItem("soltower:user-settings:v1")).toContain('"cameraZoom":0.62');
+    await userEvent.click(zoomControls.getByRole("button", { name: "Zoom In" }));
     expect(localStorage.getItem("soltower:user-settings:v1")).toContain('"cameraZoom":0.72');
 
     await userEvent.click(screen.getByRole("tab", { name: "Audio" }));

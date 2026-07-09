@@ -275,16 +275,28 @@ export class TownScene extends Phaser.Scene {
 
     this.zoomInListener = () => {
       const cam = this.cameras.main;
-      const newZoom = Phaser.Math.Clamp(cam.zoom * 1.15, 0.68, 1.45);
+      const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
+      const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
+      const newZoom = Phaser.Math.Clamp(cam.zoom * 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
+      if (this.options.mode === "game") {
+        this.saveCameraZoomFromActual(newZoom);
+        this.updateCameraFollow(true);
+      }
     };
     this.zoomOutListener = () => {
       const cam = this.cameras.main;
-      const newZoom = Phaser.Math.Clamp(cam.zoom / 1.15, 0.68, 1.45);
+      const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
+      const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
+      const newZoom = Phaser.Math.Clamp(cam.zoom / 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
+      if (this.options.mode === "game") {
+        this.saveCameraZoomFromActual(newZoom);
+        this.updateCameraFollow(true);
+      }
     };
-    window.addEventListener('soltower:zoom-in', this.zoomInListener);
-    window.addEventListener('soltower:zoom-out', this.zoomOutListener);
+    window.addEventListener("soltower:zoom-in", this.zoomInListener);
+    window.addEventListener("soltower:zoom-out", this.zoomOutListener);
 
     window.addEventListener("soltower:user-settings-changed", this.settingsListener);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -295,10 +307,10 @@ export class TownScene extends Phaser.Scene {
         window.removeEventListener("soltower:user-settings-changed", this.settingsListener);
       }
       if (this.zoomInListener) {
-        window.removeEventListener('soltower:zoom-in', this.zoomInListener);
+        window.removeEventListener("soltower:zoom-in", this.zoomInListener);
       }
       if (this.zoomOutListener) {
-        window.removeEventListener('soltower:zoom-out', this.zoomOutListener);
+        window.removeEventListener("soltower:zoom-out", this.zoomOutListener);
       }
       this.persistPlayerPosition(this.time.now, true);
       this.options.onNearbyInteraction?.(null);

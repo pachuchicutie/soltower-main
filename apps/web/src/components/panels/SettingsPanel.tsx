@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, Copy, LogOut, Unplug } from "lucide-react";
+import { Camera, Copy, LogOut, Unplug, ZoomIn, ZoomOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { uiAssetManifest, type PlayerBootstrapData } from "@soltower/shared";
 import {
@@ -44,6 +44,8 @@ const controlGroups: ShortcutGroupDefinition[] = [
   ...townShortcutGroups,
   { keys: ["Esc"], label: "Close" }
 ];
+
+const cameraZoomStep = 0.1;
 
 export function SettingsPanel({
   onCenterCamera,
@@ -134,6 +136,20 @@ export function SettingsPanel({
               value={settings.cameraZoom}
               onChange={(cameraZoom) => updateSettings({ cameraZoom })}
             />
+            <div className="settings-zoom-actions" role="group" aria-label="Camera zoom controls">
+              <GameButton
+                variant="secondary"
+                onClick={() => updateSettings({ cameraZoom: clamp01(settings.cameraZoom - cameraZoomStep) })}
+              >
+                <ZoomOut size={17} /> Zoom Out
+              </GameButton>
+              <GameButton
+                variant="secondary"
+                onClick={() => updateSettings({ cameraZoom: clamp01(settings.cameraZoom + cameraZoomStep) })}
+              >
+                <ZoomIn size={17} /> Zoom In
+              </GameButton>
+            </div>
             <ToggleRow
               label="Show Raid Range Circles"
               description="Shows each guardian's attack coverage during raids."
@@ -252,4 +268,11 @@ export function SettingsPanel({
       ) : null}
     </div>
   );
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, Number(value.toFixed(2))));
 }
