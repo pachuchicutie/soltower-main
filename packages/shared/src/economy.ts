@@ -10,7 +10,6 @@ export const economyConfig = {
     jupiterSwapUrl: "https://jup.ag/swap/SOL-93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump"
   },
   tokenGate: {
-    playMinimumTower: 1000,
     sellerMinimumTower: 10000,
     auctionSellerMinimumTower: 10000,
     sellerMinimumAccountLevel: 10
