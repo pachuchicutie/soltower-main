@@ -29,10 +29,15 @@ describe("authenticated town scene UX", () => {
     expect(scene).toContain("DESKTOP_GAME_ZOOM");
     expect(scene).toContain("GAME_ZOOM_MIN");
     expect(scene).toContain("GAME_ZOOM_MAX");
-    expect(scene).toContain("GAME_CAMERA_FOLLOW_MARGIN_X");
-    expect(scene).toContain("GAME_CAMERA_FOLLOW_MARGIN_Y");
+    expect(scene).toContain("DESKTOP_GAME_ZOOM = 1.46");
+    expect(scene).toContain("GAME_CAMERA_WORLD_PADDING_X");
+    expect(scene).toContain("GAME_CAMERA_WORLD_PADDING_Y");
+    expect(scene).toContain("GAME_CAMERA_FOLLOW_SCREEN_X = 0.5");
+    expect(scene).toContain("GAME_CAMERA_FOLLOW_SCREEN_Y = 0.5");
+    expect(scene).toContain("PLAYER_WORLD_MIN_X");
     expect(scene).toContain("gameMinZoom");
-    expect(scene).toContain("width / (WORLD_WIDTH - GAME_CAMERA_FOLLOW_MARGIN_X * 2)");
+    expect(scene).toContain("width / (WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2)");
+    expect(scene).toContain("PLAYER_WORLD_MAX_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X");
     expect(scene).toContain("gameZoomFromSetting");
     expect(scene).toContain("saveCameraZoomFromActual");
     expect(scene).toContain("this.updateCameraFollow(true);");

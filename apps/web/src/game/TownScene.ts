@@ -84,11 +84,17 @@ const HERO_FRAME_WIDTH = 64;
 const HERO_FRAME_HEIGHT = 64;
 const HERO_SCALE = 1;
 const GAME_DEBUG = import.meta.env.VITE_GAME_DEBUG === "true";
-const DESKTOP_GAME_ZOOM = 1.92;
-const GAME_ZOOM_MIN = DESKTOP_GAME_ZOOM - 0.26;
-const GAME_ZOOM_MAX = DESKTOP_GAME_ZOOM + 0.34;
-const GAME_CAMERA_FOLLOW_MARGIN_X = 128;
-const GAME_CAMERA_FOLLOW_MARGIN_Y = 96;
+const DESKTOP_GAME_ZOOM = 1.46;
+const GAME_ZOOM_MIN = DESKTOP_GAME_ZOOM - 0.28;
+const GAME_ZOOM_MAX = DESKTOP_GAME_ZOOM + 0.3;
+const GAME_CAMERA_WORLD_PADDING_X = 1600;
+const GAME_CAMERA_WORLD_PADDING_Y = 1200;
+const GAME_CAMERA_FOLLOW_SCREEN_X = 0.5;
+const GAME_CAMERA_FOLLOW_SCREEN_Y = 0.5;
+const PLAYER_WORLD_MIN_X = 54;
+const PLAYER_WORLD_MAX_X = WORLD_WIDTH - 54;
+const PLAYER_WORLD_MIN_Y = 120;
+const PLAYER_WORLD_MAX_Y = WORLD_HEIGHT - 46;
 const DEFAULT_INTERACTION_RANGE = 58;
 const REMOTE_PLAYER_SNAP_DISTANCE = 240;
 const REMOTE_PLAYER_IDLE_AFTER_MS = 320;
@@ -374,8 +380,8 @@ export class TownScene extends Phaser.Scene {
       this.movePlayerBy(movement.x, movement.y);
       this.playMovementSound(time, running);
     }
-    this.player.x = Phaser.Math.Clamp(this.player.x, 54, WORLD_WIDTH - 54);
-    this.player.y = Phaser.Math.Clamp(this.player.y, 120, WORLD_HEIGHT - 46);
+    this.player.x = Phaser.Math.Clamp(this.player.x, PLAYER_WORLD_MIN_X, PLAYER_WORLD_MAX_X);
+    this.player.y = Phaser.Math.Clamp(this.player.y, PLAYER_WORLD_MIN_Y, PLAYER_WORLD_MAX_Y);
     this.player.x = Math.round(this.player.x);
     this.player.y = Math.round(this.player.y);
     if (moving) {
@@ -448,8 +454,8 @@ export class TownScene extends Phaser.Scene {
       return fallback;
     }
     const candidate: TownPosition = {
-      x: Math.round(Phaser.Math.Clamp(requested.x, 54, WORLD_WIDTH - 54)),
-      y: Math.round(Phaser.Math.Clamp(requested.y, 120, WORLD_HEIGHT - 46)),
+      x: Math.round(Phaser.Math.Clamp(requested.x, PLAYER_WORLD_MIN_X, PLAYER_WORLD_MAX_X)),
+      y: Math.round(Phaser.Math.Clamp(requested.y, PLAYER_WORLD_MIN_Y, PLAYER_WORLD_MAX_Y)),
       facingX: Phaser.Math.Clamp(requested.facingX, -1, 1),
       facingY: Phaser.Math.Clamp(requested.facingY, -1, 1)
     };
@@ -737,6 +743,16 @@ export class TownScene extends Phaser.Scene {
     const zoom = Phaser.Math.Clamp(targetZoom, 0.68, maxZoom);
     const camera = this.cameras.main;
     camera.roundPixels = true;
+    if (this.options.mode === "game") {
+      camera.setBounds(
+        -GAME_CAMERA_WORLD_PADDING_X,
+        -GAME_CAMERA_WORLD_PADDING_Y,
+        WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2,
+        WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2
+      );
+    } else {
+      camera.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    }
     camera.setZoom(zoom);
     if (this.options.mode === "game" && this.player) {
       this.updateCameraFollow(true);
@@ -752,10 +768,9 @@ export class TownScene extends Phaser.Scene {
 
   private gameMinZoom(width = this.scale.width, height = this.scale.height): number {
     return Math.max(
-      this.coverZoom(width, height),
       GAME_ZOOM_MIN,
-      width / (WORLD_WIDTH - GAME_CAMERA_FOLLOW_MARGIN_X * 2),
-      height / (WORLD_HEIGHT - GAME_CAMERA_FOLLOW_MARGIN_Y * 2)
+      width / (WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2),
+      height / (WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2)
     );
   }
 
@@ -782,13 +797,14 @@ export class TownScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const viewWidth = this.scale.width / camera.zoom;
     const viewHeight = this.scale.height / camera.zoom;
-    const mobileBias = 0.5;
-    const desiredScrollX = this.player.x - viewWidth * 0.5;
-    const desiredScrollY = this.player.y - viewHeight * mobileBias;
-    const maxScrollX = Math.max(0, WORLD_WIDTH - viewWidth);
-    const maxScrollY = Math.max(0, WORLD_HEIGHT - viewHeight);
-    const nextX = Phaser.Math.Clamp(desiredScrollX, 0, maxScrollX);
-    const nextY = Phaser.Math.Clamp(desiredScrollY, 0, maxScrollY);
+    const desiredScrollX = this.player.x - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
+    const desiredScrollY = this.player.y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
+    const minScrollX = PLAYER_WORLD_MIN_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
+    const maxScrollX = PLAYER_WORLD_MAX_X - viewWidth * GAME_CAMERA_FOLLOW_SCREEN_X;
+    const minScrollY = PLAYER_WORLD_MIN_Y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
+    const maxScrollY = PLAYER_WORLD_MAX_Y - viewHeight * GAME_CAMERA_FOLLOW_SCREEN_Y;
+    const nextX = Phaser.Math.Clamp(desiredScrollX, minScrollX, maxScrollX);
+    const nextY = Phaser.Math.Clamp(desiredScrollY, minScrollY, maxScrollY);
     if (immediate) {
       camera.scrollX = Math.round(nextX);
       camera.scrollY = Math.round(nextY);
@@ -1010,6 +1026,16 @@ export class TownScene extends Phaser.Scene {
 
   private createTileField(): void {
     const ground = townAssetManifest.townGround;
+    this.add
+      .rectangle(
+        WORLD_WIDTH / 2,
+        WORLD_HEIGHT / 2,
+        WORLD_WIDTH + GAME_CAMERA_WORLD_PADDING_X * 2,
+        WORLD_HEIGHT + GAME_CAMERA_WORLD_PADDING_Y * 2,
+        0x2f4327,
+        1
+      )
+      .setDepth(-130);
     this.add
       .image(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, environmentAssetKey("townGround"))
       .setOrigin(ground.originX, ground.originY)
