@@ -229,9 +229,19 @@ function mergeRemotePlayers(
       continue;
     }
     const current = playersById.get(player.playerId);
-    if (!current || player.sentAt >= current.sentAt) {
+    if (!current || isNewerRemotePlayer(player, current)) {
       playersById.set(player.playerId, player);
     }
   }
   return [...playersById.values()];
+}
+
+function isNewerRemotePlayer(candidate: TownRealtimePlayer, current: TownRealtimePlayer): boolean {
+  if (candidate.sessionId !== current.sessionId) {
+    return candidate.sentAt >= current.sentAt;
+  }
+  if (candidate.sequence !== current.sequence) {
+    return candidate.sequence > current.sequence;
+  }
+  return candidate.sentAt >= current.sentAt;
 }

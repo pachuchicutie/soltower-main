@@ -12,6 +12,7 @@ import {
 import { createBrowserSupabaseClient } from "./supabase";
 
 const MOVEMENT_SEND_INTERVAL_MS = 125;
+const PRESENCE_MOVEMENT_TRACK_INTERVAL_MS = 500;
 const PRESENCE_REFRESH_INTERVAL_MS = 5000;
 const PRESENCE_VISIBLE_UNTIL_MS = PRESENCE_REFRESH_INTERVAL_MS * 3;
 
@@ -41,6 +42,7 @@ export class TownRealtimeSession {
   private channel?: RealtimeChannel;
   private latestState: TownRealtimePlayer;
   private lastSentAt = 0;
+  private lastPresenceTrackAt = Number.NEGATIVE_INFINITY;
   private sequence = 0;
   private pendingMovement?: LocalTownMovement;
   private movementTimer?: number;
@@ -104,7 +106,7 @@ export class TownRealtimeSession {
         }
         if (status === "SUBSCRIBED") {
           this.options.onStatus?.("connected");
-          void channel.track(this.latestState);
+          this.trackLatestPresence(true);
           this.broadcastLatestState();
           this.startPresenceRefresh();
           return;
@@ -177,6 +179,7 @@ export class TownRealtimeSession {
       sentAt: Date.now()
     });
     this.broadcastLatestState();
+    this.trackLatestPresence(!movement.moving || this.sequence === 1);
   }
 
   private syncPresence(): void {
@@ -196,7 +199,7 @@ export class TownRealtimeSession {
           continue;
         }
         const current = newestByPlayer.get(parsed.data.playerId);
-        if (!current || parsed.data.sentAt > current.sentAt) {
+        if (!current || isNewerRealtimePlayer(parsed.data, current)) {
           newestByPlayer.set(parsed.data.playerId, parsed.data);
         }
       }
@@ -216,9 +219,21 @@ export class TownRealtimeSession {
         ...this.latestState,
         sentAt: Date.now()
       };
-      void this.channel.track(this.latestState);
+      this.trackLatestPresence(true);
       this.broadcastLatestState();
     }, PRESENCE_REFRESH_INTERVAL_MS);
+  }
+
+  private trackLatestPresence(force = false): void {
+    if (!this.channel) {
+      return;
+    }
+    const now = performance.now();
+    if (!force && now - this.lastPresenceTrackAt < PRESENCE_MOVEMENT_TRACK_INTERVAL_MS) {
+      return;
+    }
+    this.lastPresenceTrackAt = now;
+    void this.channel.track(this.latestState);
   }
 
   private broadcastLatestState(): void {
@@ -232,4 +247,14 @@ export class TownRealtimeSession {
       payload
     });
   }
+}
+
+function isNewerRealtimePlayer(candidate: TownRealtimePlayer, current: TownRealtimePlayer): boolean {
+  if (candidate.sessionId !== current.sessionId) {
+    return candidate.sentAt >= current.sentAt;
+  }
+  if (candidate.sequence !== current.sequence) {
+    return candidate.sequence > current.sequence;
+  }
+  return candidate.sentAt >= current.sentAt;
 }

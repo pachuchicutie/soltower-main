@@ -107,14 +107,19 @@ describe("authenticated town scene UX", () => {
     const scene = read("src/game/TownScene.ts");
 
     expect(realtime).toContain("MOVEMENT_SEND_INTERVAL_MS = 125");
+    expect(realtime).toContain("PRESENCE_MOVEMENT_TRACK_INTERVAL_MS");
     expect(realtime).toContain('event: "player_move"');
     expect(realtime).toContain("presenceState()");
+    expect(realtime).toContain("trackLatestPresence");
+    expect(realtime).toContain("isNewerRealtimePlayer");
     expect(realtime).toContain("townMovementBroadcastSchema.safeParse");
     expect(canvas).toContain("new TownRealtimeSession");
     expect(canvas).toContain("syncRemotePlayers");
+    expect(canvas).toContain("isNewerRemotePlayer");
     expect(scene).toContain("animateRemotePlayers");
     expect(scene).toContain("REMOTE_PLAYER_SNAP_DISTANCE");
     expect(scene).toContain("Math.exp(-delta / 82)");
+    expect(scene).toContain("const interpolating = distance > 0.75");
   });
 
   it("uses one proximity interaction registry without direct click-to-open activation", () => {

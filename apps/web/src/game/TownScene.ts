@@ -595,9 +595,10 @@ export class TownScene extends Phaser.Scene {
       } else {
         container.setPosition(runtime.target.x, runtime.target.y);
       }
+      const interpolating = distance > 0.75 && distance <= REMOTE_PLAYER_SNAP_DISTANCE;
       const recentlyMoving =
-        runtime.moving &&
-        now - runtime.lastReceivedAt <= REMOTE_PLAYER_IDLE_AFTER_MS;
+        interpolating ||
+        (runtime.moving && now - runtime.lastReceivedAt <= REMOTE_PLAYER_IDLE_AFTER_MS);
       this.updateHeroSpriteFrame(container, time, recentlyMoving);
       container.setDepth(container.y + 70);
     }
