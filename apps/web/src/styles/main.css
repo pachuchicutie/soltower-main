@@ -6885,7 +6885,7 @@ label {
 .connect-wallet-btn,
 .pre-reg-btn {
   margin: 0 auto;
-  margin-top: 8px;
+  margin-top: 4px;
   min-width: 180px;
   display: flex;
   align-items: center;
