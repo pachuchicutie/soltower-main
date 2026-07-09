@@ -13,7 +13,7 @@ The admin portal runs at `admin.playsoltower.fun` and uses Supabase Auth email/p
 
 ## Navigation
 
-Dashboard, Players, Economy, Market Board, Blackjack, Raids, Content, Quests and Events, Chat and Reports, Moderation, Announcements, Audit Logs, Admin Users and Roles, System Health, and DEV Tools in DEV_MODE.
+Dashboard, Players, Economy, Market Board, Blackjack, Raids, Content, Quests and Events, Chat and Reports, Moderation, Announcements, Audit Logs, Admin Users and Roles, and System Health.
 
 ## Required Behavior
 
@@ -22,12 +22,12 @@ Dashboard, Players, Economy, Market Board, Blackjack, Raids, Content, Quests and
 - Edge Function role checks.
 - Database policies where appropriate.
 - Data tables for players, wallet public keys, balances, immutable ledger, market listings, market trades, buy orders, escrow, Blackjack history, raid history, reports, moderation actions, admin notes, config versions, audit logs, and system activity.
-- Visible DEV_MODE indicator.
+- Visible environment and deployment status.
 - No wallet private keys, seed phrases, or signing secrets.
 - No casual raw balance editor.
 - All admin mutations require a reason and audit log entry.
 - Economy/admin mutations use idempotency keys where money or inventory can change.
-- DEV tools are unavailable when DEV_MODE is false.
+- Restricted operations remain role-gated and audit-logged.
 
 ## Current MVP Coverage
 

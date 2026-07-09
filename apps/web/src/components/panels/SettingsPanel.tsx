@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Camera, Copy, LogOut, Unplug } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { uiAssetManifest, type PlayerBootstrapData, type TownServerId } from "@soltower/shared";
+import { uiAssetManifest, type PlayerBootstrapData } from "@soltower/shared";
 import {
   applyAudioSettings,
   playAmbience,
@@ -55,11 +55,6 @@ export function SettingsPanel({
   const [activeTab, setActiveTab] = useState<SettingsTab>("audio");
   const [settings, updateSettings] = useUserSettings();
   const [confirmation, setConfirmation] = useState<"disconnect" | "logout" | null>(null);
-  const servers = useQuery({
-    queryKey: ["town-servers"],
-    queryFn: () => apiGet<any>("/api/town/servers"),
-    staleTime: 15000
-  });
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => apiGet<PlayerBootstrapData>("/api/player/me")

@@ -8,18 +8,19 @@ import {
   useState
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Backpack, BookOpen, Map, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
-import type { PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
+import { Backpack, BookOpen, ExternalLink, Map, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
+import { economyConfig, type PlayerBootstrapData, type TownPosition, type TownServerId } from "@soltower/shared";
 import { Hud } from "./components/Hud";
 import { LandingPage } from "./components/LandingPage";
 import { NpcModal } from "./components/NpcModal";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { TownChat } from "./components/TownChat";
 import { TownCanvas } from "./components/TownCanvas";
+import { ErrorState, GameButton } from "./components/ui/GameUi";
 import { ShortcutHint } from "./components/ui/ShortcutHint";
 import type { NearbyInteraction } from "./game/TownScene";
 import { useTownShortcuts } from "./hooks/useTownShortcuts";
-import { apiGet, apiPost } from "./lib/api";
+import { apiGet, apiPost, isTowerGateErrorCode, WalletAuthError } from "./lib/api";
 import { applyAudioSettings, pauseTownMusic, playUiSound, startTownMusic } from "./lib/audio";
 import { emitMobileMovement } from "./lib/gameInput";
 import { useHeroAppearance } from "./lib/heroAppearance";
@@ -29,10 +30,16 @@ import type { ModalKey } from "./store/ui";
 import { useUiStore } from "./store/ui";
 
 type MeResponse = PlayerBootstrapData;
-const PreRegisterModal = lazy(async () => {
-  const module = await import("./components/PreRegisterModal");
-  return { default: module.PreRegisterModal };
-});
+interface TownServerStatus {
+  id: TownServerId;
+  label: string;
+  online: number;
+  capacity: number;
+}
+
+interface TownServersResponse {
+  servers: TownServerStatus[];
+}
 
 const WalletOnboardingModal = lazy(async () => {
   const module = await import("./components/WalletOnboardingModal");
@@ -43,7 +50,6 @@ export function App() {
   const queryClient = useQueryClient();
   const { modal, openModal, closeModal } = useUiStore();
   const [walletOpen, setWalletOpen] = useState(false);
-  const [preRegisterOpen, setPreRegisterOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [disconnected, setDisconnected] = useState(false);
   const [spectating, setSpectating] = useState(false);
@@ -65,24 +71,33 @@ export function App() {
     queryKey: ["me"],
     queryFn: () => apiGet<MeResponse>("/api/player/me"),
     enabled: !disconnected,
-    retry: false
+    retry: false,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: true,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true
   });
   const servers = useQuery({
     queryKey: ["town-servers"],
-    queryFn: () => apiGet<any>("/api/town/servers"),
+    queryFn: () => apiGet<TownServersResponse>("/api/town/servers"),
     staleTime: 15000
   });
-  const [heroAppearance] = useHeroAppearance(me.data?.selectedHeroId ?? "storm-archer");
+  const tokenGateError =
+    me.error instanceof WalletAuthError && isTowerGateErrorCode(me.error.code)
+      ? me.error
+      : null;
+  const activeBootstrap = tokenGateError ? undefined : me.data;
+  const [heroAppearance] = useHeroAppearance(activeBootstrap?.selectedHeroId ?? "storm-archer");
   const restoredTownPosition = useMemo(() => {
-    if (!me.data?.player) {
+    if (!activeBootstrap?.player) {
       return undefined;
     }
     return (
-      loadLocalTownPosition(me.data.player.id, townChannel) ??
-      me.data.townPosition
+      loadLocalTownPosition(activeBootstrap.player.id, townChannel) ??
+      activeBootstrap.townPosition
     );
-  }, [me.data?.player, me.data?.townPosition, townChannel]);
-  const townMusicEnabled = Boolean(me.data?.player);
+  }, [activeBootstrap?.player, activeBootstrap?.townPosition, townChannel]);
+  const townMusicEnabled = Boolean(activeBootstrap?.player);
 
   useEffect(() => {
     if (restoredTownPosition) {
@@ -175,7 +190,7 @@ export function App() {
   const handleTownPositionChange = useCallback(
     (position: TownPosition) => {
       latestTownPositionRef.current = position;
-      saveLocalTownPosition(me.data?.player.id, townChannel, position);
+      saveLocalTownPosition(activeBootstrap?.player.id, townChannel, position);
       void Promise.resolve(
         apiPost<{ position: TownPosition }>("/api/town/position", {
           townChannel,
@@ -183,11 +198,11 @@ export function App() {
         })
       ).catch(() => undefined);
     },
-    [me.data?.player.id, townChannel]
+    [activeBootstrap?.player.id, townChannel]
   );
 
   useEffect(() => {
-    const playerId = me.data?.player.id;
+    const playerId = activeBootstrap?.player.id;
     if (!playerId) {
       return undefined;
     }
@@ -219,11 +234,11 @@ export function App() {
       window.removeEventListener("pagehide", flushPosition);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [me.data?.player.id, townChannel]);
+  }, [activeBootstrap?.player.id, townChannel]);
   const controlsEnabled = !modal && !profileOpen && !chatOpen;
 
   useTownShortcuts({
-    active: Boolean(me.data?.player),
+    active: Boolean(activeBootstrap?.player),
     modal,
     profileOpen,
     onOpenModal: handleOpenModal,
@@ -232,24 +247,31 @@ export function App() {
     onInteract: handleInteract
   });
 
-  if (!me.data && me.isLoading && !disconnected) {
+  if (!activeBootstrap && me.isLoading && !disconnected) {
     return <div className="loading-screen">Lighting SolBloom lanterns...</div>;
   }
 
-  if (!me.data?.player) {
+  if (tokenGateError) {
+    return (
+      <TokenGateRequiredScreen
+        message={tokenGateError.message}
+        checking={me.isFetching}
+        onRetry={() => {
+          void me.refetch();
+        }}
+        onDisconnect={() => logout.mutate()}
+      />
+    );
+  }
+
+  if (!activeBootstrap?.player) {
     return (
       <>
         <LandingPage
-          onPlay={() => setPreRegisterOpen(true)}
+          onPlay={() => setWalletOpen(true)}
           spectating={spectating}
           onSpectatingChange={setSpectating}
         />
-        {preRegisterOpen ? (
-          <Suspense fallback={<div className="wallet-modal-loading">Opening pre-register...</div>}>
-            <PreRegisterModal onClose={() => setPreRegisterOpen(false)} />
-          </Suspense>
-        ) : null}
-
         {walletOpen ? (
           <Suspense fallback={<div className="wallet-modal-loading">Opening wallet gate...</div>}>
             <WalletOnboardingModal
@@ -274,11 +296,11 @@ export function App() {
   return (
     <main className="game-shell">
       <TownCanvas
-        playerId={me.data.player.id}
-        playerName={me.data.player.displayName}
+        playerId={activeBootstrap.player.id}
+        playerName={activeBootstrap.player.displayName}
         onNpc={handleNpc}
         mode="game"
-        selectedHeroId={me.data.selectedHeroId}
+        selectedHeroId={activeBootstrap.selectedHeroId}
         heroAppearance={heroAppearance}
         controlsEnabled={controlsEnabled}
         onNearbyInteraction={setNearbyInteraction}
@@ -292,9 +314,9 @@ export function App() {
         onRealtimeStatusChange={setRealtimeStatus}
       />
       <Hud
-        player={me.data.player}
-        walletShort={me.data.profile.shortenedWalletAddress}
-        selectedHeroId={me.data.selectedHeroId}
+        player={activeBootstrap.player}
+        walletShort={activeBootstrap.profile.shortenedWalletAddress}
+        selectedHeroId={activeBootstrap.selectedHeroId}
         heroAppearance={heroAppearance}
         onOpen={handleOpenModal}
         onProfile={() => setProfileOpen(true)}
@@ -302,8 +324,8 @@ export function App() {
       <ShortcutHint className="town-control-hint" decorative />
       <MobileMovePad />
       <TownChat
-        playerId={me.data.player.id}
-        displayName={me.data.player.displayName}
+        playerId={activeBootstrap.player.id}
+        displayName={activeBootstrap.player.displayName}
         townChannel={townChannel}
         realtimeOnline={realtimeOnline}
         realtimeConnected={realtimeStatus === "connected"}
@@ -408,9 +430,6 @@ export function App() {
           <Settings size={18} /> Settings
         </button>
       </div>
-      {(import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test") ? (
-        <div className="dev-ribbon">DEV_MODE: Test Token is mock-only. No wallet or on-chain transaction.</div>
-      ) : null}
       {modal ? (
         <NpcModal
           modal={modal}
@@ -465,14 +484,14 @@ export function App() {
               </button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {(servers.data?.servers ?? []).map((server: any) => {
+              {(servers.data?.servers ?? []).map((server) => {
                 const isCurrent = server.id === townChannel;
                 return (
                   <button
                     key={server.id}
                     onClick={() => {
                       if (!isCurrent) {
-                        setTownChannel(server.id as TownServerId);
+                        setTownChannel(server.id);
                         setShowChannelModal(false);
                       }
                     }}
@@ -587,6 +606,61 @@ function loadLocalTownPosition(
   } catch {
     return undefined;
   }
+}
+
+function TokenGateRequiredScreen({
+  message,
+  checking,
+  onRetry,
+  onDisconnect
+}: {
+  message: string;
+  checking: boolean;
+  onRetry: () => void;
+  onDisconnect: () => void;
+}) {
+  return (
+    <main className="token-gate-screen" role="alert" aria-labelledby="token-gate-title">
+      <section className="token-gate-panel">
+        <span className="game-eyebrow">Village Access Required</span>
+        <h1 id="token-gate-title">
+          Hold {economyConfig.tokenGate.playMinimumTower.toLocaleString()} {economyConfig.towerToken.symbol} to play
+        </h1>
+        <p>
+          SolBloom Village is token gated. If this wallet drops below the required balance, your
+          active session is blocked until the wallet holds enough {economyConfig.towerToken.symbol} again.
+        </p>
+        <ErrorState
+          title="You need more TOWER to play"
+          action={
+            <a
+              className="game-button game-button-primary"
+              href={economyConfig.towerToken.jupiterSwapUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink size={15} aria-hidden="true" /> Buy on Jupiter
+            </a>
+          }
+        >
+          {message || (
+            <>
+              Sorry, you need at least {economyConfig.tokenGate.playMinimumTower.toLocaleString()}{" "}
+              {economyConfig.towerToken.symbol} in this wallet before you can enter and play.
+            </>
+          )}
+        </ErrorState>
+        <div className="button-row">
+          <GameButton variant="secondary" onClick={onRetry} disabled={checking}>
+            {checking ? "Checking..." : "Check Again"}
+          </GameButton>
+          <GameButton variant="ghost" onClick={onDisconnect}>
+            Disconnect Wallet
+          </GameButton>
+        </div>
+      </section>
+    </main>
+  );
 }
 
 function MobileMovePad() {

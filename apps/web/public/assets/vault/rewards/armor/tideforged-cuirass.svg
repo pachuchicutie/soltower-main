@@ -1,0 +1,28 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="tideforgedBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 43) rotate(90) scale(76)">
+      <stop stop-color="#1F6D86"/>
+      <stop offset="0.54" stop-color="#10213B"/>
+      <stop offset="1" stop-color="#050912"/>
+    </radialGradient>
+    <linearGradient id="tideforgedPlate" x1="43" y1="28" x2="88" y2="103" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAFBFF"/>
+      <stop offset="0.45" stop-color="#5CD2FF"/>
+      <stop offset="1" stop-color="#2060B5"/>
+    </linearGradient>
+    <filter id="tideforgedGlow" x="-20" y="-20" width="168" height="168" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#5DEBFF" flood-opacity="0.76"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020617" flood-opacity="0.82"/>
+    </filter>
+  </defs>
+  <rect x="7" y="7" width="114" height="114" rx="18" fill="url(#tideforgedBg)"/>
+  <rect x="10" y="10" width="108" height="108" rx="16" stroke="#86EAFF" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="13" stroke="#F3CA63" stroke-opacity="0.55"/>
+  <path d="M43 31L55 24H73L85 31L96 57L88 103H40L32 57L43 31Z" fill="url(#tideforgedPlate)" stroke="#E9FCFF" stroke-width="2.5" stroke-linejoin="round" filter="url(#tideforgedGlow)"/>
+  <path d="M54 25C55 39 58 46 64 50C70 46 73 39 74 25" stroke="#0B1D34" stroke-width="4" stroke-linecap="round"/>
+  <path d="M42 59C52 49 62 69 72 59C78 53 84 55 89 60" stroke="#F4D36D" stroke-width="4" stroke-linecap="round"/>
+  <path d="M40 74C51 64 62 84 74 73C80 68 85 69 90 74" stroke="#DDFBFF" stroke-width="3" stroke-linecap="round"/>
+  <path d="M51 89H77" stroke="#0B1D34" stroke-width="4" stroke-linecap="round" opacity="0.68"/>
+  <circle cx="64" cy="62" r="7" fill="#0C1C32" stroke="#F4D36D" stroke-width="2.5"/>
+  <path d="M28 46L39 51M99 46L89 51M41 25L30 22M87 25L98 22" stroke="#BDF6FF" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+</svg>

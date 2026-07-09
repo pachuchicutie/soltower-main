@@ -25,7 +25,7 @@ Selecting a town NPC shows a wallet-entry prompt rather than opening the protect
 
 Play Now creates or reuses an anonymous Supabase Auth session, detects injected Solana wallets, signs a plain-text login message, and verifies ownership through `create-wallet-nonce` and `verify-wallet-signature`.
 
-In production, entering authenticated town also requires at least `1,000 $TOWER` in the connected wallet. The temporary MVP mint is `FX1mwQ5CZHutv5jCAMJ4jxE7XYeYBpVuX2Qk5MuRpump`. DEV_MODE shows this requirement in the wallet UI but does not enforce the wallet-token check.
+Entering authenticated town requires at least `1,000 $TOWER` in the connected wallet. The official mint is `J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump`.
 
 For a first-time wallet, profile creation is intentionally separate from signature verification:
 
@@ -33,15 +33,15 @@ For a first-time wallet, profile creation is intentionally separate from signatu
 2. The Edge Function validates and consumes the nonce.
 3. Character setup validates display-name availability.
 4. `create-player-profile` accepts only the consumed, unexpired wallet proof.
-5. The existing private RPC creates the profile and one idempotent starter ledger grant.
+5. The private RPC creates the profile and applies any eligible pre-registration launch rewards.
 
-The starter state is Storm Archer, four starter equipment items, Tower 1-1, 180 Power, and exactly 50 Locked Gold. A returning wallet rotates its temporary anonymous-auth mapping and loads the existing profile; it does not create a second profile or starter grant.
+The starter state is the selected starter Hero, four starter equipment items, Tower 1-1, 180 Power, and 0 free starter Gold. A returning wallet rotates its temporary anonymous-auth mapping and loads the existing profile; it does not create a second profile. Wallets on the launch list receive 100 Locked Gold plus bound, non-tradeable rare launch items once. The launch weapon and armor are chosen from the player's selected starter Hero, and the launch Full Costume is chosen deterministically from the Rare costume pool.
 
 Wallet login does not move funds, request approvals, or perform real Solana transfers.
 
 ## Authenticated Town
 
-Authenticated town mode shows the player HUD, selected Hero portrait, shortened wallet address, level, Earned Gold, Locked Gold, DEV_MODE Test Token, and quick actions. The profile panel exposes the full public wallet address with copy support, selected Hero portrait, power, unlocked maps, sell capacity, Blackjack tier, settings, and disconnect.
+Authenticated town mode shows the player HUD, selected Hero portrait, shortened wallet address, level, Earned Gold, Locked Gold, and quick actions. The profile panel exposes the full public wallet address with copy support, selected Hero portrait, power, unlocked maps, sell capacity, Blackjack tier, settings, and disconnect.
 
 NPC interactions use React modals for hero/inventory, Blacksmith, Market Board, Buy Orders, Blackjack, friends/chat, lobbies, quests, events, and settings.
 
@@ -161,7 +161,7 @@ Overview shows the active Hero portrait, role, core skill, class summary, and si
 
 Quest Journal is a React modal with Daily, Weekly, and Achievements tabs. It reads server-backed assignments and shows server UTC plus daily/weekly reset countdowns from a synced client offset. The timestamp and countdown tick every second without refetching from the server every second.
 
-Daily quests assign three eligible quests from the possible DEV content pool. Unsupported party and skill-event quests are defined but not assigned until verified party/skill event streams exist. Weekly Full Crew is defined but not assigned until full-party raid validation exists.
+Daily quests assign three eligible quests from the current content pool. Unsupported party and skill-event quests are defined but not assigned until verified party/skill event streams exist. Weekly Full Crew is defined but not assigned until full-party raid validation exists.
 
 Quest progress is server-authoritative. The browser cannot submit raw progress values; prototype raid completion updates progress from verified `raid_history` records. Quest claims are idempotent and issue Earned Gold through immutable ledger entries.
 
@@ -178,7 +178,7 @@ Market Board is a React modal with Browse, Sell Gold, Auction House, Buy Orders,
 - My Activity is scoped to the current account and separates listings, buy orders, purchases, sales, and history.
 - Live Feed combines readable public listings, buy orders, and readable trade history with filters for All, Listings, Sales, Buy Orders, and Fills.
 
-In development, the token label is `$TOWER (DEV)` to avoid implying a live on-chain settlement token. Market mutations remain server-authoritative through Edge Functions and database RPCs. Buying Gold does not require the `$TOWER` seller gate.
+Market mutations remain server-authoritative through Edge Functions and database RPCs. Buying Gold does not require the `$TOWER` seller gate.
 
 Current caveat: the Fills filter is present for the intended UX, but the current RLS-readable feed source does not expose a global public fill-event view yet.
 

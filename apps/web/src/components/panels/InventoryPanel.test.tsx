@@ -41,7 +41,7 @@ beforeEach(() => {
         player: {
           id: "player-marky",
           displayName: "Marky",
-          walletPublicKey: "DevMock",
+          walletPublicKey: "11111111111111111111111111111111",
           walletLinkedAt: "2026-06-29T00:00:00.000Z",
           accountLevel: 10,
           avatar: "M",

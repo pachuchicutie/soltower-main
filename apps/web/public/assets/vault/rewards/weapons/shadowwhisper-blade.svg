@@ -1,0 +1,28 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="shadowwhisperBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(63 43) rotate(90) scale(76)">
+      <stop stop-color="#37306F"/>
+      <stop offset="0.52" stop-color="#121B35"/>
+      <stop offset="1" stop-color="#050912"/>
+    </radialGradient>
+    <linearGradient id="shadowwhisperBlade" x1="38" y1="95" x2="91" y2="23" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7C7FF"/>
+      <stop offset="0.45" stop-color="#6F7BFF"/>
+      <stop offset="1" stop-color="#14182F"/>
+    </linearGradient>
+    <filter id="shadowwhisperGlow" x="-20" y="-20" width="168" height="168" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#A78BFA" flood-opacity="0.82"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020617" flood-opacity="0.82"/>
+    </filter>
+  </defs>
+  <rect x="7" y="7" width="114" height="114" rx="18" fill="url(#shadowwhisperBg)"/>
+  <rect x="10" y="10" width="108" height="108" rx="16" stroke="#86EAFF" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="13" stroke="#F3CA63" stroke-opacity="0.55"/>
+  <path d="M88 20C95 49 83 78 52 99L42 88C63 70 75 49 74 28C80 27 84 24 88 20Z" fill="url(#shadowwhisperBlade)" stroke="#DAD3FF" stroke-width="2.5" stroke-linejoin="round" filter="url(#shadowwhisperGlow)"/>
+  <path d="M47 85L62 100" stroke="#ECCC69" stroke-width="8" stroke-linecap="round"/>
+  <path d="M39 79L54 94L45 103L30 88L39 79Z" fill="#0B1328" stroke="#80E7FF" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M27 91L43 107L35 115L19 99L27 91Z" fill="#16102A" stroke="#F1CD69" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M81 31C75 51 66 66 51 82" stroke="#EDE9FF" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+  <path d="M94 50C103 54 107 61 106 70C99 65 93 63 85 64C92 59 95 55 94 50Z" fill="#A78BFA" opacity="0.84"/>
+  <path d="M30 38L42 42M49 23L55 34M94 91L84 101" stroke="#C4F7FF" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+</svg>

@@ -390,7 +390,7 @@ export class TownScene extends Phaser.Scene {
     }
   }
 
-  private resolvePlayerCollisions(axis: "x" | "y", delta: number, previousPosition: number): void {
+  private resolvePlayerCollisions(axis: "x" | "y", delta: number, _previousPosition: number): void {
     if (!this.player || this.collisionBodies.length === 0) {
       return;
     }

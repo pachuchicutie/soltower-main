@@ -22,6 +22,7 @@ const requiredFunctions = [
   "buy-bound-shop-item",
   "equip-item",
   "unequip-item",
+  "gift-inventory-item",
   "starlight-vault-state",
   "starlight-vault-draw",
   "equip-full-costume",
@@ -105,12 +106,14 @@ describe("Supabase-first MVP architecture", () => {
     expect(migration).toContain("Earned Gold listings unlock at Level 10");
   });
 
-  it("guards wallet login nonce expiry, replay, signature validation, and one-time starter grants", () => {
+  it("guards wallet login nonce expiry, replay, signature validation, and launch reward grants", () => {
     const actions = read("supabase/functions/_shared/actions.ts");
     const walletVerification = read("supabase/functions/_shared/walletVerification.ts");
     const initialMigration = read("supabase/migrations/20260629000100_initial_soltower.sql");
     const supabaseFirstMigration = read("supabase/migrations/20260629000200_supabase_first_mvp.sql");
     const starterHeroMigration = read("supabase/migrations/20260630000400_starter_hero_selection.sql");
+    const launchRewardsMigration = read("supabase/migrations/20260709000100_launch_rewards_and_item_gifts.sql");
+    const edgeContent = read("supabase/functions/_shared/content.ts");
     expect(actions).toContain("Date.now() + 5 * 60 * 1000");
     expect(actions).toContain(".is(\"consumed_at\", null)");
     expect(walletVerification).toContain('"expired_nonce"');
@@ -130,12 +133,45 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain('.delete()');
     expect(initialMigration).toContain("public_key text unique not null");
     expect(supabaseFirstMigration).toContain("'starter-locked-gold:' || v_player_id");
+    expect(actions).toContain("starterLockedGold: 0");
+    expect(launchRewardsMigration).toContain("private.grant_pre_registration_rewards");
+    expect(launchRewardsMigration).toContain("'pre-registration-locked-gold:' || p_wallet_public_key");
+    expect(launchRewardsMigration).toContain("'PRE_REGISTRATION'");
+    expect(launchRewardsMigration).toContain("when 'storm-archer' then 'voidpiercer-crossbow'");
+    expect(launchRewardsMigration).toContain("when 'tide-mage' then 'stormcall-javelin'");
+    expect(launchRewardsMigration).toContain("when 'bombardier' then 'embershot-cannon'");
+    expect(launchRewardsMigration).toContain("when 'coral-alchemist' then 'flameveil-dagger'");
+    expect(launchRewardsMigration).toContain("when 'starcaller' then 'shadowwhisper-blade'");
+    expect(launchRewardsMigration).toContain("when 'storm-archer' then 'stormscale-vest'");
+    expect(launchRewardsMigration).toContain("when 'tide-mage' then 'tideforged-cuirass'");
+    expect(launchRewardsMigration).toContain("when 'bombardier' then 'forgebound-defender-mail'");
+    expect(launchRewardsMigration).toContain("when 'coral-alchemist' then 'emberweave-cloak'");
+    expect(launchRewardsMigration).toContain("when 'starcaller' then 'shadowveil-mantle'");
+    expect(launchRewardsMigration).toContain("'launchRewardSlot', reward.launch_slot");
+    expect(launchRewardsMigration).toContain("v_costume_definition_id := v_rare_costumes");
+    expect(launchRewardsMigration).not.toContain("'STARTER_LOCKED_GOLD'");
     expect(actions).toContain("p_selected_hero_id: body.heroId");
     expect(starterHeroMigration).toContain("v_selected_hero_id not in");
     expect(starterHeroMigration).toContain("selected_hero_id");
     expect(starterHeroMigration).toContain("values (v_player_id, v_selected_hero_id)");
     expect(actions).toContain("Request ID:");
     expect(actions).toContain("challengeId");
+    expect(actions).toContain("assertWalletTowerBalance(");
+    expect(actions).not.toContain("if (isDevMode()) {\n    return;\n  }\n  if (!walletPublicKey)");
+    expect(edgeContent).toContain('mint: "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"');
+    expect(edgeContent).toContain("https://jup.ag/swap/SOL-J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump");
+  });
+
+  it("adds server-authoritative item gift transfers while blocking pre-registration rewards", () => {
+    const actions = read("supabase/functions/_shared/actions.ts");
+    const migration = read("supabase/migrations/20260709000100_launch_rewards_and_item_gifts.sql");
+    const api = read("apps/web/src/lib/api.ts");
+    expect(actions).toContain('"gift-inventory-item": giftInventoryItem');
+    expect(actions).toContain("giftItemSchema");
+    expect(migration).toContain("create table if not exists public.inventory_item_transfers");
+    expect(migration).toContain("v_item.bound or not (v_item.is_giftable or v_item.is_tradeable) or v_item.acquired_from = 'PRE_REGISTRATION'");
+    expect(migration).toContain("v_costume.is_bound or not (v_costume.is_giftable or v_costume.is_tradeable) or v_costume.source = 'pre_registration'");
+    expect(api).toContain('if (path === "/api/inventory/gift")');
   });
 
   it("keeps public world status read-only and separates wallet proof from first-time profile creation", () => {

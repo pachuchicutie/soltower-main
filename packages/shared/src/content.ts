@@ -12,7 +12,7 @@ export const rarityColors = {
 export const seededPlayer: PublicPlayer = {
   id: "player-marky",
   displayName: "Marky",
-  walletPublicKey: "DevMockMarky111111111111111111111111111111111",
+  walletPublicKey: "11111111111111111111111111111111",
   walletLinkedAt: "2026-06-29T00:00:00.000Z",
   accountLevel: 10,
   xp: 0,

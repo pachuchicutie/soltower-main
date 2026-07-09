@@ -44,8 +44,6 @@ export function Hud({
     { label: "Quests", icon: <Swords size={18} />, modal: "quests" },
     { label: "Settings", icon: <Settings size={18} />, modal: "settings" }
   ];
-  const isDevMode = import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test";
-  const towerLabel = isDevMode ? `${economyConfig.towerToken.symbol} (DEV)` : economyConfig.towerToken.symbol;
   const xpProgress = getAccountXpProgress(player.accountLevel, player.xp);
 
   return (
@@ -89,7 +87,7 @@ export function Hud({
           <AssetIcon src={uiAssetManifest.currencies.lockedGold} /> Locked {player.balances.LOCKED_GOLD}
         </span>
         <span className="tower-token-chip">
-          <AssetIcon src={uiAssetManifest.currencies.towerToken} /> {towerLabel} {player.balances.TEST_TOKEN}
+          <AssetIcon src={uiAssetManifest.currencies.towerToken} /> {economyConfig.towerToken.symbol}
           <a
             className="tower-token-link"
             href={economyConfig.towerToken.jupiterSwapUrl}

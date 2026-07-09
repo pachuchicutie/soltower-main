@@ -67,8 +67,8 @@ The Starlight Vault object is collidable/interactable in configuration and rende
 
 Interaction radii, collision boxes, anchor markers, and target triangles are developer-only overlays.
 
-- Normal `DEV_MODE` does not show them.
-- Production does not show them.
+- Normal gameplay does not show them.
+- Launch builds do not show them.
 - They render only when `VITE_GAME_DEBUG=true`.
 - The fountain is a collidable decorative object and is not interactable.
 

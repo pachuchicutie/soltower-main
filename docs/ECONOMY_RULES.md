@@ -12,9 +12,9 @@ Do not label a balance as "Unlocked Gold" in player UI.
 
 ## Locked Gold
 
-Locked Gold comes from starter grants, Test Token purchases, market purchases, bound rewards, and locked admin grants. It can be spent in game but cannot be sold, listed, gifted, converted to Test Token, or converted to Earned Gold.
+Locked Gold comes from pre-registration rewards, Test Token purchases, market purchases, bound rewards, and locked admin grants. It can be spent in game but cannot be sold, listed, gifted, converted to Test Token, or converted to Earned Gold.
 
-Every new player receives exactly 50 Locked Gold once through an idempotent starter ledger entry.
+New players no longer receive free starter Gold. Wallets on the launch list receive exactly 100 Locked Gold once through an idempotent launch-reward ledger entry.
 
 ## Earned Gold
 

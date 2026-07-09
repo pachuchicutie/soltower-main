@@ -111,6 +111,11 @@ describe("Starlight Vault shared rules", () => {
       "village-initiate",
       "banana-guardian",
       "capybara-vacation",
+      "desert-nomad",
+      "frostveil-guardian",
+      "crimson-duelist",
+      "mystic-lantern-keeper",
+      "verdant-wildcaller",
       "galactic-sigma",
       "midnight-drum-runner",
       "celestial-star-sovereign"

@@ -120,7 +120,7 @@ export function BlackjackPanel() {
             <h3>Lady Vesper's Table</h3>
           </div>
           <span className="blackjack-table-tier">
-            {practiceAllowed ? "DEV Practice Table" : "Village Table"}
+            {practiceAllowed ? "Practice Table" : "Village Table"}
           </span>
         </header>
 

@@ -1,15 +1,5 @@
 const activeWalletStorageKey = "soltower.activeWallet";
 
-export const devMockWallet = {
-  name: "DEV Mock Wallet",
-  publicKey: "DevMockMarky111111111111111111111111111111111",
-  signature: "DEV_MOCK_SIGNATURE"
-} as const;
-
-export function markDevWalletSession(): void {
-  sessionStorage.setItem(activeWalletStorageKey, "dev-mock");
-}
-
 export async function disconnectActiveWallet(): Promise<void> {
   sessionStorage.removeItem(activeWalletStorageKey);
 }

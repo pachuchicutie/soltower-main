@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Palette } from "lucide-react";
+import { Gift, Palette } from "lucide-react";
 import { heroDefinitions } from "@soltower/game-engine";
 import {
   consumables as consumableDefinitions,
@@ -50,6 +50,7 @@ interface InventoryResponse {
     rarity: keyof typeof rarityColors;
     bound: boolean;
     tradeable: boolean;
+    giftable: boolean;
     source: string;
   }>;
   equippedCosmetics?: Array<{ heroId?: string; hero_id?: string; costumeId?: string | null; costume_id?: string | null }>;
@@ -64,7 +65,10 @@ interface EquipmentItem {
     equippedSlot: EquipmentSlot | null;
     level: number;
     bound: boolean;
+    tradeable: boolean;
+    giftable: boolean;
     relistable: boolean;
+    acquiredFrom: string;
     stats: Record<string, number>;
 }
 
@@ -78,6 +82,12 @@ interface EquipmentSwapResult {
 interface MeResponse {
   player: PublicPlayer;
   selectedHeroId: string;
+}
+
+interface GiftTarget {
+  itemKind: "INVENTORY_ITEM" | "FULL_COSTUME";
+  itemId: string;
+  name: string;
 }
 
 const tabs: Array<{ id: InventoryTab; label: string; iconSrc: string }> = [
@@ -95,6 +105,9 @@ export function InventoryPanel() {
   const [pendingReplacement, setPendingReplacement] = useState<EquipmentItem | null>(null);
   const [showEquippedItems, setShowEquippedItems] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [giftTarget, setGiftTarget] = useState<GiftTarget | null>(null);
+  const [giftRecipientPlayerId, setGiftRecipientPlayerId] = useState("");
+  const [giftError, setGiftError] = useState<string | null>(null);
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeResponse>("/api/player/me") });
   const inventory = useQuery({
     queryKey: ["inventory"],
@@ -127,6 +140,28 @@ export function InventoryPanel() {
       ]);
     }
   });
+  const giftItem = useMutation({
+    mutationFn: (input: { target: GiftTarget; recipientPlayerId: string }) =>
+      apiPost<{ transfer: unknown }>("/api/inventory/gift", {
+        itemKind: input.target.itemKind,
+        itemId: input.target.itemId,
+        recipientPlayerId: input.recipientPlayerId,
+        idempotencyKey: idempotencyKey("item-gift")
+      }),
+    onSuccess: async (_result, variables) => {
+      setSuccessMessage(`${variables.target.name} sent to ${variables.recipientPlayerId}.`);
+      setGiftTarget(null);
+      setGiftRecipientPlayerId("");
+      setGiftError(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+        queryClient.invalidateQueries({ queryKey: ["me"] })
+      ]);
+    },
+    onError: (error) => {
+      setGiftError(error instanceof Error ? error.message : "Could not gift this item.");
+    }
+  });
 
   const selectedHero =
     heroDefinitions.find((hero) => hero.id === me.data?.selectedHeroId) ?? heroDefinitions[0];
@@ -154,10 +189,52 @@ export function InventoryPanel() {
     (entry.heroId ?? entry.hero_id) === selectedHero.id
   )?.costume_id ?? null;
   const equippedFullCostume = ownedCostumes.find((costume) => costume.costumeId === equippedFullCostumeId);
+  const beginGift = (target: GiftTarget) => {
+    setGiftTarget(target);
+    setGiftRecipientPlayerId("");
+    setGiftError(null);
+  };
+  const sendGift = () => {
+    const recipientPlayerId = giftRecipientPlayerId.trim();
+    if (!giftTarget || !recipientPlayerId) {
+      setGiftError("Enter the recipient player ID.");
+      return;
+    }
+    giftItem.mutate({ target: giftTarget, recipientPlayerId });
+  };
 
   return (
     <div className="inventory-panel">
       <ModalTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} label="Inventory tabs" />
+      {giftTarget ? (
+        <GameCard className="equipment-confirm-card">
+          <strong>Gift / Trade {giftTarget.name}</strong>
+          <p>Send this item to another player by player ID. Bound launch rewards are blocked server-side.</p>
+          <input
+            data-game-input="text"
+            value={giftRecipientPlayerId}
+            placeholder="Recipient player ID"
+            aria-label="Recipient player ID"
+            onChange={(event) => setGiftRecipientPlayerId(event.target.value)}
+          />
+          {giftError ? <span className="equipment-error tag">{giftError}</span> : null}
+          <div className="button-row">
+            <GameButton
+              variant="ghost"
+              onClick={() => {
+                setGiftTarget(null);
+                setGiftRecipientPlayerId("");
+                setGiftError(null);
+              }}
+            >
+              Cancel
+            </GameButton>
+            <GameButton onClick={sendGift} disabled={giftItem.isPending}>
+              <Gift size={15} /> Send Gift
+            </GameButton>
+          </div>
+        </GameCard>
+      ) : null}
 
       {activeTab === "equipment" ? (
         <section className="inventory-equipment-view" aria-label="Equipment inventory">
@@ -302,25 +379,48 @@ export function InventoryPanel() {
             </div>
             {ownedEquipment.length ? (
               <div className="inventory-item-list">
-                {ownedEquipment.map((item) => (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className="inventory-item-row"
-                    style={{ borderColor: rarityColors[item.rarity] }}
-                    onClick={() => {
-                      setChangingSlot(item.slot);
-                      setPendingReplacement(item.equippedSlot ? null : item);
-                    }}
-                  >
-                    <AssetIcon src={itemAssetPath(item.definitionId)} alt={item.name} decorative={false} />
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>{formatSlot(item.slot)} · Level {item.level} · {item.bound ? "Bound" : "Tradeable"}</small>
-                    </span>
-                    <em>{item.equippedSlot ? "Equipped" : "Change"}</em>
-                  </button>
-                ))}
+                {ownedEquipment.map((item) => {
+                  const giftable = canGiftEquipment(item);
+                  return (
+                    <div
+                      key={item.id}
+                      className="inventory-item-row"
+                      style={{ borderColor: rarityColors[item.rarity] }}
+                    >
+                      <span
+                        className="inventory-item-icon-frame"
+                        style={{ "--item-rarity-color": rarityColors[item.rarity] } as CSSProperties}
+                      >
+                        <AssetIcon src={itemAssetPath(item.definitionId)} alt={item.name} decorative={false} />
+                        <AssetIcon src={rarityFrame(item.rarity)} className="inventory-rarity-frame" />
+                      </span>
+                      <span>
+                        <strong>{item.name}</strong>
+                        <small>{formatSlot(item.slot)} · Level {item.level} · {item.bound ? "Bound" : "Tradeable"}</small>
+                        <small>{item.acquiredFrom === "PRE_REGISTRATION" ? "Launch reward · Not tradeable" : giftable ? "Giftable" : "Not giftable"}</small>
+                      </span>
+                      <div className="button-row inventory-row-actions">
+                        <GameButton
+                          variant="secondary"
+                          onClick={() => {
+                            setChangingSlot(item.slot);
+                            setPendingReplacement(item.equippedSlot ? null : item);
+                          }}
+                        >
+                          {item.equippedSlot ? "Equipped" : "Select"}
+                        </GameButton>
+                        {giftable ? (
+                          <GameButton
+                            variant="ghost"
+                            onClick={() => beginGift({ itemKind: "INVENTORY_ITEM", itemId: item.id, name: item.name })}
+                          >
+                            <Gift size={14} /> Gift
+                          </GameButton>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <EmptyState title="No replacement equipment yet." iconSrc={uiAssetManifest.icons.heroLoadout}>
@@ -426,19 +526,31 @@ export function InventoryPanel() {
                 {ownedCostumes.map((costume) => {
                   const definition = fullCostumeDefinitions.find((entry) => entry.id === costume.costumeId);
                   const equipped = costume.costumeId === equippedFullCostumeId;
+                  const giftable = canGiftCostume(costume, equipped);
                   return (
                     <GameCard key={costume.costumeId} className="starlight-reward-card" style={{ borderColor: rarityColors[costume.rarity] }}>
                       <span className="game-eyebrow">{costume.rarity}</span>
                       <strong>{costume.name}</strong>
                       <small>{costume.bound ? "Bound" : "Tradeable"} · {equipped ? "Equipped" : "Owned"}</small>
+                      <small>{costume.source === "pre_registration" ? "Launch reward · Not tradeable" : giftable ? "Giftable" : "Not giftable"}</small>
                       <p>{definition?.theme ?? "Manual costume details pending."}</p>
                       <span className="tag">Preview hidden until manual Hero assets are ready</span>
-                      <GameButton
-                        disabled={equipped || equipCostume.isPending}
-                        onClick={() => equipCostume.mutate({ heroId: selectedHero.id, costumeId: costume.costumeId })}
-                      >
-                        {equipped ? "Equipped" : "Equip Costume"}
-                      </GameButton>
+                      <div className="button-row">
+                        <GameButton
+                          disabled={equipped || equipCostume.isPending}
+                          onClick={() => equipCostume.mutate({ heroId: selectedHero.id, costumeId: costume.costumeId })}
+                        >
+                          {equipped ? "Equipped" : "Equip Costume"}
+                        </GameButton>
+                        {giftable ? (
+                          <GameButton
+                            variant="ghost"
+                            onClick={() => beginGift({ itemKind: "FULL_COSTUME", itemId: costume.costumeId, name: costume.name })}
+                          >
+                            <Gift size={14} /> Gift
+                          </GameButton>
+                        ) : null}
+                      </div>
                     </GameCard>
                   );
                 })}
@@ -594,6 +706,17 @@ function rarityFrame(rarity: ItemRarity): string {
     uiAssetManifest.rarityFrames[rarity as keyof typeof uiAssetManifest.rarityFrames] ??
     uiAssetManifest.rarityFrames.LEGENDARY
   );
+}
+
+function canGiftEquipment(item: EquipmentItem): boolean {
+  return !item.bound && !item.equippedSlot && item.acquiredFrom !== "PRE_REGISTRATION" && (item.giftable || item.tradeable);
+}
+
+function canGiftCostume(
+  costume: NonNullable<InventoryResponse["cosmetics"]>[number],
+  equipped: boolean
+): boolean {
+  return !costume.bound && !equipped && costume.source !== "pre_registration" && (costume.giftable || costume.tradeable);
 }
 
 function formatSlot(slot: EquipmentSlot): string {

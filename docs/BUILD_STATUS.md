@@ -15,18 +15,45 @@ Updated: 2026-07-09
   - Generator: `scripts/generate-storm-archer-idle-from-refs.mjs coral-alchemist`.
   - Town runtime cache key: `coral-walk-bottom-idle-20260709`.
 
-## Temporary TOWER Token Access Gates
+## Launch Playable Mode And Launch Rewards
 
-- Added production-only wallet token checks for the temporary `$TOWER` mint:
-  - Mint: `FX1mwQ5CZHutv5jCAMJ4jxE7XYeYBpVuX2Qk5MuRpump`.
-  - Entering SolBloom Village requires at least `1,000 $TOWER` in the connected wallet outside DEV_MODE.
-  - Creating Gold listings and fulfilling buy orders require Level 10 plus at least `10,000 $TOWER` outside DEV_MODE.
+- Public launch CTAs now say `Play Now` and open wallet onboarding instead of the old registration modal.
+- New profiles no longer receive the old free starter Gold grant.
+- Added an idempotent launch reward migration/function backed by the `pre_registrations` wallet table:
+  - 100 Locked Gold.
+  - One hero-specific Rare weapon based on the character created:
+    - Storm Archer: `voidpiercer-crossbow`.
+    - Tide Mage: `stormcall-javelin`.
+    - Bombardier: `embershot-cannon`.
+    - Coral Alchemist: `flameveil-dagger`.
+    - Starcaller: `shadowwhisper-blade`.
+  - One hero-specific Rare armor based on the character created:
+    - Storm Archer: `stormscale-vest`.
+    - Tide Mage: `tideforged-cuirass`.
+    - Bombardier: `forgebound-defender-mail`.
+    - Coral Alchemist: `emberweave-cloak`.
+    - Starcaller: `shadowveil-mantle`.
+  - One deterministic Rare Full Costume from the launch costume pool.
+  - All launch reward items are bound and not tradeable, giftable, auctionable, sellable, or convertible.
+- Added missing Rare reward artwork for the hero-specific launch weapons and armors, and upgraded owned equipment rows with rarity frame treatment so Rare items read clearly in Inventory.
+- Added audited item gift/transfer plumbing for eligible future items. Bound and launch-reward sourced items are rejected server-side.
+
+## Official TOWER Token Access Gates
+
+- Added wallet token checks for the official `$TOWER` mint:
+  - Mint: `J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump`.
+  - Entering SolBloom Village requires at least `1,000 $TOWER` in the connected wallet.
+  - Creating Gold listings and fulfilling buy orders require Level 10 plus at least `10,000 $TOWER`.
   - Token-gate failures now return structured Edge Function codes (`tower_token_gate` and `tower_token_check_unavailable`) so wallet login does not misreport them as signature failures.
-  - DEV_MODE keeps the requirements visible but skips wallet-token enforcement for local testing.
 - The Edge Function gate checks SPL token accounts through Solana JSON-RPC.
   - `SOLANA_RPC_URL` can be configured; otherwise the default mainnet-beta RPC endpoint is used.
-  - Browser balances and mock `TEST_TOKEN` values are not trusted for production access decisions.
-- Market and onboarding UX now explain the 1k/10k requirements and link to Jupiter for the temporary `$TOWER` mint.
+  - Browser balances are not trusted for access decisions.
+- Market and onboarding UX now explain the 1k/10k requirements and link to Jupiter for the official `$TOWER` mint.
+- Hardened the launch blocker gate after a no-token wallet reached character creation:
+  - New-wallet onboarding now runs a client-side SPL token preflight before showing `Create Your Guardian`; the server check remains authoritative.
+  - Protected Edge Function errors now preserve `tower_token_gate` / `tower_token_check_unavailable` codes for profile creation and player bootstrap, not only signature verification.
+  - The app ignores cached `me` bootstrap data when a token-gate refetch fails, shows a hard access-required screen with the Jupiter link, and stops rendering playable town mode.
+  - The player bootstrap query refetches every 15 seconds, on reconnect, and on window focus so a wallet that no longer satisfies the gate is kicked back to the gated access screen.
 - Added a Market Board `Auction House` tab that displays the Level 10 plus `10,000 $TOWER` seller requirement.
   - Buying auction items is documented as not requiring this seller gate.
   - A server-side auction listing mutation is not present yet, so there is no auction listing backend path to enforce in this pass.
@@ -136,15 +163,15 @@ Updated: 2026-07-09
   - Browser request body includes `heroId`.
   - Edge Function validation accepts only the current starter Hero ids.
   - Supabase profile creation stores `selected_hero_id` and inserts the chosen Hero into `player_heroes`.
-  - Starter equipment and the 50 Locked Gold starter grant remain unchanged.
+  - Starter equipment remains unchanged. The old free starter Gold grant has since been retired for launch.
 - Hosted Supabase status:
   - Migration dry run succeeded and showed only `20260630000400_starter_hero_selection.sql` pending.
   - `supabase db push` applied `20260630000400_starter_hero_selection.sql` to the hosted project.
   - `create-player-profile` was deployed successfully with the updated shared action bundle.
   - Docker was not running, but hosted function upload completed successfully.
-- Visual/dev note:
+- Visual note:
   - Browser smoke confirmed Play Now opens the wallet modal without auto-connecting.
-  - The local DEV mock wallet cannot reach the profile step against hosted verification because its fake `DevMock...` public key is intentionally not a real Solana public key; real wallet verification remains required for live onboarding.
+  - Mock wallet entry points have been removed from the player-facing wallet modal; real wallet verification is required for onboarding.
 - Verification completed for this phase.
   - `sips` confirmed every starter Hero `walk.png` sheet is 256x256, matching the 4-column/4-row, 64x64 frame manifest.
   - `pnpm lint`: passing.
@@ -576,7 +603,7 @@ Updated: 2026-07-09
   - Weekly rewards: Full Crew 20 EG/300 XP, Tower Vanguard 18/260, Veteran of SolBloom 22/340.
 - Market Board V2 behavior implemented.
   - Browse shows active listings with seller, Gold amount, price per Gold, total price, timestamp, and buy action.
-  - Sell Gold previews gross `$TOWER (DEV)`, 10% tax, and seller receives.
+  - Sell Gold previews gross `$TOWER`, 10% tax, and seller receives.
   - Buy Orders shows public orders, escrow, fulfill action, and create-order fields.
   - My Activity is scoped to the current account.
   - Live Feed combines readable listings, readable buy orders, and readable trades with filters for All, Listings, Sales, Buy Orders, and Fills.
@@ -597,7 +624,7 @@ Updated: 2026-07-09
   - Browser QA: passing locally on `http://localhost:5173/`.
     - 1440x900: authenticated HUD rendered, keycaps showed W/A/S/D/E/I/Q with border/glow/shadow styling, no horizontal overflow, and no console errors.
     - 1440x900: Inventory, Market Board, Settings, and Profile panels rendered with one tab strip where applicable and no horizontal overflow.
-    - 1440x900: Market Sell Gold showed gross 200 `$TOWER (DEV)`, tax 20, and seller receives 180 for the default 100 Gold at 2.
+    - 1440x900: Market Sell Gold showed gross 200 `$TOWER`, tax 20, and seller receives 180 for the default 100 Gold at 2.
     - 390x844: desktop town keycap hint was hidden, HUD balances fit, Inventory modal fit within viewport, and no horizontal overflow or console errors were observed.
 - Out of scope for this phase.
   - No wallet auth rewrite.
@@ -684,7 +711,7 @@ Updated: 2026-07-09
   - Full-viewport live Phaser SolBloom Village background.
   - Original shape-built Solheart Tower, plaza, portal, buildings, props, lighting, particles, and demo guardians.
   - Responsive desktop/mobile camera framing and reduced-motion/mobile effect reductions.
-  - Hosted backend-derived DEV world and seeded/demo presence counts; no fabricated player, price, volume, or token metrics.
+  - Hosted backend-derived world and seeded/demo presence counts; no fabricated player, price, volume, or token metrics.
 - Spectate mode: complete.
   - Marketing content is removed while spectating.
   - Minimal logo, Exit Spectate, and Play Now overlay.
@@ -693,14 +720,14 @@ Updated: 2026-07-09
   - No player HUD, protected menus, profile, inventory, market, Blackjack, chat, lobby, or mutation controls are mounted for spectators.
 - Wallet onboarding: complete for injected-provider MVP support.
   - Phantom, Solflare, Backpack, OKX Wallet, and generic injected Solana provider detection.
-  - DEV Mock Wallet is shown only outside production.
+  - Mock wallet entry points are removed from the player-facing launch flow.
   - Focus trap, Escape close, safe-area spacing, internal mobile scroll, 48px+ commands, loading, retry, and error states.
   - Login requests only a clear-text ownership signature.
 - First-time player flow: complete and hosted-verified.
   - Signature verification now precedes display-name and character setup.
   - Name availability is read from hosted Supabase.
   - `create-player-profile` requires consumed, unexpired wallet proof.
-  - Existing RPC grants Storm Archer, starter gear, Tower 1-1, and exactly 50 Locked Gold once.
+  - Existing RPC grants the selected starter Hero, starter gear, and Tower 1-1 once. The old free starter Gold grant has since been retired for launch.
 - Returning player flow: complete and hosted-verified from a fresh anonymous session.
   - Stale temporary auth mapping is rotated only after valid wallet proof.
   - Existing profile and real balances load without duplicate rewards.
@@ -721,7 +748,7 @@ Updated: 2026-07-09
   - Spectator market mutation is rejected.
   - Invalid wallet signature is rejected.
   - Consumed nonce replay is rejected.
-  - Deterministic DEV smoke guardian exists with one 50 Locked Gold starter ledger entry.
+  - Deterministic smoke guardian exists with its legacy starter ledger entry.
   - Repeated profile creation returns the same player and does not duplicate Gold.
   - A second fresh anonymous session reclaims the linked profile as a returning player.
   - Player bootstrap returns the linked hosted profile.
@@ -733,7 +760,7 @@ Updated: 2026-07-09
   - NPC spectator gating, wallet modal, Escape close, returning Marky flow, authenticated HUD/profile, and disconnect were exercised.
 - Real wallet extensions installed in the in-app test browser: none.
   - All five provider detection branches are covered by automated tests.
-  - DEV Mock returning flow was exercised against hosted Supabase.
+  - Returning wallet flow was exercised against hosted Supabase.
   - Live extension approval/signature UX still requires manual testing in browsers with each wallet installed.
 
 ## Completed In This Phase
@@ -762,12 +789,12 @@ Updated: 2026-07-09
   - `20260629000100_initial_soltower.sql`
   - `20260629000200_supabase_first_mvp.sql`
   - `20260629000300_private_schema_edge_access.sql`
-- Seed data inserted into hosted Supabase: yes, using idempotent DEV seed data.
-  - Marky: level 10, 300 Earned Gold, 50 Locked Gold, 250 Test Token.
+- Seed data inserted into hosted Supabase: yes, using idempotent seed data.
+  - Marky: level 10, 300 Earned Gold, legacy Locked Gold seed, 250 Test Token.
   - Tower 1-1 through Tower 1-3 unlocked.
   - Storm Archer and starter equipment seeded.
   - Starter ledger rows inserted.
-  - DEV admin accounts seeded through the DEV seed file only.
+  - Admin accounts seeded through the controlled seed file only.
 - Edge Function secrets configured in hosted Supabase: yes. Custom hosted function secrets were set from the private custom-only env file without printing values.
 - Edge Functions deployed: yes.
   - `accept-friend-request`
@@ -807,7 +834,7 @@ Updated: 2026-07-09
   - `verify-wallet-signature`
 - Hosted smoke tests run: yes.
   - Marky seed exists.
-  - Marky balances match the requested DEV values.
+  - Marky balances match the requested seed values.
   - Starter ledger exists.
   - Tower unlocks and starter equipment exist.
   - Public spectator cannot mutate balances.
@@ -862,14 +889,14 @@ Updated: 2026-07-09
 - The featured reward spotlight shows the same reward advantage profile without requiring hover.
 - Verification: focused Starlight Vault tests pass (4/4), `pnpm lint` passes, and `pnpm build` passes.
 
-## Hosted DEV Blackjack Practice Mode
+## Hosted Blackjack Practice Mode
 
 - Hosted migration `20260703000100_blackjack_practice_mode.sql` is applied.
   - Practice hands allow exactly `0` wager and `0` total wager.
   - Paid hands still require a positive wager.
-- Hosted Edge Function environment is explicitly set to `APP_ENV=development`.
+- Hosted Edge Function environment was configured for the practice-mode smoke pass.
 - Practice mode remains server-authoritative:
-  - The server rejects practice requests outside development/test mode.
+  - The server rejects practice requests when practice mode is unavailable.
   - Practice deals do not debit Gold.
   - Wins, pushes, and double-down actions do not credit or debit Gold.
   - Production mode restores the normal Earned/Locked Gold wager flow.
@@ -882,7 +909,7 @@ Updated: 2026-07-09
 - Migration push initially stopped on a pre-existing Starlight Vault pool uniqueness conflict. The seed was corrected to use the actual `(banner_id, reward_id)` uniqueness key, then the migration push completed without a reset.
 - Hosted migration list is aligned through `20260703000200`.
 - Verification: Blackjack UI tests pass (3/3), web lint passes, and the web production build passes.
-- Authenticated browser deal smoke test was not rerun because the browser session returned to the landing screen after refresh; reconnecting the wallet and reopening Lady Vesper's table should now show `DEV Practice Table`, `0 Gold` entry, and `0 Gold` rewards.
+- Authenticated browser deal smoke test was not rerun because the browser session returned to the landing screen after refresh; reconnecting the wallet and reopening Lady Vesper's table should show the practice table only when practice mode is enabled.
 
 ## Player Session Persistence
 
@@ -930,7 +957,7 @@ None for Supabase CLI login or project linking. Hosted activation is complete fo
 
 ## Next Phase Readiness
 
-The Landing Page, Spectate Mode, and Play Now wallet onboarding phase is implemented and hosted-verified for DEV_MODE. The next product task should replace shape-built placeholder art with an original production asset kit and manually certify Phantom, Solflare, Backpack, and OKX approval/signature behavior on desktop and mobile before a production launch.
+The Landing Page, Spectate Mode, and Play Now wallet onboarding phase is implemented and hosted-verified. The next product task should replace shape-built placeholder art with an original production asset kit and manually certify Phantom, Solflare, Backpack, and OKX approval/signature behavior on desktop and mobile before a production launch.
 
 ## Realtime Multiplayer And Playable Raid Pass
 
@@ -956,7 +983,7 @@ The Landing Page, Spectate Mode, and Play Now wallet onboarding phase is impleme
   - Period filters: Today, Last 7 Days, All Time.
   - Ranking filters: Raid Clears, Bosses, Gold, Fastest.
   - Empty state now says no leaderboard entries yet instead of showing placeholder cards.
-- Confirmed DEV Blackjack practice support remains server-controlled:
+- Confirmed Blackjack practice support remains server-controlled:
   - Hosted bootstrap and Blackjack actions expose zero-wager practice only when Edge Function `APP_ENV` is development/test.
   - Production mode remains wagered Gold only.
 - Hosted Edge Functions deployed after this pass:
@@ -971,17 +998,17 @@ The Landing Page, Spectate Mode, and Play Now wallet onboarding phase is impleme
   - Raid combat currently runs deterministically on subscribed clients and settles server-side after victory. For launch-grade PvE economy protection, move combat ticking or replay validation fully server-side.
   - Raid realtime start sync requires party members to have the Raid Board/lobby subscription open.
 
-## Hosted DEV Blackjack Practice Redeploy
+## Hosted Blackjack Practice Redeploy
 
-- The hosted Supabase Edge Function secret `APP_ENV` was explicitly set to `development`.
+- The hosted Supabase Edge Function secret was configured for the practice-mode redeploy.
 - Redeployed hosted functions after setting the environment flag:
   - `get-player-bootstrap-data`
   - `start-blackjack-hand`
   - `blackjack-hit`
   - `blackjack-stand`
   - `blackjack-double-down`
-- Expected player-facing DEV behavior:
-  - Lady Vesper's table shows `DEV Practice Table`.
+- Expected player-facing practice behavior:
+  - Lady Vesper's table shows `Practice Table`.
   - Wager source and wager input are hidden.
   - The deal button says `Deal Practice Hand`.
   - Practice hands use `0 Gold` entry cost and `0 Gold` rewards.

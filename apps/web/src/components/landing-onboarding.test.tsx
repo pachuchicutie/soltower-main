@@ -138,7 +138,7 @@ const bootstrap: PlayerBootstrapData = {
   player: {
     id: "player-marky",
     displayName: "Marky",
-    walletPublicKey: "DevMockMarky111111111111111111111111111111111",
+    walletPublicKey: "11111111111111111111111111111111",
     walletLinkedAt: "2026-06-29T00:00:00.000Z",
     accountLevel: 10,
     xp: 300,
@@ -155,7 +155,7 @@ const bootstrap: PlayerBootstrapData = {
     }
   },
   profile: {
-    fullWalletAddress: "DevMockMarky111111111111111111111111111111111",
+    fullWalletAddress: "11111111111111111111111111111111",
     shortenedWalletAddress: "DevM...1111",
     accountLevel: 10,
     xp: 300,
@@ -229,6 +229,38 @@ describe("public landing and Spectate mode", () => {
     ).toBeTruthy();
   });
 
+  it("blocks the playable town when the active session fails the TOWER gate", async () => {
+    const { WalletAuthError } = await import("../lib/api");
+    apiMocks.get.mockImplementation((path: string) => {
+      if (path === "/api/player/me") {
+        return Promise.reject(new WalletAuthError(
+          "tower_token_gate",
+          "Sorry, entering solbloom village requires at least 1,000 $TOWER"
+        ));
+      }
+      if (path === "/api/town/servers") {
+        return Promise.resolve(mockTownServers());
+      }
+      return Promise.resolve({
+        devMode: false,
+        testWorldActive: true,
+        demoPresenceCount: 0,
+        activeTownCount: 0
+      });
+    });
+
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Hold 1,000 $TOWER to play" })).toBeTruthy();
+    expect(screen.getByText(/you need more tower to play/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
+      "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
+    );
+    expect(screen.getByRole("button", { name: "Check Again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Disconnect Wallet" })).toBeTruthy();
+    expect(document.querySelector('[data-testid="town-canvas"][data-mode="game"]')).toBeNull();
+  });
+
   it("keeps Spectate read-only and turns NPC clicks into wallet entry prompts", async () => {
     apiMocks.get.mockResolvedValue({
       devMode: true,
@@ -253,7 +285,7 @@ describe("public landing and Spectate mode", () => {
 });
 
 describe("wallet onboarding", () => {
-  const bootstrapWalletPublicKey = bootstrap.player.walletPublicKey ?? "DevMock11111111111111111111111111111111";
+  const bootstrapWalletPublicKey = bootstrap.player.walletPublicKey ?? "11111111111111111111111111111111";
 
   it("shows a recoverable error when wallet onboarding fails", async () => {
     apiMocks.post.mockRejectedValue(new Error("Nonce service unavailable"));
@@ -265,10 +297,10 @@ describe("wallet onboarding", () => {
       />
     );
 
-    expect(screen.getByText(/1,000 \$TOWER \(DEV\) required to enter SolBloom Village/)).toBeTruthy();
-    expect(screen.getByText(/10,000 \$TOWER \(DEV\)/)).toBeTruthy();
+    expect(screen.getByText(/1,000 \$TOWER required to enter SolBloom Village/)).toBeTruthy();
+    expect(screen.getByText(/10,000 \$TOWER/)).toBeTruthy();
     expect(screen.queryByText(/required to enter in production/i)).toBeNull();
-    await openDeveloperWallet();
+    await openConnectedWallet();
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByText("Nonce service unavailable")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Connect Wallet" })).toBeTruthy();
@@ -404,15 +436,94 @@ describe("wallet onboarding", () => {
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain(String(firstVerifyPayload.signatureBase64));
   });
 
+  it("blocks token-gated wallets before character creation", async () => {
+    const { WalletAuthError } = await import("../lib/api");
+    apiMocks.post.mockImplementation((path: string, body: Record<string, unknown>) => {
+      if (path === "/api/auth/wallet/nonce") {
+        return Promise.resolve(walletChallenge(
+          bootstrapWalletPublicKey,
+          body.requestId,
+          "SolTower wallet login message for token gate"
+        ));
+      }
+      if (path === "/api/auth/wallet/verify") {
+        return Promise.reject(new WalletAuthError(
+          "tower_token_gate",
+          "Sorry, entering solbloom village requires at least 1,000 $TOWER"
+        ));
+      }
+      return Promise.reject(new Error(`Unexpected path ${path}`));
+    });
+
+    render(
+      <WalletOnboardingModal
+        onClose={vi.fn()}
+        onEntered={vi.fn()}
+        onSpectate={vi.fn()}
+      />
+    );
+
+    await openConnectedWallet();
+    expect(await screen.findByText(/you need at least 1,000 \$TOWER/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Buy on Jupiter/i }).getAttribute("href")).toContain(
+      "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
+    );
+    expect(screen.queryByRole("heading", { name: "Create Your Guardian" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Choose Your First Guardian" })).toBeNull();
+  });
+
+  it("fails closed before character creation if a new-wallet token preflight has no TOWER", async () => {
+    mockTowerBalanceFetch(0);
+    apiMocks.post.mockImplementation((path: string, body: Record<string, unknown>) => {
+      if (path === "/api/auth/wallet/nonce") {
+        return Promise.resolve(walletChallenge(
+          bootstrapWalletPublicKey,
+          body.requestId,
+          "SolTower wallet login message for new wallet token preflight"
+        ));
+      }
+      if (path === "/api/auth/wallet/verify") {
+        return Promise.resolve({
+          isNewPlayer: true,
+          requiresProfile: true,
+          intro: "Wallet verified.",
+          verifiedWallet: {
+            publicKey: bootstrap.player.walletPublicKey,
+            nonce: "nonce-123456789012",
+            expiresAt: "2026-06-29T12:05:00.000Z"
+          }
+        });
+      }
+      return Promise.reject(new Error(`Unexpected path ${path}`));
+    });
+
+    render(
+      <WalletOnboardingModal
+        onClose={vi.fn()}
+        onEntered={vi.fn()}
+        onSpectate={vi.fn()}
+      />
+    );
+
+    await openConnectedWallet();
+    expect(await screen.findByText(/you need at least 1,000 \$TOWER/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Buy on Jupiter/i })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Create Your Guardian" })).toBeNull();
+  });
+
   it("does not refetch the player bootstrap merely because the browser tab regains focus", () => {
     const main = readFileSync(join(webRoot, "src/main.tsx"), "utf8");
     const app = readFileSync(join(webRoot, "src/App.tsx"), "utf8");
     expect(main).toContain("refetchOnWindowFocus: false");
     expect(main).toContain("refetchOnReconnect: false");
-    expect(app).toContain("!me.data && me.isLoading");
+    expect(app).toContain("!activeBootstrap && me.isLoading");
+    expect(app).toContain("refetchInterval: 15000");
+    expect(app).toContain("refetchOnWindowFocus: true");
+    expect(app).toContain("refetchOnReconnect: true");
   });
 
   it("creates a first-time profile once after name availability succeeds", async () => {
+    mockTowerBalanceFetch(1000);
     const newPlayer = {
       ...bootstrap,
       player: {
@@ -440,7 +551,7 @@ describe("wallet onboarding", () => {
         return Promise.resolve(walletChallenge(
           bootstrapWalletPublicKey,
           "request-dev-profile",
-          "SolTower wallet login message for DEV"
+          "SolTower wallet login message for launch"
         ));
       }
       if (path === "/api/auth/wallet/verify") {
@@ -476,7 +587,7 @@ describe("wallet onboarding", () => {
       />
     );
 
-    await openDeveloperWallet();
+    await openConnectedWallet();
     expect(await screen.findByRole("heading", { name: "Choose Your First Guardian" })).toBeTruthy();
     for (const heroName of ["Storm Archer", "Tide Mage", "Bombardier", "Coral Alchemist", "Starcaller"]) {
       expect(screen.getByRole("option", { name: new RegExp(heroName) })).toBeTruthy();
@@ -510,7 +621,7 @@ describe("wallet onboarding", () => {
         return Promise.resolve(walletChallenge(
           bootstrapWalletPublicKey,
           "request-dev-returning",
-          "SolTower wallet login message for DEV"
+          "SolTower wallet login message for launch"
         ));
       }
       if (path === "/api/auth/wallet/verify") {
@@ -532,7 +643,7 @@ describe("wallet onboarding", () => {
       />
     );
 
-    await openDeveloperWallet();
+    await openConnectedWallet();
     expect(await screen.findByRole("heading", { name: "Welcome, Marky" })).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Enter Village" }));
     expect(onEntered).toHaveBeenCalledWith(expect.objectContaining({ player: bootstrap.player }));
@@ -880,7 +991,7 @@ describe("authenticated town", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Sell Gold" }));
     expect(screen.getByLabelText("Sell Gold")).toBeTruthy();
     expect(screen.getByText("Seller receives")).toBeTruthy();
-    expect(screen.getByText(/Selling Gold requires Level 10 and 10,000 \$TOWER \(DEV\)/)).toBeTruthy();
+    expect(screen.getByText(/Selling Gold requires Level 10 and 10,000 \$TOWER/)).toBeTruthy();
     expect(screen.queryByText("No active listings")).toBeNull();
 
     await userEvent.click(screen.getByRole("tab", { name: "Auction House" }));
@@ -895,15 +1006,15 @@ describe("authenticated town", () => {
     await userEvent.click(screen.getByRole("button", { name: "Market" }));
     await userEvent.click(await screen.findByRole("tab", { name: "Sell Gold" }));
 
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Gross total200 $TOWER (DEV)");
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Market tax20 $TOWER (DEV)");
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Seller receives180 $TOWER (DEV)");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Gross total200 $TOWER");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Market tax20 $TOWER");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Seller receives180 $TOWER");
 
     fireEvent.change(screen.getByLabelText("Gold amount"), { target: { value: "125" } });
     fireEvent.change(screen.getByLabelText("Price per Gold"), { target: { value: "3" } });
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Gross total375 $TOWER (DEV)");
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Market tax37 $TOWER (DEV)");
-    expect(document.querySelector(".preview-box")?.textContent).toContain("Seller receives338 $TOWER (DEV)");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Gross total375 $TOWER");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Market tax37 $TOWER");
+    expect(document.querySelector(".preview-box")?.textContent).toContain("Seller receives338 $TOWER");
   });
 
   it("keeps My Activity scoped to the current account", async () => {
@@ -914,10 +1025,10 @@ describe("authenticated town", () => {
     await userEvent.click(await screen.findByRole("tab", { name: "My Activity" }));
 
     const panel = screen.getByLabelText("My Activity");
-    expect(panel.textContent).toContain("Active · 100 Gold · 200 $TOWER (DEV)");
-    expect(panel.textContent).toContain("OPEN · 140 Gold open · escrow 280 $TOWER (DEV)");
-    expect(panel.textContent).toContain("Bought · 45 Gold · gross 90 $TOWER (DEV)");
-    expect(panel.textContent).toContain("Sold · 60 Gold · gross 120 $TOWER (DEV)");
+    expect(panel.textContent).toContain("Active · 100 Gold · 200 $TOWER");
+    expect(panel.textContent).toContain("OPEN · 140 Gold open · escrow 280 $TOWER");
+    expect(panel.textContent).toContain("Bought · 45 Gold · gross 90 $TOWER");
+    expect(panel.textContent).toContain("Sold · 60 Gold · gross 120 $TOWER");
     expect(panel.textContent).not.toContain("999 Gold");
     expect(panel.textContent).not.toContain("gross 999");
   });
@@ -965,11 +1076,34 @@ function renderApp() {
   );
 }
 
-async function openDeveloperWallet() {
-  await userEvent.click(screen.getByText("Developer options"));
-  await userEvent.click(
-    screen.getByRole("button", { name: "DEV ONLY — NOT A REAL WALLET" })
-  );
+async function openConnectedWallet() {
+  reownMocks.configured = true;
+  reownMocks.state.address = "11111111111111111111111111111111";
+  reownMocks.state.isConnected = true;
+  reownMocks.state.provider = {
+    signMessage: vi.fn().mockResolvedValue(new Uint8Array(64))
+  } as never;
+  reownMocks.state.walletName = "Test Wallet";
+  await userEvent.click(screen.getByRole("button", { name: "Connect Wallet" }));
+}
+
+function mockTowerBalanceFetch(uiAmount: number) {
+  const value = uiAmount > 0
+    ? [
+        {
+          account: {
+            data: {
+              parsed: {
+                info: {
+                  tokenAmount: { uiAmount, uiAmountString: String(uiAmount), amount: String(uiAmount * 1_000_000), decimals: 6 }
+                }
+              }
+            }
+          }
+        }
+      ]
+    : [];
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: { value } }))));
 }
 
 function mockAuthenticatedMarketData() {

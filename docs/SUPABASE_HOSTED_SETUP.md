@@ -73,7 +73,7 @@ The hosted API schema config must include the private schema so Edge Functions c
 pnpm exec supabase config push
 ```
 
-On the current DEV hosted project, this command applied the needed Auth/API changes but ended with a storage vector-bucket paid-tier warning. That warning is not a blocker for the current MVP unless vector storage is introduced.
+On the hosted project, this command applied the needed Auth/API changes but ended with a storage vector-bucket paid-tier warning. That warning is not a blocker for the current MVP unless vector storage is introduced.
 
 ## Hosted Function Secrets
 
@@ -111,7 +111,7 @@ Do not add new game systems during hosted activation.
 After migrations and functions are deployed, verify:
 
 - player bootstrap Edge Function can run with a valid session
-- Marky seed data exists if the project is confirmed DEV_MODE
+- Marky seed data exists when seed data is enabled
 - starter ledger exists
 - anonymous/spectator access cannot mutate balances
 - RLS blocks direct player balance updates from the anon client

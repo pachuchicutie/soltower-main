@@ -72,7 +72,7 @@ The current audio assets are lightweight synthesized WAV files. Settings applies
 - Use transparent SVG icons for UI/item/hero/currency surfaces.
 - Keep item icons readable at small sizes.
 - Keep rarity frames visually distinct but not louder than the item art.
-- Continue to label development token buying power as `$TOWER (DEV)`.
+- Label the official wallet-token gate as `$TOWER`.
 
 ## Validation
 

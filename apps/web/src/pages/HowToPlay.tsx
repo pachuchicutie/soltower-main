@@ -7,17 +7,17 @@ export function HowToPlay() {
         <div className="space-y-8">
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Connect Your Wallet</h2>
-            <p>Click "Pre Register" and connect your Solana wallet to get started.</p>
+            <p>Click "Play Now" and connect your Solana wallet to enter SolBloom Village.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">2. Pre-Register for Rewards</h2>
-            <p>Secure your launch rewards:</p>
+            <h2 className="text-2xl font-semibold mb-4">2. Claim Launch Rewards</h2>
+            <p>Wallets already on the launch list receive their launch rewards automatically:</p>
             <ul className="list-disc pl-6 mt-2">
               <li>1 Rare Weapon</li>
               <li>1 Rare Armor</li>
               <li>1 Rare Costume</li>
-              <li>100 Gold</li>
+              <li>100 Locked Gold</li>
             </ul>
           </section>
 

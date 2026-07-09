@@ -9,7 +9,7 @@
 - Private schema for hidden wallet nonce metadata, Blackjack state, and economy RPC helpers.
 - Append-only economy ledger with idempotency keys and before/after balances.
 - Admin audit logs for privileged actions.
-- DEV_MODE indicators and guards for local-only tools.
+- Launch-mode wallet-token gates for town entry and seller actions.
 
 ## Trust Boundaries
 
@@ -30,19 +30,18 @@ The MVP flow is:
 7. The browser normalizes the provider result to a canonical base64-encoded 64-byte Ed25519 signature.
 8. `verify-wallet-signature` loads the stored challenge by `challengeId` and verifies stored message bytes, wallet, signature, expiry, and replay status.
 9. Expected failures return a safe structured code without exposing signatures, challenge text, tokens, or secrets.
-10. In production, the Edge Function checks the connected wallet for the configured `$TOWER` mint before town entry is allowed.
+10. The Edge Function checks the connected wallet for the official `$TOWER` mint before town entry is allowed.
 11. The wallet public key is linked to one player profile.
-12. New profiles receive exactly 50 Locked Gold once through the ledger.
+12. New profiles receive no free starter Gold. Wallets on the launch list receive 100 Locked Gold and bound, non-tradeable launch items once through idempotent server-side grants.
 
 Wallet connection never requests seed phrases, private keys, transactions, token approvals, deposits, withdrawals, or real Solana transfers.
 
-The current production token gates are server-side only:
+The current token gates are server-side only:
 
 - Town entry requires at least `1,000 $TOWER` in the connected wallet.
 - Creating Gold listings and fulfilling buy orders require account Level 10 plus at least `10,000 $TOWER`.
 - Future auction item listings must use the same Level 10 plus `10,000 $TOWER` seller gate before any server mutation is added.
 - Buying Gold or future auction items does not require the seller gate.
-- DEV_MODE displays the requirements but skips SPL wallet-balance enforcement for local testing.
 
 Wallet verification logs are metadata-only: provider, challenge ID, submitted/challenge/current public keys, masked nonce identifier, timestamps, consumed status, byte lengths, stored message hash, encoding, verifier name, and final result. Raw signatures, full challenge messages, authorization headers, and secrets are never logged.
 
@@ -71,7 +70,7 @@ Quest assignment, progress, completion, and reward claims are server-authoritati
 
 ## Hosted Verification
 
-The hosted DEV project was smoke-tested after migration, seed, secret configuration, and Edge Function deployment. The checks verified that public spectators cannot mutate balances, authenticated players cannot directly update balances through RLS, quest assignment/progress/claim paths work from verified raid history, browser quest progress mutation is blocked/no-op under RLS, a safe Edge Function invocation succeeds, the wallet verification path can link Marky, player bootstrap can read required server-side data, and frontend bundles do not contain the service-role key value or service-role literals.
+The hosted project was smoke-tested after migration, seed, secret configuration, and Edge Function deployment. The checks verified that public spectators cannot mutate balances, authenticated players cannot directly update balances through RLS, quest assignment/progress/claim paths work from verified raid history, browser quest progress mutation is blocked/no-op under RLS, a safe Edge Function invocation succeeds, the wallet verification path can link Marky, player bootstrap can read required server-side data, and frontend bundles do not contain the service-role key value or service-role literals.
 
 ## Realtime
 

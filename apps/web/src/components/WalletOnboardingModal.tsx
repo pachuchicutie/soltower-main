@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
-  ChevronDown,
-  Code2,
   ExternalLink,
   Sparkle,
   LoaderCircle,
@@ -19,20 +17,20 @@ import {
   type PlayerBootstrapData
 } from "@soltower/shared";
 import { heroDefinitions } from "@soltower/game-engine";
-import { apiPost, WalletAuthError, type WalletAuthErrorCode } from "../lib/api";
+import { apiPost, isTowerGateErrorCode, WalletAuthError, type WalletAuthErrorCode } from "../lib/api";
 import {
   isReownConfigured,
   openReownWalletPicker,
   signReownWalletMessage,
   useReownWallet
 } from "../lib/reown";
-import { devMockWallet, markDevWalletSession } from "../lib/wallets";
 import {
   createWalletAuthRequestId,
   decodeChallengeMessageBase64,
   normalizeWalletSignature,
   validateWalletVerificationPayload
 } from "../lib/walletAuth";
+import { assertClientTowerTokenGate } from "../lib/towerTokenGate";
 import {
   ErrorState,
   GameButton,
@@ -108,8 +106,6 @@ export function WalletOnboardingModal({
   const pendingSignatureRef = useRef<string | null>(null);
   const currentWalletAddressRef = useRef<string | null>(reownWallet.address);
   currentWalletAddressRef.current = reownWallet.address;
-  const isDevMode =
-    import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test";
 
   useEffect(() => {
     previousFocusRef.current =
@@ -267,23 +263,13 @@ export function WalletOnboardingModal({
         signatureBase64,
         requestId,
         provider: walletName
-      }, isDevMode);
-      if (isDevMode) {
-        console.info("wallet_auth_preverify_diagnostic", {
-          provider: walletName,
-          challengeId: nonce.challengeId,
-          currentWalletPublicKey: maskWalletForLog(currentWalletPublicKey),
-          challengeWalletPublicKey: maskWalletForLog(challengeWalletPublicKey),
-          signedMessageByteLength: messageBytes.byteLength,
-          messageSha256: nonce.messageSha256,
-          signatureByteLength: atob(signatureBase64).length,
-          signatureEncoding: "base64"
-        });
-      }
+      });
       const response = await apiPost<VerifyResponse>("/api/auth/wallet/verify", payload);
       pendingSignatureRef.current = null;
 
       if (response.requiresProfile && response.verifiedWallet) {
+        setStatus(`Checking ${economyConfig.towerToken.symbol} entry balance...`);
+        await assertClientTowerTokenGate(response.verifiedWallet.publicKey);
         setVerifiedWallet(response.verifiedWallet);
         setStep("profile");
         setStatus(null);
@@ -305,16 +291,6 @@ export function WalletOnboardingModal({
               caught instanceof Error ? caught.message : "Wallet connection failed."
             );
       setError({ code: authError.code, message: authError.message });
-      if (isDevMode) {
-        console.error("wallet_auth_failure", {
-          code: authError.code,
-          message: authError.message,
-          provider: walletName,
-          currentWalletPublicKey: currentWalletAddressRef.current,
-          challengeWalletPublicKey,
-          requestId
-        });
-      }
       setStatus(null);
     } finally {
       connectRequestedRef.current = false;
@@ -327,9 +303,7 @@ export function WalletOnboardingModal({
     if (!isReownConfigured) {
       setError({
         code: null,
-        message: isDevMode
-          ? "Set VITE_REOWN_PROJECT_ID in apps/web/.env.local to enable Reown AppKit."
-          : "Wallet connection is temporarily unavailable."
+        message: "Wallet connection is temporarily unavailable."
       });
       return;
     }
@@ -362,16 +336,6 @@ export function WalletOnboardingModal({
         message: caught instanceof Error ? caught.message : "Wallet picker could not open."
       });
     }
-  }
-
-  async function connectDevWallet() {
-    markDevWalletSession();
-    attemptedAddressRef.current = devMockWallet.publicKey;
-    await authenticateWallet(
-      devMockWallet.publicKey,
-      devMockWallet.name,
-      async () => new Uint8Array(64)
-    );
   }
 
   async function retryWalletAuthentication() {
@@ -421,10 +385,18 @@ export function WalletOnboardingModal({
       setStep("ready");
       setStatus(null);
     } catch (caught) {
-      setError({
-        code: null,
-        message: caught instanceof Error ? caught.message : "Profile creation failed."
-      });
+      const authError =
+        caught instanceof WalletAuthError
+          ? caught
+          : new WalletAuthError(
+              "unknown_verification_error",
+              caught instanceof Error ? caught.message : "Profile creation failed."
+            );
+      if (isTowerGateError(authError.code)) {
+        setStep("wallet");
+        setVerifiedWallet(null);
+      }
+      setError({ code: authError.code, message: authError.message });
       setStatus(null);
     } finally {
       setBusy(false);
@@ -477,11 +449,11 @@ export function WalletOnboardingModal({
               transaction approval during sign-in.
             </span>
           </div>
-          <TokenAccessNote isDevMode={isDevMode} />
+          <TokenAccessNote />
           <GameButton
             variant="primary"
             className="wallet-connect-command"
-            disabled={busy || (!isReownConfigured && !isDevMode)}
+            disabled={busy}
             onClick={() => void openWalletPicker()}
           >
             {busy ? <LoaderCircle className="spin" size={19} /> : <WalletCards size={20} />}
@@ -490,32 +462,6 @@ export function WalletOnboardingModal({
           <button type="button" className="spectate-link" onClick={onSpectate} disabled={busy}>
             Spectate SolBloom Village instead
           </button>
-          {!isReownConfigured && isDevMode ? (
-            <div className="reown-config-note" role="note">
-              <Code2 size={17} aria-hidden="true" />
-              <span>
-                Reown is not configured. Set <code>VITE_REOWN_PROJECT_ID</code> in{" "}
-                <code>apps/web/.env.local</code>.
-              </span>
-            </div>
-          ) : null}
-          {isDevMode ? (
-            <details className="developer-options">
-              <summary>
-                <span>Developer options</span>
-                <ChevronDown size={16} aria-hidden="true" />
-              </summary>
-              <GameButton
-                variant="ghost"
-                className="dev-wallet-command"
-                disabled={busy}
-                onClick={() => void connectDevWallet()}
-              >
-                <Code2 size={18} />
-                DEV ONLY — NOT A REAL WALLET
-              </GameButton>
-            </details>
-          ) : null}
           <p className="wallet-safety-footer">
             No transactions. No approvals. Your wallet stays in your control.
           </p>
@@ -555,7 +501,7 @@ export function WalletOnboardingModal({
             {availabilityMessage(availability)}
           </p>
           <div className="starter-grant-note">
-            You will begin with <strong>50 Locked Gold</strong> and starter gear.
+            You will begin with starter gear. Launch-list wallets receive their rewards automatically.
           </div>
           <GameButton
             variant="primary"
@@ -586,10 +532,6 @@ export function WalletOnboardingModal({
           <ProfilePreviewStat label="Earned Gold" value={summary.player.balances.EARNED_GOLD} />
           <ProfilePreviewStat label="Locked Gold" value={summary.player.balances.LOCKED_GOLD} />
           <ProfilePreviewStat
-            label="Test Token · DEV"
-            value={summary.player.balances.TEST_TOKEN}
-          />
-          <ProfilePreviewStat
             label="Hero"
             value={
               heroDefinitions.find((hero) => hero.id === summary.selectedHeroId)?.name ??
@@ -608,26 +550,38 @@ export function WalletOnboardingModal({
       {error ? (
         <ErrorState
           action={
-            reownWallet.isConnected && step === "wallet" ? (
+            isTowerGateError(error.code) ? (
+              <a
+                className="game-button game-button-primary"
+                href={economyConfig.towerToken.jupiterSwapUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ExternalLink size={15} aria-hidden="true" /> Buy on Jupiter
+              </a>
+            ) : reownWallet.isConnected && step === "wallet" ? (
               <GameButton variant="ghost" onClick={() => void retryWalletAuthentication()}>
                 Try Again
               </GameButton>
             ) : undefined
           }
         >
-          {error.message}
+          {isTowerGateError(error.code) ? (
+            <>
+              Sorry, you need at least {economyConfig.tokenGate.playMinimumTower.toLocaleString()}{" "}
+              {economyConfig.towerToken.symbol} in this wallet before you can enter and play.
+            </>
+          ) : error.message}
         </ErrorState>
       ) : null}
     </GameModal>
   );
 }
 
-function TokenAccessNote({ isDevMode }: { isDevMode: boolean }) {
+function TokenAccessNote() {
   const playRequirement = economyConfig.tokenGate.playMinimumTower.toLocaleString();
   const sellRequirement = economyConfig.tokenGate.sellerMinimumTower.toLocaleString();
-  const towerLabel = isDevMode
-    ? `${economyConfig.towerToken.symbol} (DEV)`
-    : economyConfig.towerToken.symbol;
+  const towerLabel = economyConfig.towerToken.symbol;
   return (
     <div className="token-access-note" role="note">
       <ShieldCheck size={19} aria-hidden="true" />
@@ -637,9 +591,6 @@ function TokenAccessNote({ isDevMode }: { isDevMode: boolean }) {
           Selling Gold or auction items requires Level {economyConfig.tokenGate.sellerMinimumAccountLevel} and{" "}
           {sellRequirement} {towerLabel}. Buying remains open.
         </span>
-        {isDevMode ? (
-          <small>Local development shows this gate but skips wallet-token enforcement for testing.</small>
-        ) : null}
       </div>
       <a
         href={economyConfig.towerToken.jupiterSwapUrl}
@@ -652,6 +603,10 @@ function TokenAccessNote({ isDevMode }: { isDevMode: boolean }) {
       </a>
     </div>
   );
+}
+
+function isTowerGateError(code: WalletAuthErrorCode | null): boolean {
+  return isTowerGateErrorCode(code);
 }
 
 function HeroStarterSelection({
@@ -863,13 +818,6 @@ function HeroTraitList({ title, items }: { title: string; items: string[] }) {
       </ul>
     </div>
   );
-}
-
-function maskWalletForLog(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  return value.length <= 10 ? `${value.slice(0, 2)}...` : `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 function hasBootstrap(response: VerifyResponse): response is VerifyResponse & PlayerBootstrapData {

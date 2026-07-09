@@ -1,0 +1,26 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="stormcallBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(65 43) rotate(90) scale(76)">
+      <stop stop-color="#2C6CA3"/>
+      <stop offset="0.55" stop-color="#10213B"/>
+      <stop offset="1" stop-color="#050912"/>
+    </radialGradient>
+    <linearGradient id="stormcallShaft" x1="30" y1="98" x2="95" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55D8FF"/>
+      <stop offset="0.5" stop-color="#F5D56A"/>
+      <stop offset="1" stop-color="#ECF8FF"/>
+    </linearGradient>
+    <filter id="stormcallGlow" x="-20" y="-20" width="168" height="168" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#7CE8FF" flood-opacity="0.8"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020617" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+  <rect x="7" y="7" width="114" height="114" rx="18" fill="url(#stormcallBg)"/>
+  <rect x="10" y="10" width="108" height="108" rx="16" stroke="#87ECFF" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="13" stroke="#F3CA63" stroke-opacity="0.55"/>
+  <path d="M32 98L91 39" stroke="url(#stormcallShaft)" stroke-width="7" stroke-linecap="round" filter="url(#stormcallGlow)"/>
+  <path d="M86 23L104 20L101 38L112 47L95 52L90 68L80 54L63 57L72 42L67 27L82 34L86 23Z" fill="#EAFBFF" stroke="#F3D36D" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M45 84L55 94L39 108L29 98L45 84Z" fill="#12365A" stroke="#80E7FF" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M63 65L49 58L64 53L59 37L73 47L86 36L82 53L96 60L80 64L83 81L70 70L57 80L63 65Z" fill="#F7DB73" opacity="0.92"/>
+  <path d="M24 44L36 43M23 63L34 68M64 20L66 31M104 76L96 87" stroke="#BDEFFF" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
+</svg>

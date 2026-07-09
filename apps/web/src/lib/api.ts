@@ -10,7 +10,6 @@ import {
   starterEquipment,
   starlightMaterialDefinitions,
   vaultEquipment,
-  TOWN_PRESENCE_STALE_AFTER_SECONDS,
   TOWN_SERVER_CAPACITY,
   townServerIds,
   type BalanceSnapshot
@@ -179,6 +178,9 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   if (path === "/api/inventory/full-costume") {
     return invokeFunction<T>("equip-full-costume", body);
   }
+  if (path === "/api/inventory/gift") {
+    return invokeFunction<T>("gift-inventory-item", body);
+  }
   if (path === "/api/lobbies") {
     return invokeFunction<T>("create-lobby", body);
   }
@@ -274,7 +276,7 @@ async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
   });
   if (error) {
     const detail = await functionErrorDetail(error);
-    if (name === "verify-wallet-signature" && detail.code) {
+    if (detail.code && isWalletAuthErrorCode(detail.code)) {
       throw new WalletAuthError(detail.code, detail.message);
     }
     throw new Error(detail.message);
@@ -313,7 +315,10 @@ async function readInventory<T>(): Promise<T> {
         equippedSlot: typeof row.equipped_slot === "string" ? row.equipped_slot : null,
         level: 1,
         bound: row.bound !== false,
+        tradeable: row.is_tradeable === true,
+        giftable: row.is_giftable === true,
         relistable: Boolean(row.relistable),
+        acquiredFrom: String(row.acquired_from ?? ""),
         stats: definition?.stats ?? {}
       };
     });
@@ -329,6 +334,7 @@ async function readInventory<T>(): Promise<T> {
       rarity: definition?.rarity ?? String(row.rarity ?? "COMMON"),
       bound: row.is_bound !== false,
       tradeable: row.is_tradeable === true,
+      giftable: row.is_giftable === true,
       source: String(row.source ?? "starlight_vault")
     };
   });
@@ -644,6 +650,10 @@ export async function readFunctionErrorResponse(
     return { code: null, message: payload.error };
   }
   return { code: null, message: "Supabase Edge Function request failed" };
+}
+
+export function isTowerGateErrorCode(value: unknown): value is Extract<WalletAuthErrorCode, "tower_token_gate" | "tower_token_check_unavailable"> {
+  return value === "tower_token_gate" || value === "tower_token_check_unavailable";
 }
 
 function isWalletAuthErrorCode(value: unknown): value is WalletAuthErrorCode {

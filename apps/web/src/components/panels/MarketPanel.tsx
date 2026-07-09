@@ -84,8 +84,7 @@ export function MarketPanel() {
   const [sellPrice, setSellPrice] = useState(2);
   const [buyOrderGold, setBuyOrderGold] = useState<number>(economyConfig.marketMinimumGoldQuantity);
   const [buyOrderPrice, setBuyOrderPrice] = useState(2);
-  const isDevMode = import.meta.env.VITE_APP_ENV === "development" || import.meta.env.MODE === "test";
-  const towerLabel = isDevMode ? `${economyConfig.towerToken.symbol} (DEV)` : economyConfig.towerToken.symbol;
+  const towerLabel = economyConfig.towerToken.symbol;
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<PlayerBootstrapData>("/api/player/me") });
   const listings = useQuery({
     queryKey: ["market-listings"],
@@ -173,8 +172,8 @@ export function MarketPanel() {
   const myHistory = (listings.data?.history ?? []).filter(
     (trade) => trade.buyerPlayerId === currentPlayerId || trade.sellerPlayerId === currentPlayerId
   );
-  const sellerGate = getSellerGate(me.data, isDevMode, economyConfig.tokenGate.sellerMinimumTower);
-  const auctionGate = getSellerGate(me.data, isDevMode, economyConfig.tokenGate.auctionSellerMinimumTower);
+  const sellerGate = getSellerGate(me.data, economyConfig.tokenGate.sellerMinimumTower);
+  const auctionGate = getSellerGate(me.data, economyConfig.tokenGate.auctionSellerMinimumTower);
   const feedEntries = useMemo(
     () =>
       createFeedEntries({
@@ -397,20 +396,16 @@ function MarketNote({ towerLabel }: { towerLabel: string }) {
   );
 }
 
-function getSellerGate(data: PlayerBootstrapData | undefined, isDevMode: boolean, minimumTower: number) {
+function getSellerGate(data: PlayerBootstrapData | undefined, minimumTower: number) {
   const player = data?.player;
   const level = player?.accountLevel ?? 0;
-  const towerBalance = player?.balances.TEST_TOKEN ?? 0;
   const levelOk = level >= economyConfig.tokenGate.sellerMinimumAccountLevel;
-  const tokenOk = isDevMode || towerBalance >= minimumTower;
   return {
-    canSell: levelOk && tokenOk,
+    canSell: levelOk,
     level,
-    towerBalance,
     minimumTower,
     levelOk,
-    tokenOk,
-    isDevMode
+    tokenOk: true
   };
 }
 
@@ -436,9 +431,6 @@ function MarketSellerGateCard({
         <span>
           {actionLabel} requires {levelRequirement} and {tokenRequirement}. Buying is open without this seller gate.
         </span>
-        {gate.isDevMode ? (
-          <small>DEV_MODE: token balance is shown for planning only; wallet token checks are not enforced locally.</small>
-        ) : null}
         <a
           className="market-gate-link"
           href={economyConfig.towerToken.jupiterSwapUrl}
@@ -454,7 +446,7 @@ function MarketSellerGateCard({
           {gate.levelOk ? "Ready" : `Need ${levelRequirement}`}
         </span>
         <span className={gate.tokenOk ? "is-ok" : "is-missing"}>
-          {gate.tokenOk ? `${towerLabel} ready` : `Need ${tokenRequirement}`}
+          Wallet check on submit
         </span>
       </div>
     </GameCard>

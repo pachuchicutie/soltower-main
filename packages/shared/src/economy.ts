@@ -1,13 +1,13 @@
 export const economyConfig = {
-  starterLockedGold: 50,
+  starterLockedGold: 0,
   marketMinimumGoldQuantity: 100,
   marketSellerTaxRate: 0.1,
   blackjackProfitCapRate: 0.6,
   treasuryPlayerId: "treasury",
   towerToken: {
     symbol: "$TOWER",
-    temporaryMint: "FX1mwQ5CZHutv5jCAMJ4jxE7XYeYBpVuX2Qk5MuRpump",
-    jupiterSwapUrl: "https://jup.ag/swap/SOL-FX1mwQ5CZHutv5jCAMJ4jxE7XYeYBpVuX2Qk5MuRpump"
+    mint: "J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump",
+    jupiterSwapUrl: "https://jup.ag/swap/SOL-J7Eea4gmrHZpjwSgycp5G3rSfeh5cZNgFE8LYJQwpump"
   },
   tokenGate: {
     playMinimumTower: 1000,

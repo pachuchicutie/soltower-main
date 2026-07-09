@@ -16,13 +16,13 @@ export function Docs() {
             <li>Defend the towers with friends</li>
           </ul>
 
-          <h2>Pre-Registration Rewards</h2>
-          <p>Pre-register now to receive:</p>
+          <h2>Launch Rewards</h2>
+          <p>Wallets already on the launch list receive these rewards automatically after profile creation:</p>
           <ul>
             <li>1 Rare Weapon</li>
             <li>1 Rare Armor</li>
             <li>1 Rare Costume</li>
-            <li>100 Gold</li>
+            <li>100 Locked Gold</li>
           </ul>
 
           <h2>Economy</h2>

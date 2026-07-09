@@ -1,0 +1,27 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="emberweaveBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 43) rotate(90) scale(76)">
+      <stop stop-color="#7F3D4D"/>
+      <stop offset="0.54" stop-color="#151E36"/>
+      <stop offset="1" stop-color="#050912"/>
+    </radialGradient>
+    <linearGradient id="emberweaveCloth" x1="44" y1="27" x2="87" y2="105" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE29A"/>
+      <stop offset="0.38" stop-color="#E86147"/>
+      <stop offset="1" stop-color="#641E3E"/>
+    </linearGradient>
+    <filter id="emberweaveGlow" x="-20" y="-20" width="168" height="168" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FF9A4E" flood-opacity="0.78"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020617" flood-opacity="0.82"/>
+    </filter>
+  </defs>
+  <rect x="7" y="7" width="114" height="114" rx="18" fill="url(#emberweaveBg)"/>
+  <rect x="10" y="10" width="108" height="108" rx="16" stroke="#86EAFF" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="13" stroke="#F3CA63" stroke-opacity="0.55"/>
+  <path d="M47 28C53 38 58 42 64 42C70 42 75 38 81 28C88 52 96 78 101 105H27C32 78 40 52 47 28Z" fill="url(#emberweaveCloth)" stroke="#FFE3A3" stroke-width="2.5" stroke-linejoin="round" filter="url(#emberweaveGlow)"/>
+  <path d="M47 28C51 50 57 64 64 75C71 64 77 50 81 28" stroke="#2A1122" stroke-width="4" stroke-linecap="round"/>
+  <path d="M43 59C51 66 57 67 64 59C72 68 82 66 88 58" stroke="#F6D36F" stroke-width="4" stroke-linecap="round"/>
+  <path d="M39 84C50 76 56 90 64 83C72 91 81 76 91 84" stroke="#FFE29A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M53 42L45 104M75 42L83 104" stroke="#42152D" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+  <path d="M27 46L39 49M101 46L89 49M38 24L47 32M90 24L81 32" stroke="#BDF6FF" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+</svg>

@@ -36,8 +36,7 @@ export function normalizeWalletSignatureBytes(value: unknown): Uint8Array {
 }
 
 export function validateWalletVerificationPayload(
-  payload: WalletVerificationPayload,
-  allowDevWallet = false
+  payload: WalletVerificationPayload
 ): WalletVerificationPayload {
   const required = [
     payload.publicKeyBase58,
@@ -55,7 +54,7 @@ export function validateWalletVerificationPayload(
   }
   if (
     payload.publicKeyBase58 !== payload.currentWalletPublicKey ||
-    !isSolanaPublicKey(payload.publicKeyBase58, allowDevWallet)
+    !isSolanaPublicKey(payload.publicKeyBase58)
   ) {
     throw new WalletAuthError(
       "public_key_mismatch",
@@ -119,10 +118,7 @@ function signatureBytes(value: unknown): Uint8Array | null {
   return base64ToBytes(value);
 }
 
-function isSolanaPublicKey(value: string, allowDevWallet = false): boolean {
-  if (allowDevWallet && value.startsWith("DevMock")) {
-    return true;
-  }
+function isSolanaPublicKey(value: string): boolean {
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,64}$/.test(value)) {
     return false;
   }

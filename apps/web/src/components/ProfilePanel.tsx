@@ -100,7 +100,6 @@ export function ProfilePanel({ onClose, onDisconnect, onOpenModal }: ProfilePane
           <StatRow label="Power" value={data.profile.power} />
           <StatRow label="Earned Gold" value={data.profile.balances.EARNED_GOLD} />
           <StatRow label="Locked Gold" value={data.profile.balances.LOCKED_GOLD} />
-          <StatRow label="$TOWER (DEV)" value={data.profile.balances.TEST_TOKEN} />
           <StatRow label="Unlocked Maps" value={data.profile.unlockedMaps.length} />
         </div>
       ) : (

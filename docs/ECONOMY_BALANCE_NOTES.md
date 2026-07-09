@@ -36,7 +36,7 @@ Achievements should stay mostly XP, cosmetics, titles, or small one-time Gold gr
 - Earned Gold is tradeable in-game Gold.
 - Locked Gold is non-tradeable and cannot be listed, gifted, sold, converted to Test Token, or converted to Earned Gold.
 - `$TOWER` is the market buying-power label.
-- In development/test builds, player-facing premium surfaces label it as `$TOWER (DEV)` because no live on-chain settlement token exists.
+- Player-facing premium surfaces label the official holder gate as `$TOWER`.
 
 ## Market Tax
 
@@ -63,4 +63,4 @@ The browser preview is informational only. Market listing creation, purchase, bu
 - Quest progress remains server-authoritative.
 - Quest claims remain idempotent and use immutable ledger entries.
 - Browser-provided rewards, balances, prices, and permissions must be ignored by backend code.
-- Test Token and `$TOWER (DEV)` remain DEV_MODE mock values only.
+- Browser-provided wallet-token balances are never trusted for marketplace or town-entry decisions.

@@ -144,6 +144,22 @@ const swapEquipmentSchema = z.object({
   slot: z.enum(["WEAPON", "ARMOR", "RELIC", "CHARM"]),
   idempotencyKey: idempotencyKeySchema
 });
+const giftTargetSchema = {
+  recipientPlayerId: z.string().min(2).max(80),
+  idempotencyKey: idempotencyKeySchema
+};
+const giftItemSchema = z.discriminatedUnion("itemKind", [
+  z.object({
+    itemKind: z.literal("INVENTORY_ITEM"),
+    itemId: z.string().uuid(),
+    ...giftTargetSchema
+  }),
+  z.object({
+    itemKind: z.literal("FULL_COSTUME"),
+    itemId: z.string().min(2).max(120),
+    ...giftTargetSchema
+  })
+]);
 const starlightVaultStateSchema = z.object({
   includeDeveloperValidation: z.boolean().optional().default(false)
 });
@@ -287,6 +303,7 @@ export const handlers: Record<string, EdgeHandler> = {
   "equip-item": equipItem,
   "swap-equipment": equipItem,
   "unequip-item": unequipItem,
+  "gift-inventory-item": giftInventoryItem,
   "starlight-vault-state": starlightVaultState,
   "starlight-vault-draw": starlightVaultDraw,
   "equip-full-costume": equipFullCostume,
@@ -453,7 +470,7 @@ async function verifyWalletSignature(context: EdgeContext): Promise<JsonRecord> 
           publicKeyBytes.byteLength === nacl.sign.publicKeyLength &&
         signatureBytes &&
           signatureBytes.byteLength === nacl.sign.signatureLength &&
-          isValidWalletSignature(publicKeyBytes, signatureBytes, storedMessageBytes, body.provider, body.publicKeyBase58)
+          isValidWalletSignature(publicKeyBytes, signatureBytes, storedMessageBytes)
       ),
       now: Date.now()
     });
@@ -500,7 +517,7 @@ async function verifyWalletSignature(context: EdgeContext): Promise<JsonRecord> 
           expiresAt: toStringValue(nonce.expires_at)
         },
         selectedHeroId: "storm-archer",
-        starterLockedGold: 50,
+        starterLockedGold: 0,
         starterEquipmentCount: 4
       };
     }
@@ -829,7 +846,7 @@ async function startBlackjackHand(context: EdgeContext): Promise<JsonRecord> {
   const body = blackjackDealSchema.parse(context.body);
   const practiceMode = body.practice;
   if (practiceMode && !isDevMode()) {
-    throw new HttpError(403, "Practice Blackjack is available only in development and test environments");
+    throw new HttpError(403, "Practice Blackjack is unavailable");
   }
   const balance = await loadBalances(context, player.id);
   const limits = getBlackjackLimits(player.accountLevel, balance[body.balanceType]);
@@ -1035,6 +1052,21 @@ async function unequipItem(context: EdgeContext): Promise<JsonRecord> {
   requireUser(context);
   equipItemSchema.parse(context.body);
   throw new HttpError(400, "Core equipment slots cannot be unequipped. Choose a replacement item instead.");
+}
+
+async function giftInventoryItem(context: EdgeContext): Promise<JsonRecord> {
+  const user = requireUser(context);
+  const body = giftItemSchema.parse(context.body);
+  const result = await checked(
+    context.service.schema("private").rpc("transfer_item_for_auth", {
+      p_auth_user_id: user.id,
+      p_item_kind: body.itemKind,
+      p_item_id: body.itemId,
+      p_recipient_player_id: body.recipientPlayerId,
+      p_idempotency_key: body.idempotencyKey
+    })
+  );
+  return { transfer: camelRecord(asRecord(result.data, "item transfer")) };
 }
 
 async function starlightVaultState(context: EdgeContext): Promise<JsonRecord> {
@@ -1536,7 +1568,7 @@ function unavailableReason(definition: JsonRecord): string {
   if (toBoolean(definition.requires_party)) return "Party raid validation is not enabled yet.";
   if (toBoolean(definition.requires_skill_events)) return "Verified skill-use events are not enabled yet.";
   if (toBoolean(definition.requires_boss)) return "No currently unlocked boss map is available.";
-  return "Not eligible for the current DEV content set.";
+  return "Not eligible for the current quest pool.";
 }
 
 async function ensureQuestAssignments(context: EdgeContext, playerId: string): Promise<void> {
@@ -2300,9 +2332,6 @@ async function assertGoldSellerRequirements(context: EdgeContext, authUserId: st
       `Selling Gold requires account level ${economyConfig.tokenGate.sellerMinimumAccountLevel}`
     );
   }
-  if (isDevMode()) {
-    return;
-  }
   const wallet = await loadWallet(context, player.id);
   await assertWalletTowerBalance(
     wallet.full,
@@ -2330,13 +2359,10 @@ async function assertWalletTowerBalance(
   minimumTower: number,
   actionLabel: string
 ): Promise<void> {
-  if (isDevMode()) {
-    return;
-  }
   if (!walletPublicKey) {
     throw new HttpError(
       403,
-      `${actionLabel} requires a linked wallet with at least ${formatTowerAmount(minimumTower)} ${economyConfig.towerToken.symbol}`,
+      `Sorry, ${actionLabel.toLowerCase()} requires a linked wallet with at least ${formatTowerAmount(minimumTower)} ${economyConfig.towerToken.symbol}`,
       "tower_token_gate"
     );
   }
@@ -2344,7 +2370,7 @@ async function assertWalletTowerBalance(
   if (balance < minimumTower) {
     throw new HttpError(
       403,
-      `${actionLabel} requires ${formatTowerAmount(minimumTower)} ${economyConfig.towerToken.symbol}`,
+      `Sorry, ${actionLabel.toLowerCase()} requires at least ${formatTowerAmount(minimumTower)} ${economyConfig.towerToken.symbol}`,
       "tower_token_gate"
     );
   }
@@ -2363,7 +2389,7 @@ async function loadWalletTowerBalance(walletPublicKey: string): Promise<number> 
         method: "getTokenAccountsByOwner",
         params: [
           walletPublicKey,
-          { mint: economyConfig.towerToken.temporaryMint },
+          { mint: economyConfig.towerToken.mint },
           { encoding: "jsonParsed" }
         ]
       })
@@ -2745,14 +2771,14 @@ async function failWalletVerification(
   storedMessage?: string,
   submittedMessage?: string
 ): Promise<never> {
-  const developmentHashes =
+  const diagnosticHashes =
     isDevMode() && storedMessage !== undefined && submittedMessage !== undefined
       ? {
           storedMessageSha256: await sha256(storedMessage),
           submittedMessageSha256: await sha256(submittedMessage)
         }
       : {};
-  console.error(JSON.stringify({ ...diagnostic, ...developmentHashes, result: code }));
+  console.error(JSON.stringify({ ...diagnostic, ...diagnosticHashes, result: code }));
   throw walletAuthError(code);
 }
 
@@ -2812,17 +2838,8 @@ function challengeMessageField(message: string, label: string): string {
 function isValidWalletSignature(
   publicKeyBytes: Uint8Array,
   signature: Uint8Array,
-  messageBytes: Uint8Array,
-  provider: string,
-  publicKey: string
+  messageBytes: Uint8Array
 ): boolean {
-  if (
-    publicKey.startsWith("DevMock") &&
-    provider === "DEV Mock Wallet" &&
-    isDevMode()
-  ) {
-    return true;
-  }
   try {
     return (
       publicKeyBytes.byteLength === nacl.sign.publicKeyLength &&

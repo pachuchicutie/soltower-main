@@ -1,0 +1,28 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="flameveilBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(63 42) rotate(90) scale(78)">
+      <stop stop-color="#7B3B55"/>
+      <stop offset="0.52" stop-color="#18213A"/>
+      <stop offset="1" stop-color="#050912"/>
+    </radialGradient>
+    <linearGradient id="flameveilBlade" x1="41" y1="89" x2="81" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FEC75F"/>
+      <stop offset="0.45" stop-color="#FF6D4B"/>
+      <stop offset="1" stop-color="#EAFBFF"/>
+    </linearGradient>
+    <filter id="flameveilGlow" x="-20" y="-20" width="168" height="168" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FF8A4A" flood-opacity="0.85"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020617" flood-opacity="0.78"/>
+    </filter>
+  </defs>
+  <rect x="7" y="7" width="114" height="114" rx="18" fill="url(#flameveilBg)"/>
+  <rect x="10" y="10" width="108" height="108" rx="16" stroke="#85E9FF" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="13" stroke="#F3CA63" stroke-opacity="0.58"/>
+  <path d="M75 21C84 45 75 65 57 84L45 72C58 52 63 36 75 21Z" fill="url(#flameveilBlade)" stroke="#FFF0B5" stroke-width="2.5" stroke-linejoin="round" filter="url(#flameveilGlow)"/>
+  <path d="M51 78L68 95" stroke="#F4D46D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M43 72L57 86L49 94L35 80L43 72Z" fill="#13233D" stroke="#7EE8FF" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M33 83L46 96L34 108L21 95L33 83Z" fill="#071120" stroke="#F0C96A" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M87 51C96 60 98 72 91 83C89 73 82 68 73 65C84 62 88 57 87 51Z" fill="#FFB65E" opacity="0.88"/>
+  <path d="M91 35C100 42 103 51 99 61C95 54 89 50 81 49C90 45 93 41 91 35Z" fill="#FFE28A" opacity="0.9"/>
+  <path d="M30 45L41 48M37 28L45 37M92 93L82 99" stroke="#BDF6FF" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+</svg>

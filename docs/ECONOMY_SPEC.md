@@ -53,6 +53,6 @@ Starlight duplicate materials are inventory material rows:
 
 They are bound and cannot be traded, auctioned, gifted, sold, or converted.
 
-## DEV_MODE
+## Wallet Token Gate
 
-Test Token remains DEV_MODE-only mock value. It must not be used for Starlight Vault pulls or described as on-chain settlement.
+Town entry and seller-gated market actions check the official `$TOWER` mint server-side.
