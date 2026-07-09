@@ -102,7 +102,12 @@ export function RaidPanel() {
   const lobbies = useQuery({
     queryKey: ["lobbies"],
     queryFn: () => apiGet<LobbyResponse>("/api/lobbies"),
-    refetchInterval: 3000
+    // Never keep a stale empty board cached for 5 minutes (global default).
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchInterval: 2500,
+    retry: 2,
+    enabled: Boolean(me.data?.player?.id)
   });
 
   const accountLevel = me.data?.player?.accountLevel ?? 1;
@@ -212,6 +217,7 @@ export function RaidPanel() {
       playUiSound("interactionOpen");
       setNeededHeroIds([]);
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
     }
   });
 
@@ -220,6 +226,7 @@ export function RaidPanel() {
     onSuccess: async () => {
       playUiSound("interactionOpen");
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
     }
   });
 
@@ -227,6 +234,7 @@ export function RaidPanel() {
     mutationFn: (lobbyId: string) => apiPost<{ ok: true }>(`/api/lobbies/${lobbyId}/leave`, {}),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
     }
   });
 
@@ -236,6 +244,7 @@ export function RaidPanel() {
     onSuccess: async () => {
       playUiSound("success");
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
     }
   });
 
@@ -244,6 +253,7 @@ export function RaidPanel() {
       apiPost<{ lobby: Lobby }>(`/api/lobbies/${lobbyId}/kick`, { playerId }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
     }
   });
 
@@ -612,7 +622,20 @@ export function RaidPanel() {
           </div>
         </div>
         <div className="raid-lobby-list">
-          {visibleOpenLobbies.length > 0 ? (
+          {lobbies.isLoading || (lobbies.isFetching && !lobbies.data) ? (
+            <div className="raid-empty-state">
+              <span>Loading open parties...</span>
+              <small>Fetching live recruitment from SolBloom.</small>
+            </div>
+          ) : lobbies.isError ? (
+            <div className="raid-empty-state">
+              <span>Could not load parties.</span>
+              <small>{lobbies.error instanceof Error ? lobbies.error.message : "Retrying shortly."}</small>
+              <button type="button" className="raid-copy-button" onClick={() => void lobbies.refetch()}>
+                Retry
+              </button>
+            </div>
+          ) : visibleOpenLobbies.length > 0 ? (
             visibleOpenLobbies.map((lobby) => {
               const lobbyStage = stageById.get(lobby.mapId) ?? selectedStage;
               const onSelectedStage = lobby.mapId === selectedStage.id;
@@ -648,7 +671,7 @@ export function RaidPanel() {
             <div className="raid-empty-state">
               <img src="/assets/soltower/environment/props/campfire.png" alt="" className="raid-empty-illustration" />
               <span>No open parties yet.</span>
-              <small>Create a lobby and lead the first defense.</small>
+              <small>Create a lobby and lead the first defense. Parties from every stage appear here automatically.</small>
             </div>
           )}
         </div>

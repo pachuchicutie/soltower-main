@@ -80,6 +80,25 @@ describe("wallet auth browser boundary", () => {
     });
   });
 
+  it("preserves non-wallet edge error messages instead of the generic SDK fallback", async () => {
+    await expect(
+      readFunctionErrorResponse(
+        new Response(JSON.stringify({ ok: false, code: "town_server_full", message: "Town server is full" }), {
+          status: 409
+        })
+      )
+    ).resolves.toEqual({
+      code: null,
+      message: "Town server is full"
+    });
+    await expect(
+      readFunctionErrorResponse(new Response(JSON.stringify({ error: "Chat message cannot be empty" }), { status: 400 }))
+    ).resolves.toEqual({
+      code: null,
+      message: "Chat message cannot be empty"
+    });
+  });
+
   it("uses a typed wallet auth error without carrying signature data", () => {
     const error = new WalletAuthError("invalid_signature", "Signature verification failed.");
     expect(error.code).toBe("invalid_signature");

@@ -31,6 +31,7 @@ const requiredFunctions = [
   "leave-lobby",
   "set-ready-state",
   "kick-lobby-player",
+  "list-open-lobbies",
   "start-prototype-raid",
   "finalize-prototype-raid",
   "get-player-quests",
@@ -197,6 +198,10 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("assertTownServerCapacity");
     expect(actions).toContain("updateTownPresence");
     expect(actions).toContain("town_channel: body.townChannel");
+    // Chat send must not hard-fail on town capacity; presence refresh is best-effort.
+    expect(actions).toContain("async function sendChatMessage");
+    expect(actions).toContain("never block the chat insert");
+    expect(api).toContain("extractFunctionErrorPayload");
     expect(migration).toContain("add column if not exists town_channel");
     expect(migration).toContain("solbloom-5");
     expect(migration).toContain("idx_player_presence_town_channel");
@@ -288,8 +293,11 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("reward_xp: xp");
     expect(actions).toContain('z.literal("open-lobbies")');
     expect(actions).toContain("listOpenLobbies");
+    expect(actions).toContain('"list-open-lobbies": listOpenLobbies');
     expect(actions).toContain("resolveLobbyDisplayName");
-    expect(api).toContain('section: "open-lobbies"');
+    expect(api).toContain('invokeFunction<unknown>("list-open-lobbies"');
+    expect(api).toContain("readLobbiesFromTables");
+    expect(api).toContain("isLobbyListPayload");
     expect(xpMigration).toContain("create or replace function private.add_player_xp");
     expect(xpMigration).toContain("private.player_xp_ledger");
   });

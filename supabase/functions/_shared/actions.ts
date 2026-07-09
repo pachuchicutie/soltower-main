@@ -313,6 +313,7 @@ export const handlers: Record<string, EdgeHandler> = {
   "leave-lobby": leaveLobby,
   "set-ready-state": setReadyState,
   "kick-lobby-player": kickLobbyPlayer,
+  "list-open-lobbies": listOpenLobbies,
   "start-prototype-raid": startPrototypeRaid,
   "finalize-prototype-raid": startPrototypeRaid,
   "get-player-quests": getPlayerQuests,
@@ -1152,6 +1153,7 @@ async function createLobby(context: EdgeContext): Promise<JsonRecord> {
       host: true
     })
   );
+  await maybeSetLobbyMemberDisplayName(context, toStringValue(lobby.id), player.id, player.displayName);
   return { lobby: await loadLobby(context, toStringValue(lobby.id)) };
 }
 
@@ -1195,6 +1197,7 @@ async function joinLobby(context: EdgeContext): Promise<JsonRecord> {
       host: false
     })
   );
+  await maybeSetLobbyMemberDisplayName(context, body.lobbyId, player.id, player.displayName);
   return { lobby: await loadLobby(context, body.lobbyId) };
 }
 
@@ -1836,9 +1839,18 @@ async function sendChatMessage(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = chatSchema.parse(context.body);
+  const message = body.message.trim().replace(/\s+/g, " ");
+  if (!message) {
+    throw new HttpError(400, "Chat message cannot be empty");
+  }
+  // Town chat must not re-run capacity gates: players already in the village still need to talk,
+  // and a full-server check was incorrectly hard-failing sends with a generic edge error.
   if (body.channel === "TOWN") {
-    await assertTownServerCapacity(context, body.townChannel, player.id);
-    await updateTownPresence(context, player.id, body.townChannel);
+    try {
+      await updateTownPresence(context, player.id, body.townChannel);
+    } catch {
+      // Presence refresh is best-effort; never block the chat insert on it.
+    }
   }
   const result = await checked(
     context.service
@@ -1848,12 +1860,18 @@ async function sendChatMessage(context: EdgeContext): Promise<JsonRecord> {
         town_channel: body.townChannel,
         from_player_id: player.id,
         target_player_id: body.targetPlayerId ?? null,
-        message: body.message
+        message
       })
       .select("*")
       .single()
   );
-  return { message: camelRecord(asRecord(result.data, "chat message")) };
+  return {
+    message: {
+      ...camelRecord(asRecord(result.data, "chat message")),
+      fromDisplayName: player.displayName,
+      fromHeroId: player.selectedHeroId
+    }
+  };
 }
 
 async function saveTownPosition(context: EdgeContext): Promise<JsonRecord> {
@@ -2579,7 +2597,10 @@ async function listOpenLobbies(context: EdgeContext): Promise<JsonRecord> {
     const profile = profileByPlayerId.get(playerId);
     const member = {
       playerId,
-      displayName: resolveLobbyDisplayName(profile?.display_name, playerId),
+      displayName: resolveLobbyDisplayName(
+        profile?.display_name ?? row.display_name,
+        playerId
+      ),
       heroId:
         toStringValue(row.hero_id) ||
         toStringValue(profile?.selected_hero_id) ||
@@ -2609,7 +2630,7 @@ async function listOpenLobbies(context: EdgeContext): Promise<JsonRecord> {
         lobby.members.length > 0 &&
         lobby.members.some((member) => toBoolean((member as JsonRecord).host))
     );
-  return { lobbies };
+  return { lobbies, generatedAt: new Date().toISOString() };
 }
 
 async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRecord> {
@@ -2634,7 +2655,7 @@ async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRec
       const profile = profileByPlayerId.get(playerId);
       return {
         playerId,
-        displayName: resolveLobbyDisplayName(profile?.display_name, playerId),
+        displayName: resolveLobbyDisplayName(profile?.display_name ?? row.display_name, playerId),
         heroId: toStringValue(row.hero_id) || toStringValue(profile?.selected_hero_id) || "storm-archer",
         accountLevel: toNumber(row.account_level ?? profile?.account_level, 1),
         power: toNumber(row.power ?? profile?.power),
@@ -2643,6 +2664,23 @@ async function loadLobby(context: EdgeContext, lobbyId: string): Promise<JsonRec
       };
     })
   };
+}
+
+async function maybeSetLobbyMemberDisplayName(
+  context: EdgeContext,
+  lobbyId: string,
+  playerId: string,
+  displayName: string
+): Promise<void> {
+  // display_name is added by 20260709000400_raid_lobby_member_display_names.sql — ignore if missing.
+  const result = await context.service
+    .from("raid_lobby_members")
+    .update({ display_name: displayName })
+    .eq("lobby_id", lobbyId)
+    .eq("player_id", playerId);
+  if (result.error && !/display_name|column/i.test(result.error.message)) {
+    // Unexpected errors still shouldn't block lobby create/join.
+  }
 }
 
 function parseNeededHeroIds(value: unknown): string[] {

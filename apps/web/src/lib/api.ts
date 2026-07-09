@@ -275,11 +275,15 @@ async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (error) {
-    const detail = await functionErrorDetail(error);
+    // Some SDK versions put the JSON error body on `data` even when `error` is set.
+    const detail = await functionErrorDetail(error, data);
     if (detail.code && isWalletAuthErrorCode(detail.code)) {
       throw new WalletAuthError(detail.code, detail.message);
     }
     throw new Error(detail.message);
+  }
+  if (data && typeof data === "object" && "error" in data && typeof (data as JsonRecord).error === "string") {
+    throw new Error(String((data as JsonRecord).error));
   }
   return data as T;
 }
@@ -404,10 +408,155 @@ async function readBuyOrders<T>(): Promise<T> {
 }
 
 async function readLobbies<T>(): Promise<T> {
-  // Service-role edge path resolves every member's real display name. Direct table reads cannot —
-  // RLS only lets a player read their own player_profiles row, so other hosts became "Unknown Guardian"
-  // and party lists looked empty/broken until a local create forced a partial refresh.
-  return invokeFunction<T>("get-player-bootstrap-data", { section: "open-lobbies" });
+  // Prefer service-role list (real names + stale cleanup). Always fall back to a direct table
+  // read so the board is never empty just because an edge deploy is lagging or returns the wrong shape.
+  try {
+    const edge = await invokeFunction<unknown>("list-open-lobbies", {});
+    if (isLobbyListPayload(edge)) {
+      return edge as T;
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const bootstrap = await invokeFunction<unknown>("get-player-bootstrap-data", {
+      section: "open-lobbies"
+    });
+    if (isLobbyListPayload(bootstrap)) {
+      return bootstrap as T;
+    }
+  } catch {
+    // fall through to table read
+  }
+  return (await readLobbiesFromTables()) as T;
+}
+
+function isLobbyListPayload(value: unknown): value is { lobbies: unknown[] } {
+  return Boolean(value && typeof value === "object" && Array.isArray((value as JsonRecord).lobbies));
+}
+
+async function readLobbiesFromTables(): Promise<{ lobbies: JsonRecord[] }> {
+  const client = getSupabaseClient();
+  await requireExistingSession(client);
+  const activeSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const lobbiesResult = await checked<Array<JsonRecord>>(
+    client
+      .from("raid_lobbies")
+      .select("*")
+      .eq("status", "OPEN")
+      .gte("created_at", activeSince)
+      .order("created_at", { ascending: false })
+      .limit(100)
+  );
+  const lobbyRows = lobbiesResult.data;
+  if (lobbyRows.length === 0) {
+    return { lobbies: [] };
+  }
+  const lobbyIds = lobbyRows.map((lobby) => stringValue(lobby.id)).filter(Boolean);
+  const membersResult = await checked<Array<JsonRecord>>(
+    client.from("raid_lobby_members").select("*").in("lobby_id", lobbyIds)
+  );
+  const memberRows = membersResult.data;
+  const memberPlayerIds = [
+    ...new Set(memberRows.map((member) => stringValue(member.player_id)).filter(Boolean))
+  ];
+  // Optional profile join — works once open-lobby profile RLS (or display_name column) is live.
+  let profileByPlayerId = new Map<string, JsonRecord>();
+  if (memberPlayerIds.length > 0) {
+    try {
+      const profiles = await checked<Array<JsonRecord>>(
+        client
+          .from("player_profiles")
+          .select("player_id,display_name,account_level,power,selected_hero_id")
+          .in("player_id", memberPlayerIds)
+      );
+      profileByPlayerId = new Map(
+        profiles.data.map((profile) => [stringValue(profile.player_id), profile])
+      );
+    } catch {
+      profileByPlayerId = new Map();
+    }
+  }
+  const membersByLobby = new Map<string, JsonRecord[]>();
+  for (const member of memberRows) {
+    const lobbyId = stringValue(member.lobby_id);
+    const playerId = stringValue(member.player_id);
+    if (!lobbyId || !playerId) {
+      continue;
+    }
+    const profile = profileByPlayerId.get(playerId);
+    const rawName =
+      stringValue(profile?.display_name) ||
+      stringValue(member.display_name) ||
+      stringValue(member.displayName);
+    const list = membersByLobby.get(lobbyId) ?? [];
+    list.push({
+      playerId,
+      displayName: resolveClientLobbyDisplayName(rawName, playerId),
+      heroId:
+        stringValue(member.hero_id) ||
+        stringValue(profile?.selected_hero_id) ||
+        "storm-archer",
+      accountLevel:
+        typeof member.account_level === "number"
+          ? member.account_level
+          : typeof profile?.account_level === "number"
+            ? profile.account_level
+            : 1,
+      power:
+        typeof member.power === "number"
+          ? member.power
+          : typeof profile?.power === "number"
+            ? profile.power
+            : 0,
+      ready: Boolean(member.ready),
+      host: Boolean(member.host)
+    });
+    membersByLobby.set(lobbyId, list);
+  }
+  const lobbies = lobbyRows
+    .map((lobby) => {
+      const id = stringValue(lobby.id);
+      const members = membersByLobby.get(id) ?? [];
+      return {
+        ...camelRecord(lobby),
+        neededHeroIds: parseHeroIdList(lobby.needed_hero_ids ?? lobby.neededHeroIds),
+        members
+      };
+    })
+    .filter(
+      (lobby) =>
+        Array.isArray(lobby.members) &&
+        lobby.members.length > 0 &&
+        lobby.members.some((member) => Boolean((member as JsonRecord).host))
+    );
+  return { lobbies };
+}
+
+function parseHeroIdList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((entry): entry is string => typeof entry === "string");
+  }
+  if (typeof value !== "string" || value.length === 0) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function resolveClientLobbyDisplayName(value: string, playerId: string): string {
+  const displayName = value.trim();
+  if (displayName && !/^player[-_]/i.test(displayName)) {
+    return displayName;
+  }
+  if (playerId && !/^player[-_]/i.test(playerId)) {
+    return playerId;
+  }
+  return "Guardian";
 }
 
 function stringValue(value: unknown): string {
@@ -532,7 +681,8 @@ function camelRecord(row: JsonRecord): JsonRecord {
 }
 
 async function functionErrorDetail(
-  error: unknown
+  error: unknown,
+  dataFallback?: unknown
 ): Promise<{ code: WalletAuthErrorCode | null; message: string }> {
   if (
     error &&
@@ -543,38 +693,60 @@ async function functionErrorDetail(
     try {
       return await readFunctionErrorResponse(error.context.clone());
     } catch {
-      // The SDK fallback message remains useful when a response is not JSON.
+      // Fall through to data / generic message parsing.
     }
   }
-  return {
-    code: null,
-    message: error instanceof Error ? error.message : "Supabase Edge Function request failed"
-  };
+  const fromData = extractFunctionErrorPayload(dataFallback);
+  if (fromData) {
+    return fromData;
+  }
+  const fallback =
+    error instanceof Error && error.message.trim().length > 0
+      ? error.message
+      : "Supabase Edge Function request failed";
+  // SDK often only says "Edge Function returned a non-2xx status code" — keep it readable.
+  if (/non-2xx status code/i.test(fallback)) {
+    return { code: null, message: "Chat request failed. Please try again in a moment." };
+  }
+  return { code: null, message: fallback };
 }
 
 export async function readFunctionErrorResponse(
   response: Response
 ): Promise<{ code: WalletAuthErrorCode | null; message: string }> {
   const payload = (await response.json()) as unknown;
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "code" in payload &&
-    isWalletAuthErrorCode(payload.code) &&
-    "message" in payload &&
-    typeof payload.message === "string"
-  ) {
-    return { code: payload.code, message: payload.message };
+  const extracted = extractFunctionErrorPayload(payload);
+  if (extracted) {
+    return extracted;
   }
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    typeof payload.error === "string"
-  ) {
-    return { code: null, message: payload.error };
+  return {
+    code: null,
+    message: response.statusText?.trim() || "Supabase Edge Function request failed"
+  };
+}
+
+function extractFunctionErrorPayload(
+  payload: unknown
+): { code: WalletAuthErrorCode | null; message: string } | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
   }
-  return { code: null, message: "Supabase Edge Function request failed" };
+  const record = payload as JsonRecord;
+  const message =
+    typeof record.message === "string" && record.message.trim().length > 0
+      ? record.message.trim()
+      : typeof record.error === "string" && record.error.trim().length > 0
+        ? record.error.trim()
+        : typeof record.msg === "string" && record.msg.trim().length > 0
+          ? record.msg.trim()
+          : null;
+  if (!message) {
+    return null;
+  }
+  return {
+    code: isWalletAuthErrorCode(record.code) ? record.code : null,
+    message
+  };
 }
 
 export function isTowerGateErrorCode(value: unknown): value is Extract<WalletAuthErrorCode, "tower_token_gate" | "tower_token_check_unavailable"> {

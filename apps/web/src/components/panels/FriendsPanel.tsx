@@ -39,7 +39,8 @@ export function FriendsPanel() {
     [chat.data?.messages, panelOpenedAtMs]
   );
   const quickMessage = useMutation({
-    mutationFn: (message: string) => apiPost("/api/chat/message", { channel: "TOWN", message }),
+    mutationFn: (message: string) =>
+      apiPost("/api/chat/message", { channel: "TOWN", townChannel: "solbloom-1", message }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["chat"] });
     }
