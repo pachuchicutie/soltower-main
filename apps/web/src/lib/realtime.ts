@@ -86,6 +86,7 @@ export class TownRealtimeSession {
         presence: { key: this.sessionId }
       }
     });
+    this.channel = channel;
     channel
       .on("presence", { event: "sync" }, () => this.syncPresence())
       .on("presence", { event: "join" }, () => this.syncPresence())
@@ -104,6 +105,7 @@ export class TownRealtimeSession {
         if (status === "SUBSCRIBED") {
           this.options.onStatus?.("connected");
           void channel.track(this.latestState);
+          this.broadcastLatestState();
           this.startPresenceRefresh();
           return;
         }
@@ -115,7 +117,6 @@ export class TownRealtimeSession {
           this.options.onStatus?.("disconnected");
         }
       });
-    this.channel = channel;
   }
 
   publishMovement(movement: LocalTownMovement): void {
@@ -175,12 +176,7 @@ export class TownRealtimeSession {
       sequence: this.sequence,
       sentAt: Date.now()
     });
-    const payload = townMovementBroadcastSchema.parse(this.latestState);
-    void this.channel.send({
-      type: "broadcast",
-      event: "player_move",
-      payload
-    });
+    this.broadcastLatestState();
   }
 
   private syncPresence(): void {
@@ -221,6 +217,19 @@ export class TownRealtimeSession {
         sentAt: Date.now()
       };
       void this.channel.track(this.latestState);
+      this.broadcastLatestState();
     }, PRESENCE_REFRESH_INTERVAL_MS);
+  }
+
+  private broadcastLatestState(): void {
+    if (!this.channel) {
+      return;
+    }
+    const payload = townMovementBroadcastSchema.parse(this.latestState);
+    void this.channel.send({
+      type: "broadcast",
+      event: "player_move",
+      payload
+    });
   }
 }

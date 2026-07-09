@@ -34,7 +34,7 @@ import { apiGet, apiPost, idempotencyKey } from "../../lib/api";
 import { playUiSound } from "../../lib/audio";
 import { createBrowserSupabaseClient } from "../../lib/supabase";
 import { HeroAppearancePreview } from "../ui/HeroAppearancePreview";
-import { RaidBattleOverlay } from "./RaidBattleOverlay";
+import { RaidBattleOverlay, type RaidBattleMember } from "./RaidBattleOverlay";
 
 interface LobbyMember {
   playerId?: string;
@@ -131,6 +131,7 @@ export function RaidPanel() {
     ? undefined
     : openLobbiesForStage.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4);
   const myHostedLobby = openLobbiesForStage.find((lobby) => lobby.members.some((member) => member.host && member.playerId === currentPlayerId));
+  const activeRaidMembers = activeRaid ? getRaidBattleMembers(activeRaid.lobby, currentPlayerId) : [];
 
   useEffect(() => {
     const client = createBrowserSupabaseClient();
@@ -303,12 +304,7 @@ export function RaidPanel() {
       {activeRaid ? (
         <RaidBattleOverlay
           stage={activeRaid.stage}
-          members={activeRaid.lobby.members.map((member, index) => ({
-            playerId: member.playerId ?? `party-member-${index}`,
-            displayName: member.displayName,
-            heroId: member.heroId,
-            power: member.power ?? activeRaid.lobby.recommendedPower
-          }))}
+          members={activeRaidMembers}
           startsAt={activeRaid.startsAt}
           settling={startRun.isPending}
           settlementError={
@@ -829,6 +825,54 @@ function safeGuardianName(value?: string): string {
     return "Unknown Guardian";
   }
   return value;
+}
+
+function getRaidBattleMembers(lobby: Lobby, currentPlayerId?: string): RaidBattleMember[] {
+  const membersByPlayerId = new Map<string, RaidBattleMember & { knownName: boolean; currentPlayer: boolean }>();
+  for (const member of lobby.members) {
+    if (!member.playerId) {
+      continue;
+    }
+    const displayName = safeGuardianName(member.displayName);
+    const knownName = displayName !== "Unknown Guardian";
+    const currentPlayer = member.playerId === currentPlayerId;
+    if (!knownName && !currentPlayer) {
+      continue;
+    }
+    const battleMember = {
+      playerId: member.playerId,
+      displayName,
+      heroId: member.heroId,
+      power: member.power ?? lobby.recommendedPower,
+      knownName,
+      currentPlayer
+    };
+    const existing = membersByPlayerId.get(member.playerId);
+    if (!existing || (!existing.knownName && knownName) || (!existing.currentPlayer && currentPlayer)) {
+      membersByPlayerId.set(member.playerId, battleMember);
+    }
+  }
+  const battleMembers = Array.from(membersByPlayerId.values(), ({ playerId, displayName, heroId, power }) => ({
+    playerId,
+    displayName,
+    heroId,
+    power
+  }));
+  if (battleMembers.length > 0) {
+    return battleMembers.slice(0, 4);
+  }
+  const fallbackMember = lobby.members.find((member) => member.host && member.playerId) ?? lobby.members.find((member) => member.playerId);
+  if (!fallbackMember?.playerId) {
+    return [];
+  }
+  return [
+    {
+      playerId: fallbackMember.playerId,
+      displayName: safeGuardianName(fallbackMember.displayName),
+      heroId: fallbackMember.heroId,
+      power: fallbackMember.power ?? lobby.recommendedPower
+    }
+  ];
 }
 
 function isRenderableLobby(lobby: Lobby): boolean {

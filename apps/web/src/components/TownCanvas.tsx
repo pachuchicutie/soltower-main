@@ -17,6 +17,8 @@ import {
 } from "../lib/realtime";
 import type { ModalKey } from "../store/ui";
 
+const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 16000;
+
 interface TownCanvasProps {
   playerName: string;
   playerId?: string;
@@ -136,7 +138,7 @@ export function TownCanvas({
   useEffect(() => {
     if (mode !== "game" || !playerId) {
       remotePlayersRef.current = [];
-      sceneRef.current?.syncRemotePlayers([]);
+      sceneRef.current?.syncRemotePlayers([], true);
       onRealtimeOnlineChange?.(0);
       return undefined;
     }
@@ -159,12 +161,15 @@ export function TownCanvas({
           facingY: 1
         },
         onPresence: (players) => {
-          remotePlayersRef.current = players;
-          sceneRef.current?.syncRemotePlayers(players);
-          onRealtimeOnlineChange?.(players.length + 1);
+          const visiblePlayers = mergeRemotePlayers(remotePlayersRef.current, players);
+          remotePlayersRef.current = visiblePlayers;
+          sceneRef.current?.syncRemotePlayers(visiblePlayers);
+          onRealtimeOnlineChange?.(visiblePlayers.length + 1);
         },
         onMovement: (movement) => {
+          remotePlayersRef.current = mergeRemotePlayers(remotePlayersRef.current, [movement]);
           sceneRef.current?.applyRemoteMovement(movement);
+          onRealtimeOnlineChange?.(remotePlayersRef.current.length + 1);
         },
         onStatus: onRealtimeStatusChange
       });
@@ -177,7 +182,7 @@ export function TownCanvas({
     return () => {
       realtimeSessionRef.current = null;
       remotePlayersRef.current = [];
-      sceneRef.current?.syncRemotePlayers([]);
+      sceneRef.current?.syncRemotePlayers([], true);
       void session.disconnect();
     };
   }, [
@@ -206,4 +211,27 @@ export function TownCanvas({
       tabIndex={mode === "spectate" ? 0 : -1}
     />
   );
+}
+
+function mergeRemotePlayers(
+  currentPlayers: TownRealtimePlayer[],
+  incomingPlayers: TownRealtimePlayer[]
+): TownRealtimePlayer[] {
+  const freshSince = Date.now() - REMOTE_PLAYER_VISIBLE_UNTIL_MS;
+  const playersById = new Map<string, TownRealtimePlayer>();
+  for (const player of currentPlayers) {
+    if (player.sentAt >= freshSince) {
+      playersById.set(player.playerId, player);
+    }
+  }
+  for (const player of incomingPlayers) {
+    if (player.sentAt < freshSince) {
+      continue;
+    }
+    const current = playersById.get(player.playerId);
+    if (!current || player.sentAt >= current.sentAt) {
+      playersById.set(player.playerId, player);
+    }
+  }
+  return [...playersById.values()];
 }

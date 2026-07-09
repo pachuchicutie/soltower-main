@@ -90,6 +90,7 @@ const GAME_ZOOM_MAX = DESKTOP_GAME_ZOOM + 0.34;
 const DEFAULT_INTERACTION_RANGE = 58;
 const REMOTE_PLAYER_SNAP_DISTANCE = 240;
 const REMOTE_PLAYER_IDLE_AFTER_MS = 320;
+const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 16000;
 const PLAYER_COLLISION_BODY: TownRect = { offsetX: -12, offsetY: -10, width: 24, height: 21 };
 const directionRows = { down: 0, left: 1, right: 2, up: 3 } as const;
 const eightDirectionWalkRows = {
@@ -492,10 +493,14 @@ export class TownScene extends Phaser.Scene {
     this.updateNearbyInteraction();
   }
 
-  syncRemotePlayers(players: TownRealtimePlayer[]): void {
+  syncRemotePlayers(players: TownRealtimePlayer[], forceRemoveMissing = false): void {
     const visiblePlayerIds = new Set(players.map((player) => player.playerId));
+    const now = Date.now();
     for (const [playerId, runtime] of this.remotePlayers) {
-      if (!visiblePlayerIds.has(playerId)) {
+      if (
+        !visiblePlayerIds.has(playerId) &&
+        (forceRemoveMissing || now - runtime.lastReceivedAt > REMOTE_PLAYER_VISIBLE_UNTIL_MS)
+      ) {
         runtime.container.destroy(true);
         this.remotePlayers.delete(playerId);
       }
@@ -504,30 +509,7 @@ export class TownScene extends Phaser.Scene {
   }
 
   applyRemoteMovement(movement: TownMovementBroadcast): void {
-    let runtime = this.remotePlayers.get(movement.playerId);
-    
-    // Create remote player if not exists yet (from movement)
-    if (!runtime) {
-      // We don't have full player data from movement alone, so skip for now
-      // In future we can request full state
-      return;
-    }
-    
-    if (
-      runtime.sessionId !== movement.sessionId ||
-      movement.sequence <= runtime.sequence
-    ) {
-      return;
-    }
-    runtime.sequence = movement.sequence;
-    runtime.target.set(movement.x, movement.y);
-    runtime.lastReceivedAt = Date.now();
-    runtime.moving = movement.moving;
-    runtime.running = movement.running;
-    const facing = new Phaser.Math.Vector2(movement.facingX, movement.facingY);
-    if (facing.lengthSq() > 0.001) {
-      runtime.container.setData("lastFacing", facing.normalize());
-    }
+    this.upsertRemotePlayer(movement);
   }
 
   centerCameraOnPlayer(immediate = false): void {

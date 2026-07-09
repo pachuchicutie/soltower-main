@@ -47,6 +47,31 @@ describe("realtime multiplayer payloads", () => {
     ).toBe(false);
   });
 
+  it("keeps movement broadcasts self-sufficient for remote avatar creation", () => {
+    const parsed = townMovementBroadcastSchema.parse(player);
+    expect(parsed).toMatchObject({
+      playerId: "player-one",
+      displayName: "Guardian One",
+      heroId: "storm-archer",
+      appearance: player.appearance,
+      townChannel: "solbloom-1"
+    });
+    expect(
+      townMovementBroadcastSchema.safeParse({
+        sessionId: player.sessionId,
+        playerId: player.playerId,
+        x: player.x,
+        y: player.y,
+        facingX: player.facingX,
+        facingY: player.facingY,
+        moving: player.moving,
+        running: player.running,
+        sequence: player.sequence,
+        sentAt: player.sentAt
+      }).success
+    ).toBe(false);
+  });
+
   it("validates synchronized raid start events", () => {
     expect(
       raidRealtimeEventSchema.safeParse({

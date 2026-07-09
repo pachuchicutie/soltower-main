@@ -34,18 +34,7 @@ export const townRealtimePlayerSchema = z.object({
   sentAt: z.number().int().positive()
 });
 
-export const townMovementBroadcastSchema = townRealtimePlayerSchema.pick({
-  sessionId: true,
-  playerId: true,
-  x: true,
-  y: true,
-  facingX: true,
-  facingY: true,
-  moving: true,
-  running: true,
-  sequence: true,
-  sentAt: true
-});
+export const townMovementBroadcastSchema = townRealtimePlayerSchema;
 
 export const raidRealtimeEventSchema = z.discriminatedUnion("kind", [
   z.object({

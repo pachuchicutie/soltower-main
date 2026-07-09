@@ -284,6 +284,8 @@ describe("Supabase-first MVP architecture", () => {
   it("uses an atomic server-side equipment swap and blocks direct core-slot unequip", () => {
     const actions = read("supabase/functions/_shared/actions.ts");
     const migration = read("supabase/migrations/20260630000100_equipment_core_slot_swaps.sql");
+    const catalogMigration = read("supabase/migrations/20260709000200_expand_equipment_definition_catalog.sql");
+    const edgeContent = read("supabase/functions/_shared/content.ts");
     expect(actions).toContain('"swap-equipment": equipItem');
     expect(actions).toContain('rpc("swap_equipment_for_auth"');
     expect(actions).toContain("Core equipment slots cannot be unequipped");
@@ -294,6 +296,14 @@ describe("Supabase-first MVP architecture", () => {
     expect(migration).toContain("Core equipment slots must each contain exactly one item");
     expect(migration).toContain("private.recalculate_player_power");
     expect(migration).toContain("idempotency_key");
+    expect(catalogMigration).toContain("private.equipment_definition_catalog");
+    expect(catalogMigration).toContain("'voidpiercer-crossbow', 'Voidpiercer Crossbow', 'WEAPON'");
+    expect(catalogMigration).toContain("'stormscale-vest', 'Stormscale Vest', 'ARMOR'");
+    expect(catalogMigration).toContain("'celestial-aegis-armor', 'Celestial Aegis Armor', 'ARMOR'");
+    expect(catalogMigration).toContain("private.equipment_definition_slot");
+    expect(catalogMigration).toContain("private.equipment_definition_stats");
+    expect(edgeContent).toContain('id: "voidpiercer-crossbow"');
+    expect(edgeContent).toContain('id: "stormscale-vest"');
   });
 
   it("adds Starlight Vault as a Gold-only server-authoritative pull system with local asset-backed rewards", () => {

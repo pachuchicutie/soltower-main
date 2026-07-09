@@ -199,6 +199,64 @@ describe("RaidPanel", () => {
     expect((screen.getByRole("button", { name: /Start Raid/i }) as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("starts solo raid battles without stale Unknown Guardian combatants", async () => {
+    mockLobbies([
+      {
+        id: "lobby-solo-with-stale-members",
+        mapId: "tower-1-1",
+        lobbyType: "PUBLIC",
+        recommendedPower: 515,
+        members: [
+          {
+            playerId: "player-marky",
+            displayName: "Marky",
+            heroId: "storm-archer",
+            accountLevel: 10,
+            power: 1280,
+            ready: false,
+            host: true
+          },
+          {
+            playerId: "player-stale-one",
+            displayName: "player-stale-one",
+            heroId: "tide-mage",
+            accountLevel: 1,
+            power: 420,
+            ready: true,
+            host: false
+          },
+          {
+            playerId: "player-stale-two",
+            displayName: "player-stale-two",
+            heroId: "bombardier",
+            accountLevel: 1,
+            power: 430,
+            ready: true,
+            host: false
+          },
+          {
+            playerId: "player-stale-three",
+            displayName: "player-stale-three",
+            heroId: "starcaller",
+            accountLevel: 1,
+            power: 440,
+            ready: true,
+            host: false
+          }
+        ]
+      }
+    ]);
+    renderRaidPanel();
+
+    expect(await screen.findByText("Marky")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Start Raid/i }));
+
+    expect(await screen.findByRole("dialog", { name: /Sproutling Path raid battle/i })).toBeTruthy();
+    expect(screen.getByText("Marky")).toBeTruthy();
+    expect(screen.queryByText("Unknown Guardian")).toBeNull();
+    expect(document.querySelectorAll(".raid-guardian")).toHaveLength(1);
+  });
+
   it("blocks joining or creating another party while the player is already in one", async () => {
     mockLobbies([
       {
