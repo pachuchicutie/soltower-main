@@ -142,6 +142,7 @@ describe("authenticated town scene UX", () => {
     expect(scene).toContain("stormArcherEightDirectionWalkPath");
     expect(scene).toContain("tideMageEightDirectionWalkPath");
     expect(scene).toContain("bombardierEightDirectionWalkPath");
+    expect(scene).toContain("coralAlchemistIdlePath");
     expect(scene).toContain("coralAlchemistEightDirectionWalkPath");
     expect(scene).toContain("eightDirectionWalkRows[eightFacing]");
     expect(scene).toContain("/assets/soltower/heroes/shared/fallback-${action}.png");

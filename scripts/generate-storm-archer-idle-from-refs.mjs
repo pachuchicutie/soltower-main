@@ -9,7 +9,14 @@ const heroRoot = join(root, "apps/web/public/assets/soltower/heroes", heroId);
 const outputPath = join(heroRoot, "idle.png");
 const frame = { width: 64, height: 64, columns: 4, rows: 4 };
 const idleSourceNames =
-  heroId === "tide-mage"
+  heroId === "coral-alchemist"
+    ? [
+        ["down", "walk-bottom.png"],
+        ["left", "walk-bottom.png"],
+        ["right", "walk-bottom.png"],
+        ["up", "walk-bottom.png"]
+      ]
+    : heroId === "tide-mage"
     ? [
         ["down", "walk-bottom.png"],
         ["left", "walk-left.png"],

@@ -1,6 +1,19 @@
 # Build Status
 
-Updated: 2026-07-05
+Updated: 2026-07-09
+
+## Coral Alchemist 8-Direction Walk Sheet
+
+- Regenerated `apps/web/public/assets/soltower/heroes/coral-alchemist/walk-8dir.png` from the eight Coral Alchemist walk MP4 sources.
+  - Size: 256x512.
+  - Frames: 64x64.
+  - Layout: 8 direction rows x 4 walking columns.
+  - Row order: top-left, left, bottom-left, top, top-right, right, bottom-right, bottom.
+  - Generator: `scripts/generate-hero-8-direction-walk-from-videos.mjs coral-alchemist`.
+- Town movement, onboarding preview, and raid overlay cache keys now point at the all-direction Coral sheet.
+- Regenerated `apps/web/public/assets/soltower/heroes/coral-alchemist/idle.png` from `walk-bottom.png` so Coral uses the bottom-facing pose whenever idle or not moving.
+  - Generator: `scripts/generate-storm-archer-idle-from-refs.mjs coral-alchemist`.
+  - Town runtime cache key: `coral-walk-bottom-idle-20260709`.
 
 ## Temporary TOWER Token Access Gates
 

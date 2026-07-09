@@ -107,8 +107,9 @@ const stormArcherEightDirectionWalkPath = "/assets/soltower/heroes/storm-archer/
 const tideMageEightDirectionWalkPath = "/assets/soltower/heroes/tide-mage/walk-8dir.png?v=video-all-directions";
 const bombardierIdlePath = "/assets/soltower/heroes/bombardier/idle.png?v=walk-bottom-idle";
 const bombardierEightDirectionWalkPath = "/assets/soltower/heroes/bombardier/walk-8dir.png?v=video-all-directions";
+const coralAlchemistIdlePath = "/assets/soltower/heroes/coral-alchemist/idle.png?v=coral-walk-bottom-idle-20260709";
 const coralAlchemistEightDirectionWalkPath =
-  "/assets/soltower/heroes/coral-alchemist/walk-8dir.png?v=coral-video-bottom-20260707";
+  "/assets/soltower/heroes/coral-alchemist/walk-8dir.png?v=coral-video-all-directions-20260709";
 const starcallerEightDirectionWalkPath =
   "/assets/soltower/heroes/starcaller/walk-8dir.png?v=starcaller-video-all-directions-20260707";
 const eightDirectionWalkPaths: Partial<Record<HeroId, string>> = {
@@ -1542,6 +1543,7 @@ function heroSpriteKey(heroId: HeroId | "fallback", action: HeroAnimationName): 
 function heroWorldSheetPath(heroId: HeroId, action: HeroAnimationName, defaultPath: string): string {
   if (heroId === "storm-archer" && action === "idle") return stormArcherIdlePath;
   if (heroId === "bombardier" && action === "idle") return bombardierIdlePath;
+  if (heroId === "coral-alchemist" && action === "idle") return coralAlchemistIdlePath;
   if (action === "walk") return eightDirectionWalkPaths[heroId] ?? defaultPath;
   return defaultPath;
 }

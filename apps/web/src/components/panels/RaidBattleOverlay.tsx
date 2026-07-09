@@ -324,7 +324,7 @@ function raidHeroSpriteLayout(heroId: HeroId, facing: "left" | "right" | "up" | 
     "storm-archer": "video-all-directions",
     "tide-mage": "video-all-directions",
     bombardier: "video-all-directions",
-    "coral-alchemist": "coral-video-bottom-20260707",
+    "coral-alchemist": "coral-video-all-directions-20260709",
     starcaller: "starcaller-video-all-directions-20260707"
   };
   const spriteVersion = eightDirectionSpriteVersions[heroId];

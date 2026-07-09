@@ -1,6 +1,6 @@
 # Hero Art Bible
 
-Updated: 2026-06-29
+Updated: 2026-07-09
 
 SolTower now has a first local Hero character asset pass. These assets are original generated pixel-art PNG files stored in the repository; no downloaded spritesheets, third-party asset packs, copied game art, or baked UI text are used.
 
@@ -69,16 +69,17 @@ Shared fallback files:
 - `apps/web/public/assets/soltower/heroes/shared/fallback-run.png`
 - `apps/web/public/assets/soltower/heroes/shared/fallback-attack.png`
 
-Standalone Storm Archer 8-direction walking sheet:
+Standalone 8-direction walking sheets:
 
 - `apps/web/public/assets/soltower/heroes/storm-archer/walk-8dir.png`
+- `apps/web/public/assets/soltower/heroes/coral-alchemist/walk-8dir.png`
 - Sheet size: 256x512.
 - Frame size: 64x64.
 - Layout: 8 rows x 4 columns.
 - Row order: top-left, left, bottom-left, top, top-right, right, bottom-right, bottom.
 - Columns: four walking frames.
 - Background: transparent PNG.
-- Current video-backed rows: all eight directions are extracted from MP4 sources, keyed from black to transparent, and normalized into four 64x64 frames each.
+- Current video-backed rows: all eight directions are extracted from each Hero folder's `walk-*.mp4` sources, keyed from black to transparent, and normalized into four 64x64 frames each.
 
 ## Sprite Sheet Contract
 
@@ -96,6 +97,8 @@ Town sheets are consistent across all five Heroes:
 The current Phaser town scale is tuned for the existing player collision and camera framing. Future Hero sprites must keep this exact 64x64/action-sheet contract unless `heroAssetManifest`, `TownScene`, documentation, and asset tests are updated together.
 
 Storm Archer `idle.png` is generated from the four reference PNGs listed above. It uses the standard 4-row world sheet layout: down, left, right, up. Each row currently repeats the same normalized idle reference across all four animation columns.
+
+Coral Alchemist `idle.png` is generated from `apps/web/public/assets/soltower/heroes/coral-alchemist/walk-bottom.png`. Every row repeats the normalized bottom-facing pose so Coral stays bottom-facing whenever idle or not moving.
 
 ## Hero Silhouettes
 
