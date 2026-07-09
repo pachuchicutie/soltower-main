@@ -129,7 +129,11 @@ export function LandingPage({
                 aria-expanded={mobileMenuOpen}
                 onClick={() => setMobileMenuOpen((open) => !open)}
               >
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                {mobileMenuOpen ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
+                    </svg>
+                  ) : <Menu size={20} />}
               </IconButton>
             </div>
             {mobileMenuOpen ? (
