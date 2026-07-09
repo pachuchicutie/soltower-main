@@ -238,9 +238,28 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
             </div>
           </div>
 
-          <div className="pre-reg-stats">
-            <div className="pre-reg-badge">
-              {preRegCount.toLocaleString()} wallets pre-registered
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "16px"
+          }}>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(250, 204, 21, 0.1)",
+              border: "1px solid #facc15",
+              color: "#facc15",
+              padding: "6px 16px",
+              borderRadius: "9999px",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: "0.5px"
+            }}>
+              <span style={{ color: "#fde047", fontWeight: 700, fontSize: "15px" }}>
+                {preRegCount.toLocaleString()}
+              </span>
+              <span>wallets pre-registered</span>
             </div>
           </div>
 
