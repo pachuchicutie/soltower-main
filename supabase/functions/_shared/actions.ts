@@ -478,12 +478,6 @@ async function verifyWalletSignature(context: EdgeContext): Promise<JsonRecord> 
       await failWalletVerification(verificationFailure, diagnostic);
     }
 
-    await assertWalletTowerBalance(
-      body.publicKeyBase58,
-      economyConfig.tokenGate.playMinimumTower,
-      "Entering SolBloom Village"
-    );
-
     const consumeResult = await checked(
       context.service
         .schema("private")
@@ -584,12 +578,6 @@ async function createPlayerProfile(context: EdgeContext): Promise<JsonRecord> {
   if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
     throw new HttpError(400, "Verified wallet login expired");
   }
-  await assertWalletTowerBalance(
-    body.publicKey,
-    economyConfig.tokenGate.playMinimumTower,
-    "Entering SolBloom Village"
-  );
-
   const profileResult = await checked(
     context.service.schema("private").rpc("create_profile_for_wallet", {
       p_auth_user_id: user.id,
@@ -2200,11 +2188,6 @@ async function loadPlayerBootstrap(context: EdgeContext, authUserId: string): Pr
     )
   ]);
   const presence = presenceResult.data ? asRecord(presenceResult.data, "player presence") : {};
-  await assertWalletTowerBalance(
-    wallet.full,
-    economyConfig.tokenGate.playMinimumTower,
-    "Entering SolBloom Village"
-  );
   return {
     player: {
       id: player.id,

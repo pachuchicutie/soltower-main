@@ -8,19 +8,18 @@ import {
   useState
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Backpack, BookOpen, ExternalLink, Map, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
-import { economyConfig, type PlayerBootstrapData, type TownPosition, type TownServerId } from "@soltower/shared";
+import { Backpack, BookOpen, Map, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
+import type { PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
 import { Hud } from "./components/Hud";
 import { LandingPage } from "./components/LandingPage";
 import { NpcModal } from "./components/NpcModal";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { TownChat } from "./components/TownChat";
 import { TownCanvas } from "./components/TownCanvas";
-import { ErrorState, GameButton } from "./components/ui/GameUi";
 import { ShortcutHint } from "./components/ui/ShortcutHint";
 import type { NearbyInteraction } from "./game/TownScene";
 import { useTownShortcuts } from "./hooks/useTownShortcuts";
-import { apiGet, apiPost, isTowerGateErrorCode, WalletAuthError } from "./lib/api";
+import { apiGet, apiPost } from "./lib/api";
 import { applyAudioSettings, pauseTownMusic, playUiSound, startTownMusic } from "./lib/audio";
 import { emitMobileMovement } from "./lib/gameInput";
 import { useHeroAppearance } from "./lib/heroAppearance";
@@ -82,11 +81,7 @@ export function App() {
     queryFn: () => apiGet<TownServersResponse>("/api/town/servers"),
     staleTime: 15000
   });
-  const tokenGateError =
-    me.error instanceof WalletAuthError && isTowerGateErrorCode(me.error.code)
-      ? me.error
-      : null;
-  const activeBootstrap = tokenGateError ? undefined : me.data;
+  const activeBootstrap = me.data;
   const [heroAppearance] = useHeroAppearance(activeBootstrap?.selectedHeroId ?? "storm-archer");
   const restoredTownPosition = useMemo(() => {
     if (!activeBootstrap?.player) {
@@ -249,19 +244,6 @@ export function App() {
 
   if (!activeBootstrap && me.isLoading && !disconnected) {
     return <div className="loading-screen">Lighting SolBloom lanterns...</div>;
-  }
-
-  if (tokenGateError) {
-    return (
-      <TokenGateRequiredScreen
-        message={tokenGateError.message}
-        checking={me.isFetching}
-        onRetry={() => {
-          void me.refetch();
-        }}
-        onDisconnect={() => logout.mutate()}
-      />
-    );
   }
 
   if (!activeBootstrap?.player) {
@@ -606,61 +588,6 @@ function loadLocalTownPosition(
   } catch {
     return undefined;
   }
-}
-
-function TokenGateRequiredScreen({
-  message,
-  checking,
-  onRetry,
-  onDisconnect
-}: {
-  message: string;
-  checking: boolean;
-  onRetry: () => void;
-  onDisconnect: () => void;
-}) {
-  return (
-    <main className="token-gate-screen" role="alert" aria-labelledby="token-gate-title">
-      <section className="token-gate-panel">
-        <span className="game-eyebrow">Village Access Required</span>
-        <h1 id="token-gate-title">
-          Hold {economyConfig.tokenGate.playMinimumTower.toLocaleString()} {economyConfig.towerToken.symbol} to play
-        </h1>
-        <p>
-          SolBloom Village is token gated. If this wallet drops below the required balance, your
-          active session is blocked until the wallet holds enough {economyConfig.towerToken.symbol} again.
-        </p>
-        <ErrorState
-          title="You need more TOWER to play"
-          action={
-            <a
-              className="game-button game-button-primary"
-              href={economyConfig.towerToken.jupiterSwapUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <ExternalLink size={15} aria-hidden="true" /> Buy on Jupiter
-            </a>
-          }
-        >
-          {message || (
-            <>
-              Sorry, you need at least {economyConfig.tokenGate.playMinimumTower.toLocaleString()}{" "}
-              {economyConfig.towerToken.symbol} in this wallet before you can enter and play.
-            </>
-          )}
-        </ErrorState>
-        <div className="button-row">
-          <GameButton variant="secondary" onClick={onRetry} disabled={checking}>
-            {checking ? "Checking..." : "Check Again"}
-          </GameButton>
-          <GameButton variant="ghost" onClick={onDisconnect}>
-            Disconnect Wallet
-          </GameButton>
-        </div>
-      </section>
-    </main>
-  );
 }
 
 function MobileMovePad() {

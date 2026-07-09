@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
-  ExternalLink,
   Sparkle,
   LoaderCircle,
   ShieldCheck,
@@ -10,14 +9,13 @@ import {
 } from "lucide-react";
 import {
   displayNameSchema,
-  economyConfig,
   heroAssetManifest,
   type HeroDefinition,
   type HeroId,
   type PlayerBootstrapData
 } from "@soltower/shared";
 import { heroDefinitions } from "@soltower/game-engine";
-import { apiPost, isTowerGateErrorCode, WalletAuthError, type WalletAuthErrorCode } from "../lib/api";
+import { apiPost, WalletAuthError } from "../lib/api";
 import {
   isReownConfigured,
   openReownWalletPicker,
@@ -30,7 +28,6 @@ import {
   normalizeWalletSignature,
   validateWalletVerificationPayload
 } from "../lib/walletAuth";
-import { assertClientTowerTokenGate } from "../lib/towerTokenGate";
 import {
   ErrorState,
   GameButton,
@@ -268,8 +265,6 @@ export function WalletOnboardingModal({
       pendingSignatureRef.current = null;
 
       if (response.requiresProfile && response.verifiedWallet) {
-        setStatus(`Checking ${economyConfig.towerToken.symbol} entry balance...`);
-        await assertClientTowerTokenGate(response.verifiedWallet.publicKey);
         setVerifiedWallet(response.verifiedWallet);
         setStep("profile");
         setStatus(null);
@@ -449,7 +444,6 @@ export function WalletOnboardingModal({
               transaction approval during sign-in.
             </span>
           </div>
-          <TokenAccessNote />
           <GameButton
             variant="primary"
             className="wallet-connect-command"
@@ -550,63 +544,18 @@ export function WalletOnboardingModal({
       {error ? (
         <ErrorState
           action={
-            isTowerGateError(error.code) ? (
-              <a
-                className="game-button game-button-primary"
-                href={economyConfig.towerToken.jupiterSwapUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ExternalLink size={15} aria-hidden="true" /> Buy on Jupiter
-              </a>
-            ) : reownWallet.isConnected && step === "wallet" ? (
+            reownWallet.isConnected && step === "wallet" ? (
               <GameButton variant="ghost" onClick={() => void retryWalletAuthentication()}>
                 Try Again
               </GameButton>
             ) : undefined
           }
         >
-          {isTowerGateError(error.code) ? (
-            <>
-              Sorry, you need at least {economyConfig.tokenGate.playMinimumTower.toLocaleString()}{" "}
-              {economyConfig.towerToken.symbol} in this wallet before you can enter and play.
-            </>
-          ) : error.message}
+          {error.message}
         </ErrorState>
       ) : null}
     </GameModal>
   );
-}
-
-function TokenAccessNote() {
-  const playRequirement = economyConfig.tokenGate.playMinimumTower.toLocaleString();
-  const sellRequirement = economyConfig.tokenGate.sellerMinimumTower.toLocaleString();
-  const towerLabel = economyConfig.towerToken.symbol;
-  return (
-    <div className="token-access-note" role="note">
-      <ShieldCheck size={19} aria-hidden="true" />
-      <div>
-        <strong>{playRequirement} {towerLabel} required to enter SolBloom Village.</strong>
-        <span>
-          Selling Gold or auction items requires Level {economyConfig.tokenGate.sellerMinimumAccountLevel} and{" "}
-          {sellRequirement} {towerLabel}. Buying remains open.
-        </span>
-      </div>
-      <a
-        href={economyConfig.towerToken.jupiterSwapUrl}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Get ${economyConfig.towerToken.symbol} on Jupiter`}
-      >
-        <ExternalLink size={15} aria-hidden="true" />
-        Jupiter
-      </a>
-    </div>
-  );
-}
-
-function isTowerGateError(code: WalletAuthErrorCode | null): boolean {
-  return isTowerGateErrorCode(code);
 }
 
 function HeroStarterSelection({
