@@ -198,7 +198,6 @@ export function PreRegisterModal({ onClose }: PreRegisterModalProps) {
           </div>
 
           <div className="rewards-section">
-            <div className="rewards-header">1 Rare Weapon • 1 Rare Armor • 1 Rare Costume • 100 Gold</div>
             <div className="rewards-grid">
               <div className="reward-card">
                 <img src={PRE_REG_REWARDS.weapon.image} alt="Rare Weapon" />
