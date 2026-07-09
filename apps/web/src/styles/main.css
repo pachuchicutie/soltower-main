@@ -7490,3 +7490,21 @@ label {
     padding: 4px;
   }
 }
+
+/* Force wallet address full width on mobile */
+@media (max-width: 480px) {
+  .wallet-connected,
+  .wallet-address {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+  
+  .wallet-address {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
