@@ -15,7 +15,12 @@ import {
   type PlayerBootstrapData
 } from "@soltower/shared";
 import { heroDefinitions } from "@soltower/game-engine";
-import { apiPost, WalletAuthError } from "../lib/api";
+import {
+  apiPost,
+  isTowerGateErrorCode,
+  WalletAuthError,
+  type WalletAuthErrorCode
+} from "../lib/api";
 import {
   isReownConfigured,
   openReownWalletPicker,
@@ -387,7 +392,7 @@ export function WalletOnboardingModal({
               "unknown_verification_error",
               caught instanceof Error ? caught.message : "Profile creation failed."
             );
-      if (isTowerGateError(authError.code)) {
+      if (isTowerGateErrorCode(authError.code)) {
         setStep("wallet");
         setVerifiedWallet(null);
       }

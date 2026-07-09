@@ -70,11 +70,7 @@ export function App() {
     queryKey: ["me"],
     queryFn: () => apiGet<MeResponse>("/api/player/me"),
     enabled: !disconnected,
-    retry: false,
-    refetchInterval: 15000,
-    refetchIntervalInBackground: true,
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true
+    retry: false
   });
   const servers = useQuery({
     queryKey: ["town-servers"],
