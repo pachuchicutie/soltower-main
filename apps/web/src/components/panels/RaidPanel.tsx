@@ -95,6 +95,7 @@ export function RaidPanel() {
   const [lobbyPage, setLobbyPage] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [activeRaid, setActiveRaid] = useState<ActiveRaid | null>(null);
+  const [lobbyActionError, setLobbyActionError] = useState<string | null>(null);
   const raidChannelRef = useRef<RealtimeChannel | null>(null);
   const stagePageSize = useResponsiveStagePageSize();
 
@@ -132,16 +133,40 @@ export function RaidPanel() {
     () => (lobbies.data?.lobbies ?? []).filter(isRenderableLobby),
     [lobbies.data?.lobbies]
   );
-  // Always list every open party (all stages). Selected stage parties stay on top so the board
-  // is never empty just because the player hasn't created a lobby on the focused stage.
+  const currentOpenLobby = currentPlayerId
+    ? validOpenLobbies.find((lobby) => lobby.members.some((member) => member.playerId === currentPlayerId))
+    : undefined;
+  // Always list every open party. Your party is forced to the top, then selected-stage parties.
   const sortedOpenLobbies = useMemo(() => {
-    const selected = validOpenLobbies.filter((lobby) => lobby.mapId === selectedStage.id);
-    const others = validOpenLobbies.filter((lobby) => lobby.mapId !== selectedStage.id);
+    const myLobbies: Lobby[] = [];
+    const rest: Lobby[] = [];
+    for (const lobby of validOpenLobbies) {
+      const isMine =
+        Boolean(currentPlayerId) &&
+        lobby.members.some((member) => member.playerId === currentPlayerId);
+      if (isMine) {
+        myLobbies.push(lobby);
+      } else {
+        rest.push(lobby);
+      }
+    }
+    myLobbies.sort((left, right) => {
+      const leftHost = left.members.some((member) => member.host && member.playerId === currentPlayerId)
+        ? 0
+        : 1;
+      const rightHost = right.members.some((member) => member.host && member.playerId === currentPlayerId)
+        ? 0
+        : 1;
+      return leftHost - rightHost;
+    });
+    const selected = rest.filter((lobby) => lobby.mapId === selectedStage.id);
+    const others = rest.filter((lobby) => lobby.mapId !== selectedStage.id);
     return [
+      ...myLobbies,
       ...sortLobbies(selected, lobbySortMode, selectedHeroId),
       ...sortLobbies(others, lobbySortMode, selectedHeroId)
     ];
-  }, [lobbySortMode, selectedHeroId, selectedStage.id, validOpenLobbies]);
+  }, [currentPlayerId, lobbySortMode, selectedHeroId, selectedStage.id, validOpenLobbies]);
   const openLobbiesForStage = useMemo(
     () => validOpenLobbies.filter((lobby) => lobby.mapId === selectedStage.id),
     [selectedStage.id, validOpenLobbies]
@@ -151,12 +176,10 @@ export function RaidPanel() {
     lobbyPage * lobbyPageSize,
     lobbyPage * lobbyPageSize + lobbyPageSize
   );
-  const currentOpenLobby = currentPlayerId
-    ? validOpenLobbies.find((lobby) => lobby.members.some((member) => member.playerId === currentPlayerId))
-    : undefined;
   const currentOpenLobbyRef = useRef<Lobby | undefined>(currentOpenLobby);
   currentOpenLobbyRef.current = currentOpenLobby;
-  const quickJoinLobby = currentOpenLobby
+  const alreadyInParty = Boolean(currentOpenLobby);
+  const quickJoinLobby = alreadyInParty
     ? undefined
     : openLobbiesForStage.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4) ??
       validOpenLobbies.find((lobby) => lobby.lobbyType !== "PRIVATE" && lobby.members.length < 4);
@@ -190,6 +213,17 @@ export function RaidPanel() {
         if (!lobby || !stage || event.lobbyId !== lobby.id) {
           return;
         }
+        // Party left open recruitment the moment the host started — drop it for members too.
+        queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
+          if (!previous?.lobbies) {
+            return previous;
+          }
+          return {
+            ...previous,
+            lobbies: previous.lobbies.filter((entry) => entry.id !== event.lobbyId)
+          };
+        });
+        void queryClient.invalidateQueries({ queryKey: ["lobbies"] });
         setActiveRaid({
           lobby,
           stage,
@@ -205,19 +239,35 @@ export function RaidPanel() {
   }, [currentOpenLobby?.id]);
 
   const create = useMutation({
-    mutationFn: (lobbyType: "PUBLIC" | "PRIVATE") =>
-      apiPost<{ lobby: Lobby }>("/api/lobbies", {
+    mutationFn: (lobbyType: "PUBLIC" | "PRIVATE") => {
+      if (alreadyInParty) {
+        return Promise.reject(new Error("You are already in a party. Leave or disband it first."));
+      }
+      return apiPost<{ lobby: Lobby }>("/api/lobbies", {
         mapId: selectedStage.id,
         lobbyType,
         recommendedPower: selectedStage.recommendedPower,
         heroId: selectedHeroId,
         neededHeroIds
-      }),
-    onSuccess: async () => {
+      });
+    },
+    onSuccess: async (data) => {
       playUiSound("interactionOpen");
       setNeededHeroIds([]);
+      setLobbyActionError(null);
+      // Put the new party in cache immediately so create stays blocked and the card is first.
+      if (data.lobby) {
+        queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
+          const existing = previous?.lobbies ?? [];
+          const without = existing.filter((entry) => entry.id !== data.lobby.id);
+          return { lobbies: [data.lobby, ...without] };
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
       await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+    },
+    onError: (error) => {
+      setLobbyActionError(error instanceof Error ? error.message : "Could not create party.");
     }
   });
 
@@ -268,6 +318,7 @@ export function RaidPanel() {
       }>("/api/raids/prototype/run", {
         lobbyId: lobby.id,
         mapId: lobby.mapId,
+        phase: "settle",
         idempotencyKey: idempotencyKey("raid")
       }),
     onSuccess: async () => {
@@ -282,6 +333,35 @@ export function RaidPanel() {
     },
     onError: () => {
       playUiSound("raidLose");
+    }
+  });
+
+  /** Locks the party server-side so it disappears from Open Parties as soon as the run begins. */
+  const beginLobbyRaid = useMutation({
+    mutationFn: (lobby: Lobby) =>
+      apiPost<{ started: boolean }>("/api/raids/prototype/begin", {
+        lobbyId: lobby.id,
+        mapId: lobby.mapId,
+        phase: "begin",
+        idempotencyKey: idempotencyKey("raid-begin")
+      }),
+    onSuccess: async (_data, lobby) => {
+      // Drop immediately from the local open list (don't wait for refetch).
+      queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
+        if (!previous?.lobbies) {
+          return previous;
+        }
+        return {
+          ...previous,
+          lobbies: previous.lobbies.filter((entry) => entry.id !== lobby.id)
+        };
+      });
+      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      beginRaid(lobby);
+    },
+    onError: (error) => {
+      playUiSound("raidLose");
+      setLobbyActionError(error instanceof Error ? error.message : "Could not start the raid party.");
     }
   });
 
@@ -556,28 +636,42 @@ export function RaidPanel() {
         <div className="raid-actions">
           <button
             type="button"
-            disabled={!selectedUnlock.unlocked || Boolean(currentOpenLobby) || create.isPending}
-            onClick={() => create.mutate("PUBLIC")}
-            title={currentOpenLobby ? "You are already in a party." : actionDisabledReason ?? undefined}
+            disabled={!selectedUnlock.unlocked || alreadyInParty || create.isPending}
+            onClick={() => {
+              setLobbyActionError(null);
+              create.mutate("PUBLIC");
+            }}
+            title={
+              alreadyInParty
+                ? "You already have a party. Leave or disband it before creating another."
+                : actionDisabledReason ?? undefined
+            }
           >
             Create Public Lobby
           </button>
           <button
             type="button"
-            disabled={!selectedUnlock.unlocked || Boolean(currentOpenLobby) || create.isPending}
-            onClick={() => create.mutate("PRIVATE")}
-            title={currentOpenLobby ? "You are already in a party." : actionDisabledReason ?? undefined}
+            disabled={!selectedUnlock.unlocked || alreadyInParty || create.isPending}
+            onClick={() => {
+              setLobbyActionError(null);
+              create.mutate("PRIVATE");
+            }}
+            title={
+              alreadyInParty
+                ? "You already have a party. Leave or disband it before creating another."
+                : actionDisabledReason ?? undefined
+            }
           >
             Create Private Lobby
           </button>
           <button
             type="button"
-            disabled={!selectedUnlock.unlocked || !quickJoinLobby || quickJoin.isPending}
+            disabled={!selectedUnlock.unlocked || !quickJoinLobby || alreadyInParty || quickJoin.isPending}
             onClick={() => quickJoinLobby && quickJoin.mutate(quickJoinLobby.id)}
             title={
               !selectedUnlock.unlocked
                 ? actionDisabledReason ?? undefined
-                : currentOpenLobby
+                : alreadyInParty
                   ? "You are already in a party."
                   : quickJoinLobby
                     ? undefined
@@ -588,6 +682,13 @@ export function RaidPanel() {
           </button>
         </div>
         {!selectedUnlock.unlocked ? <p className="raid-action-note">{selectedUnlock.reason}</p> : null}
+        {alreadyInParty ? (
+          <p className="raid-action-note" data-testid="already-in-party-note">
+            {myHostedLobby
+              ? "You are hosting a party — create is locked until you disband or start the raid."
+              : "You are already in a party — leave it before creating or joining another."}
+          </p>
+        ) : null}
       </section>
 
       <section className="raid-lobby-board" aria-label="Open raid lobbies">
@@ -652,18 +753,25 @@ export function RaidPanel() {
                       ? selectedUnlock.unlocked
                       : getRaidStageUnlockState(lobbyStage, accountLevel, completedStageIds).unlocked
                   }
-                  onJoin={() => quickJoin.mutate(lobby.id)}
+                  onJoin={() => {
+                    if (alreadyInParty) {
+                      setLobbyActionError("You are already in a party. Leave or disband it first.");
+                      return;
+                    }
+                    quickJoin.mutate(lobby.id);
+                  }}
                   onLeave={() => leaveLobby.mutate(lobby.id)}
                   onReady={(ready) => setReadyState.mutate({ lobbyId: lobby.id, ready })}
                   onKick={(playerId) => kickMember.mutate({ lobbyId: lobby.id, playerId })}
                   onStart={() => {
-                    beginRaid(lobby);
+                    setLobbyActionError(null);
+                    beginLobbyRaid.mutate(lobby);
                   }}
                   joining={quickJoin.isPending}
                   leaving={leaveLobby.isPending}
                   readying={setReadyState.isPending}
                   kicking={kickMember.isPending}
-                  starting={startRun.isPending}
+                  starting={beginLobbyRaid.isPending || startRun.isPending}
                 />
               );
             })
@@ -675,6 +783,7 @@ export function RaidPanel() {
             </div>
           )}
         </div>
+        {lobbyActionError ? <p className="raid-action-note">{lobbyActionError}</p> : null}
         {sortedOpenLobbies.length > lobbyPageSize ? (
           <div className="raid-lobby-pager" aria-label="Open parties page">
             <button type="button" disabled={lobbyPage === 0} onClick={() => setLobbyPage((page) => Math.max(0, page - 1))}>
@@ -795,18 +904,32 @@ function LobbyCard({
   const lobbyType = lobby.lobbyType === "PRIVATE" ? "Private" : "Public";
   const hostName = safeGuardianName(host?.displayName, host?.playerId);
   const remainingNeededHeroIds = getRemainingNeededHeroIds(lobby);
+  const ownershipLabel = isHost ? "Your Party · Hosting" : alreadyJoined ? "Your Party · Joined" : null;
   return (
-    <article className="raid-lobby-card">
+    <article
+      className={`raid-lobby-card${alreadyJoined ? " is-yours" : ""}${isHost ? " is-hosting" : ""}`}
+      data-testid={alreadyJoined ? "my-raid-lobby-card" : undefined}
+      aria-label={
+        ownershipLabel
+          ? `${ownershipLabel}: ${stage.stageNumber} ${stage.name}`
+          : `${stage.stageNumber} ${stage.name} open party`
+      }
+    >
       <img className="raid-lobby-stage-art" src={stage.thumbnailPath} alt={`${stage.stageNumber} ${stage.name} lobby preview`} />
       <div className="raid-lobby-main">
         <div className="raid-lobby-heading">
-          <span className="raid-eyebrow">OPEN PARTY</span>
+          <span className="raid-eyebrow">{alreadyJoined ? (isHost ? "YOUR PARTY" : "JOINED PARTY") : "OPEN PARTY"}</span>
           <strong>
             {stage.stageNumber} {stage.name}
           </strong>
           <small>{stage.chapterName}</small>
         </div>
         <div className="raid-lobby-meta">
+          {ownershipLabel ? (
+            <span className="raid-lobby-pill raid-lobby-yours-pill">
+              <Crown size={14} /> {isHost ? "You host this" : "You're in this"}
+            </span>
+          ) : null}
           <span className="raid-lobby-pill">{lobbyType}</span>
           <span className="raid-lobby-pill">
             <Users size={14} /> {lobby.members.length} / 4 slots
@@ -816,6 +939,7 @@ function LobbyCard({
         </div>
         <span className="raid-lobby-host">
           <Crown size={14} /> Host: {host ? hostName : "Recruiting"}
+          {isHost ? " (you)" : ""}
         </span>
         <div className="raid-needed-heroes" aria-label="Needed heroes">
           {remainingNeededHeroIds.length ? (

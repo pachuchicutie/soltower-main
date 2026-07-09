@@ -211,7 +211,9 @@ const kickSchema = z.object({ lobbyId: z.string().uuid(), playerId: z.string().m
 const raidRunSchema = z.object({
   lobbyId: z.string().uuid().optional(),
   mapId: z.string().min(3).default("tower-1-1"),
-  idempotencyKey: idempotencyKeySchema
+  idempotencyKey: idempotencyKeySchema,
+  /** begin = lock lobby out of open parties; settle = award rewards after victory */
+  phase: z.enum(["begin", "settle"]).default("settle")
 });
 const questClaimSchema = z
   .object({
@@ -1126,6 +1128,19 @@ async function createLobby(context: EdgeContext): Promise<JsonRecord> {
   if (existingOpenLobby) {
     throw new HttpError(409, "Leave or disband your current party before creating another.");
   }
+  // Extra host guard: one active recruitment/run per account (even if membership rows lag).
+  const hostedOpen = await checked(
+    context.service
+      .from("raid_lobbies")
+      .select("id,status")
+      .eq("host_player_id", player.id)
+      .in("status", ["OPEN", "IN_PROGRESS"])
+      .limit(1)
+      .maybeSingle()
+  );
+  if (hostedOpen.data) {
+    throw new HttpError(409, "You already have an active party. Disband it or finish the raid first.");
+  }
   await assertRaidStageAccess(context, player, body.mapId);
   const lobbyResult = await checked(
     context.service
@@ -1282,6 +1297,9 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = raidRunSchema.parse(context.body);
+  if (body.phase === "begin") {
+    return beginLobbyRaid(context, player, body);
+  }
   const existing = await checked(
     context.service
       .from("raid_history")
@@ -1297,10 +1315,12 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
   if (body.lobbyId) {
     const lobbyResult = await checked(context.service.from("raid_lobbies").select("*").eq("id", body.lobbyId).single());
     const lobby = asRecord(lobbyResult.data, "raid lobby");
-    if (toStringValue(lobby.status, "OPEN") !== "OPEN") {
-      throw new HttpError(409, "Lobby is not open");
+    const lobbyStatus = toStringValue(lobby.status, "OPEN");
+    // Allow settlement after begin phase locked the lobby as IN_PROGRESS.
+    if (lobbyStatus !== "OPEN" && lobbyStatus !== "IN_PROGRESS") {
+      throw new HttpError(409, "Lobby is not available for settlement");
     }
-    if (isExpiredLobby(lobby)) {
+    if (isExpiredLobby(lobby) && lobbyStatus === "OPEN") {
       await expireRaidLobby(context, body.lobbyId);
       throw new HttpError(409, "Lobby recruitment expired");
     }
@@ -1427,13 +1447,81 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
         .from("raid_lobbies")
         .update({ status: "COMPLETED", updated_at: new Date().toISOString() })
         .eq("id", body.lobbyId)
-        .eq("status", "OPEN")
+        .in("status", ["OPEN", "IN_PROGRESS"])
     );
   }
   if (!hostRaid) {
     throw new HttpError(500, "Raid settlement did not produce a host record");
   }
   return { raid: camelRecord(hostRaid) };
+}
+
+/** Host starts the client battle: lock party out of open-lobby lists immediately. */
+async function beginLobbyRaid(
+  context: EdgeContext,
+  player: { id: string; accountLevel: number },
+  body: z.infer<typeof raidRunSchema>
+): Promise<JsonRecord> {
+  if (!body.lobbyId) {
+    throw new HttpError(400, "Lobby id is required to begin a raid");
+  }
+  await expireStaleRaidLobbies(context);
+  const lobbyResult = await checked(
+    context.service.from("raid_lobbies").select("*").eq("id", body.lobbyId).single()
+  );
+  const lobby = asRecord(lobbyResult.data, "raid lobby");
+  const status = toStringValue(lobby.status, "OPEN");
+  // Idempotent: if the host double-clicks Start, still return success.
+  if (status === "IN_PROGRESS" || status === "COMPLETED") {
+    return {
+      started: true,
+      lobby: await loadLobby(context, body.lobbyId)
+    };
+  }
+  if (status !== "OPEN") {
+    throw new HttpError(409, "Lobby is not open");
+  }
+  if (isExpiredLobby(lobby)) {
+    await expireRaidLobby(context, body.lobbyId);
+    throw new HttpError(409, "Lobby recruitment expired");
+  }
+  if (toStringValue(lobby.map_id) !== body.mapId) {
+    throw new HttpError(400, "Raid stage does not match the lobby");
+  }
+  const hostResult = await checked(
+    context.service
+      .from("raid_lobby_members")
+      .select("*")
+      .eq("lobby_id", body.lobbyId)
+      .eq("player_id", player.id)
+      .eq("host", true)
+      .maybeSingle()
+  );
+  if (!hostResult.data) {
+    throw new HttpError(403, "Only the lobby host can start the run");
+  }
+  const lobbyMembersResult = await checked(
+    context.service.from("raid_lobby_members").select("player_id,ready,host").eq("lobby_id", body.lobbyId)
+  );
+  const lobbyMembers = rows(lobbyMembersResult.data);
+  const partyIsReady =
+    lobbyMembers.length >= 1 &&
+    lobbyMembers.every((member) => toBoolean(member.host) || toBoolean(member.ready));
+  if (!partyIsReady) {
+    throw new HttpError(409, "All non-host party members must be ready before the raid can start");
+  }
+  await assertRaidStageAccess(context, player, body.mapId);
+  await checked(
+    context.service
+      .from("raid_lobbies")
+      .update({ status: "IN_PROGRESS", updated_at: new Date().toISOString() })
+      .eq("id", body.lobbyId)
+      .eq("status", "OPEN")
+  );
+  return {
+    started: true,
+    lobby: await loadLobby(context, body.lobbyId)
+  };
 }
 
 async function getPlayerQuests(context: EdgeContext): Promise<JsonRecord> {
@@ -2508,7 +2596,12 @@ async function loadOpenLobbyMembership(
 
   const lobbyIds = memberships.map((membership) => toStringValue(membership.lobby_id)).filter(Boolean);
   const lobbiesResult = await checked(
-    context.service.from("raid_lobbies").select("id,status").in("id", lobbyIds).eq("status", "OPEN").limit(1)
+    context.service
+      .from("raid_lobbies")
+      .select("id,status")
+      .in("id", lobbyIds)
+      .in("status", ["OPEN", "IN_PROGRESS"])
+      .limit(1)
   );
   const lobby = rows(lobbiesResult.data)[0];
   if (!lobby) {

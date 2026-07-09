@@ -209,6 +209,9 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   if (path === "/api/raids/prototype/run") {
     return invokeFunction<T>("start-prototype-raid", body);
   }
+  if (path === "/api/raids/prototype/begin") {
+    return invokeFunction<T>("start-prototype-raid", { ...bodyRecord(body), phase: "begin" });
+  }
   if (path === "/api/chat/message") {
     return invokeFunction<T>("send-chat-message", body);
   }

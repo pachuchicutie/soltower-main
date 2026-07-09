@@ -277,6 +277,8 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("Requires completion of");
     expect(actions).toContain("loadOpenLobbyMembership");
     expect(actions).toContain("Leave or disband your current party before creating another.");
+    expect(actions).toContain("You already have an active party. Disband it or finish the raid first.");
+    expect(actions).toContain('.eq("host_player_id", player.id)');
     expect(actions).toContain("Leave or disband your current party before joining another.");
     expect(actions).toContain("status: \"DISBANDED\"");
     expect(actions).toContain("Use Disband Party instead of kicking the host.");
@@ -284,6 +286,9 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("All non-host party members must be ready before the raid can start");
     expect(actions).toContain("Synchronized raid victory reward");
     expect(actions).toContain('status: "COMPLETED"');
+    expect(actions).toContain('status: "IN_PROGRESS"');
+    expect(actions).toContain("beginLobbyRaid");
+    expect(actions).toContain('phase: z.enum(["begin", "settle"])');
     expect(actions).toContain("for (const memberId of partyPlayerIds)");
     expect(actions).toContain("recordQuestProgressFromRaid(context, { id: memberId }, raid)");
     expect(actions).toContain("awardPlayerXp");

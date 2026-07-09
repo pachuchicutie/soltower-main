@@ -3827,6 +3827,34 @@ label {
   overflow: hidden;
 }
 
+.raid-lobby-card.is-yours {
+  border: 2px solid rgba(250, 204, 21, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(250, 204, 21, 0.28),
+    0 0 28px rgba(250, 204, 21, 0.16),
+    inset 0 0 0 1px rgba(253, 224, 71, 0.12);
+  background:
+    linear-gradient(180deg, rgba(250, 204, 21, 0.12), rgba(250, 204, 21, 0.03)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    rgba(12, 18, 28, 0.92);
+}
+
+.raid-lobby-card.is-hosting {
+  border-color: rgba(251, 191, 36, 0.95);
+}
+
+.raid-lobby-card.is-yours .raid-eyebrow {
+  color: #fde68a;
+  letter-spacing: 0.08em;
+}
+
+.raid-lobby-yours-pill {
+  border-color: rgba(250, 204, 21, 0.55) !important;
+  background: rgba(250, 204, 21, 0.16) !important;
+  color: #fef3c7 !important;
+  font-weight: 700;
+}
+
 .raid-lobby-stage-art {
   width: 100%;
   min-width: 0;
