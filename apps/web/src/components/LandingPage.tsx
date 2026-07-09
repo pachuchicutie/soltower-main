@@ -119,6 +119,17 @@ export function LandingPage({
                   </svg>
                 </IconButton>
               </a>
+              <a 
+                href="https://discord.gg/cgvjjEKgx" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="landing-social-actions"
+                aria-label="Discord"
+              >
+                <IconButton title="Join Discord" aria-label="Join Discord">
+                  <img src="/discord-icon.png" alt="Discord" width="18" height="18" />
+                </IconButton>
+              </a>
               <GameButton variant="primary" className="nav-play-button" onClick={onPlay}>
                 <Play size={17} /> Pre Register
               </GameButton>
@@ -153,6 +164,17 @@ export function LandingPage({
                   </svg>
                   X
                 </a>
+              <a 
+                href="https://discord.gg/cgvjjEKgx" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="landing-social-actions"
+                aria-label="Discord"
+              >
+                <IconButton title="Join Discord" aria-label="Join Discord">
+                  <img src="/discord-icon.png" alt="Discord" width="18" height="18" />
+                </IconButton>
+              </a>
               </nav>
             ) : null}
           </header>
