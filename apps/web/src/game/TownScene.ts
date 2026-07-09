@@ -692,36 +692,37 @@ export class TownScene extends Phaser.Scene {
       this.pinchDistance = 0;
     });
 
-    this.input.on(
-      "wheel",
-      (
-        pointer: Phaser.Input.Pointer,
-        _objects: unknown,
-        _deltaX: number,
-        deltaY: number
-      ) => {
-        if (this.options.mode !== "spectate" && this.options.mode !== "game") {
-          return;
-        }
-        const camera = this.cameras.main;
-        const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
-        const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
-        const nextZoom = Phaser.Math.Clamp(camera.zoom + (deltaY > 0 ? -0.08 : 0.08), minZoom, maxZoom);
-
-        if (this.options.mode === "game") {
-          camera.setZoom(nextZoom);
-          this.saveCameraZoomFromActual(nextZoom);
-          this.updateCameraFollow(true);
-          return;
-        }
-
-        const before = camera.getWorldPoint(pointer.x, pointer.y);
-        camera.setZoom(nextZoom);
-        const after = camera.getWorldPoint(pointer.x, pointer.y);
-        camera.scrollX += before.x - after.x;
-        camera.scrollY += before.y - after.y;
-      }
-    );
+    // Wheel zoom disabled for now (prevents unwanted map size changes via scroll wheel)
+    // this.input.on(
+    //   "wheel",
+    //   (
+    //     pointer: Phaser.Input.Pointer,
+    //     _objects: unknown,
+    //     _deltaX: number,
+    //     deltaY: number
+    //   ) => {
+    //     if (this.options.mode !== "spectate" && this.options.mode !== "game") {
+    //       return;
+    //     }
+    //     const camera = this.cameras.main;
+    //     const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
+    //     const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
+    //     const nextZoom = Phaser.Math.Clamp(camera.zoom + (deltaY > 0 ? -0.08 : 0.08), minZoom, maxZoom);
+    //
+    //     if (this.options.mode === "game") {
+    //       camera.setZoom(nextZoom);
+    //       this.saveCameraZoomFromActual(nextZoom);
+    //       this.updateCameraFollow(true);
+    //       return;
+    //     }
+    //
+    //     const before = camera.getWorldPoint(pointer.x, pointer.y);
+    //     camera.setZoom(nextZoom);
+    //     const after = camera.getWorldPoint(pointer.x, pointer.y);
+    //     camera.scrollX += before.x - after.x;
+    //     camera.scrollY += before.y - after.y;
+    //   }
+    // );
   }
 
   private configureCamera(width: number, height: number): void {
