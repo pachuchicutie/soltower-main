@@ -85,7 +85,9 @@ export function LandingPage({
           <strong>SolTower</strong>
           <div>
             <GameButton variant="secondary" onClick={() => setSpectating(false)}>
-              <X size={17} /> Exit Spectate
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style={{marginRight: "6px"}}>
+                    <path d="M18.244 2.25l-7.451 8.502L4.5 2.25H1.5l7.5 8.502L1.5 21.75h3l7.5-8.502L21.75 21.75h3l-7.5-8.502L22.5 2.25h-3z"/>
+                  </svg> Exit Spectate
             </GameButton>
             <GameButton variant="primary" onClick={onPlay}>
               <Play size={17} /> Pre Register
