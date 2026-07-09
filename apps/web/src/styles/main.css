@@ -279,7 +279,7 @@ label {
     rgba(15, 23, 42, 0.72);
   padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 16px;
   align-content: start;
 }
 
@@ -322,7 +322,7 @@ label {
 .modal-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .modal-tabs button {
@@ -331,7 +331,7 @@ label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 16px;
   padding: 0 18px;
   border-radius: 8px;
   overflow-wrap: normal;
@@ -362,7 +362,7 @@ label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
   color: #cbd5e1;
@@ -415,7 +415,7 @@ label {
   min-width: 0;
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr);
-  gap: 10px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -485,7 +485,7 @@ label {
   min-height: 58px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: var(--radius-lg);
@@ -514,7 +514,7 @@ label {
 .toggle-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -554,13 +554,13 @@ label {
   place-items: center;
   background: rgba(3, 8, 16, 0.64);
   backdrop-filter: blur(8px);
-  padding: 16px;
+  padding: 24px;
 }
 
 .confirmation-dialog {
   width: min(420px, 100%);
   display: grid;
-  gap: 12px;
+  gap: 16px;
   border: 1px solid rgba(243, 201, 105, 0.44);
   border-radius: var(--radius-lg);
   background: rgba(12, 18, 30, 0.98);
@@ -691,7 +691,7 @@ label {
 
 .login-panel form {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .brand-mark {
@@ -711,7 +711,7 @@ label {
   right: max(12px, env(safe-area-inset-right));
   display: grid;
   grid-template-columns: auto minmax(220px, 1fr) auto;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   z-index: 4;
   pointer-events: none;
@@ -740,7 +740,7 @@ label {
 
 .hud-profile-button {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   width: 100%;
   min-height: 48px;
@@ -787,7 +787,7 @@ label {
 .hud-profile .hud-xp-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   color: #9fb3c8;
   font-size: 0.65rem;
   line-height: 1;
@@ -909,7 +909,7 @@ label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
   min-width: 0;
   color: #dbeafe;
@@ -927,7 +927,7 @@ label {
 }
 
 .shortcut-group-wrap {
-  gap: 10px;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -1288,7 +1288,7 @@ label {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   border: 1px solid rgba(119, 212, 242, 0.2);
   border-radius: 8px;
   background:
@@ -1371,7 +1371,7 @@ label {
 }
 
 .settings-shortcut-card {
-  gap: 12px;
+  gap: 16px;
 }
 
 .settings-shortcut-hint {
@@ -1521,7 +1521,7 @@ label {
 
 .landing-logo {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -1683,7 +1683,7 @@ label {
   bottom: max(24px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
   max-width: min(820px, calc(100vw - 48px));
   border: 1px solid var(--color-border-strong);
@@ -1742,7 +1742,7 @@ label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   border: 1px solid rgba(243, 201, 105, 0.24);
   border-radius: var(--radius-md);
   background:
@@ -1897,7 +1897,7 @@ label {
 .starter-hero-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .starter-hero-card {
@@ -2084,7 +2084,7 @@ label {
 
 .selected-hero-copy {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   align-content: start;
 }
 
@@ -2092,7 +2092,7 @@ label {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
 .selected-hero-title-row span {
@@ -2191,7 +2191,7 @@ label {
 .hero-traits-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .hero-trait-list {
@@ -2351,7 +2351,7 @@ label {
   grid-template-columns: 72px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  padding: 16px;
+  padding: 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -2421,7 +2421,7 @@ label {
 
 .modal-body {
   overflow: auto;
-  padding: 16px;
+  padding: 24px;
 }
 
 .two-column,
@@ -2452,7 +2452,7 @@ label {
   background: rgba(15, 23, 42, 0.72);
   padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 16px;
   align-content: start;
 }
 
@@ -2506,7 +2506,7 @@ label {
   display: grid;
   grid-template-columns: minmax(96px, 1fr) max-content;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
 .stats-grid .stat-row strong {
@@ -2551,7 +2551,7 @@ label {
 .friend-row,
 .chat-row {
   grid-template-columns: auto minmax(100px, 0.7fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: 16px;
 }
 
 .mini-hero-avatar {
@@ -2801,7 +2801,7 @@ label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   border: 1px solid rgba(111, 151, 169, 0.4);
   border-radius: 6px;
   background: rgba(3, 12, 23, 0.72);
@@ -2883,7 +2883,7 @@ label {
 .blackjack-profit-meter > div:first-child {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   color: #aebdcb;
   font-size: 0.75rem;
 }
@@ -2992,7 +2992,7 @@ label {
   display: grid;
   grid-template-columns: 104px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .blackjack-hand-label {
@@ -3157,7 +3157,7 @@ label {
 .blackjack-result {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   border: 1px solid rgba(111, 151, 169, 0.28);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.035);
@@ -3229,7 +3229,7 @@ label {
 }
 
 .blackjack-history-panel {
-  gap: 12px;
+  gap: 16px;
 }
 
 .blackjack-history-list {
@@ -3320,7 +3320,7 @@ label {
 .raid-chapter-card {
   display: grid;
   grid-template-columns: 44px minmax(220px, 0.9fr) minmax(0, 1fr) 44px;
-  gap: 12px;
+  gap: 16px;
   align-items: stretch;
   min-width: 0;
   border: 1px solid rgba(243, 201, 105, 0.34);
@@ -3805,7 +3805,7 @@ label {
 
 .raid-lobby-board {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 8px;
@@ -3864,13 +3864,13 @@ label {
 
 .raid-lobby-list {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .raid-lobby-card {
   display: grid;
   grid-template-columns: minmax(160px, 220px) minmax(220px, 0.82fr) minmax(280px, 1fr) minmax(160px, auto);
-  gap: 12px;
+  gap: 16px;
   align-items: stretch;
   min-width: 0;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -4085,7 +4085,7 @@ label {
   border: 1px dashed rgba(148, 163, 184, 0.26);
   border-radius: 8px;
   background: rgba(7, 13, 23, 0.48);
-  padding: 12px;
+  padding: 20px;
 }
 
 .raid-empty-state span {
@@ -4159,7 +4159,7 @@ label {
 }
 
 .market-board-v2 .segmented {
-  gap: 10px;
+  gap: 16px;
   padding: 4px;
   justify-content: flex-start;
   align-items: center;
@@ -4250,7 +4250,7 @@ label {
 .cosmetic-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .equipment-slot-card,
@@ -4391,13 +4391,13 @@ label {
 .equipment-detail-panel,
 .equipment-confirm-card {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .equipment-picker-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .equipment-replacement-card {
@@ -4435,7 +4435,7 @@ label {
   min-height: 62px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
   border-width: 2px;
   padding: 8px 10px;
@@ -4472,13 +4472,13 @@ label {
 
 .inventory-subsection {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .section-title-row {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
   color: #dbeafe;
 }
@@ -4528,7 +4528,7 @@ label {
 .starlight-odds,
 .starlight-history-panel {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .starlight-utility-row {
@@ -4577,7 +4577,7 @@ label {
   width: min(560px, 100%);
   align-self: end;
   display: grid;
-  gap: 10px;
+  gap: 16px;
   padding: 26px;
 }
 
@@ -4627,7 +4627,7 @@ label {
 .starlight-reward-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .starlight-spotlight-card,
@@ -4635,7 +4635,7 @@ label {
 .starlight-pity-card {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 16px;
 }
 
 .starlight-spotlight {
@@ -4695,7 +4695,7 @@ label {
   position: relative;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   min-height: 188px;
   overflow: hidden;
   outline: none;
@@ -4751,7 +4751,7 @@ label {
 
 .starlight-reward-preview {
   display: grid;
-  gap: 10px;
+  gap: 16px;
   margin-top: 12px;
 }
 
@@ -4878,7 +4878,7 @@ label {
 .starlight-pity-meter > span {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 16px;
   color: #cbd5e1;
 }
 
@@ -4899,7 +4899,7 @@ label {
 .starlight-result-card,
 .starlight-result-grid {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .starlight-result-card {
@@ -4987,7 +4987,7 @@ label {
 
 .hero-stat-groups .stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .hero-stat-groups .stat-row {
@@ -5009,7 +5009,7 @@ label {
 }
 
 .settings-tab-panel > .game-card {
-  gap: 12px;
+  gap: 16px;
 }
 
 .settings-controls-card {
@@ -5129,7 +5129,7 @@ label {
 
 .market-card-list {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 .market-card {
@@ -5199,7 +5199,7 @@ label {
 .quest-card {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) minmax(112px, auto);
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   min-height: 164px;
 }
@@ -5561,7 +5561,7 @@ label {
   }
 
   .landing-nav {
-    gap: 10px;
+    gap: 16px;
   }
 
   .landing-logo {
@@ -5586,7 +5586,7 @@ label {
 
   .landing-hero {
     align-content: center;
-    gap: 12px;
+    gap: 16px;
     padding: 92px 16px 22px;
   }
 
@@ -5836,14 +5836,14 @@ label {
   min-width: min(620px, 58%);
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 10px;
+  gap: 16px;
 }
 
 .event-summary-chip {
   min-height: 64px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   border: 1px solid rgba(110, 231, 183, 0.26);
   border-radius: 8px;
   background:
@@ -5910,7 +5910,7 @@ label {
   border: 1px solid rgba(124, 151, 181, 0.18);
   border-radius: 8px;
   background: rgba(3, 10, 20, 0.32);
-  padding: 12px;
+  padding: 20px;
 }
 
 .event-filter-group,
@@ -6011,7 +6011,7 @@ label {
   display: grid;
   grid-template-columns: 66px minmax(220px, 1.5fr) repeat(4, minmax(86px, 0.62fr));
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
 .event-leaderboard-head {
@@ -6057,7 +6057,7 @@ label {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
 .event-guardian .hero-appearance-preview {
@@ -6459,7 +6459,7 @@ label {
 
 .raid-result-modal {
   width: min(460px, calc(100vw - 32px));
-  gap: 10px;
+  gap: 16px;
   border: 1px solid rgba(243, 201, 105, 0.52);
   border-radius: 8px;
   background: rgba(7, 16, 28, 0.96);
@@ -6687,7 +6687,7 @@ label {
   background: linear-gradient(180deg, #1a243a 0%, #111827 100%);
   border: 1px solid rgba(243, 201, 105, 0.2);
   border-radius: 20px;
-  padding: 16px;
+  padding: 24px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 
@@ -6772,22 +6772,23 @@ label {
 
 /* Pre-Register Modal Styles - Compact, minimal */
 .pre-register-modal {
-  max-width: 620px;
+  max-width: 720px;
   width: 95%;
 }
 
 .pre-reg-content {
-  padding: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 .rewards-section {
+  width: 100%;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(243, 201, 105, 0.2);
   border-radius: 6px;
-  padding: 12px;
+  padding: 20px;
 }
 
 .rewards-header {
@@ -6801,8 +6802,8 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .reward-item {
@@ -6901,7 +6902,7 @@ label {
   background: #1e2937;
   border: 1px solid rgba(243, 201, 105, 0.3);
   border-radius: 6px;
-  padding: 16px;
+  padding: 24px;
   text-align: center;
   max-width: 280px;
 }
@@ -6933,7 +6934,7 @@ label {
   background: linear-gradient(145deg, #1e2937 0%, #0f172a 100%);
   border: 2px solid #f3c969;
   border-radius: 8px;
-  padding: 12px;
+  padding: 20px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -6998,8 +6999,8 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 /* Mobile fixes for pre-reg modal */
@@ -7034,7 +7035,7 @@ label {
 .countdown-section {
   text-align: center;
   margin-bottom: 12px;
-  padding: 12px;
+  padding: 20px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(243, 201, 105, 0.3);
   border-radius: 8px;
@@ -7117,8 +7118,8 @@ label {
 
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   justify-content: center;
   max-width: 420px;
   margin: 0 auto;
@@ -7179,7 +7180,7 @@ label {
 .rewards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  gap: 16px;
   width: 100%;
 }
 
@@ -7191,6 +7192,7 @@ label {
 }
 
 .rewards-section {
+  width: 100%;
   width: 100%;
 }
 
@@ -7217,6 +7219,7 @@ label {
 
 /* Force full width rewards on desktop */
 .rewards-section {
+  width: 100%;
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -7237,6 +7240,7 @@ label {
 /* Force full width on rewards section - desktop only */
 @media (min-width: 768px) {
   .rewards-section {
+  width: 100%;
     width: 100% !important;
     max-width: none !important;
     padding: 16px !important;
@@ -7267,6 +7271,7 @@ label {
 /* Force rewards to full width and center on desktop */
 @media (min-width: 768px) {
   .rewards-section {
+  width: 100%;
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -7293,6 +7298,7 @@ label {
 
 /* FINAL FULL WIDTH FIX - Rewards must fill the modal */
 .rewards-section {
+  width: 100%;
   width: 100% !important;
   max-width: 100% !important;
   padding: 0 !important;
