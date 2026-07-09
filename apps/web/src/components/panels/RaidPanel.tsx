@@ -103,11 +103,11 @@ export function RaidPanel() {
   const lobbies = useQuery({
     queryKey: ["lobbies"],
     queryFn: () => apiGet<LobbyResponse>("/api/lobbies"),
-    // Never keep a stale empty board cached for 5 minutes (global default).
-    staleTime: 0,
+    // Short stale window so Ready/Leave can paint from cache; poll less aggressively.
+    staleTime: 4_000,
     refetchOnMount: "always",
-    refetchInterval: 2500,
-    retry: 2,
+    refetchInterval: 8_000,
+    retry: 1,
     enabled: Boolean(me.data?.player?.id)
   });
 
@@ -263,47 +263,130 @@ export function RaidPanel() {
           return { lobbies: [data.lobby, ...without] };
         });
       }
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
-      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+      softRefreshLobbies();
     },
     onError: (error) => {
       setLobbyActionError(error instanceof Error ? error.message : "Could not create party.");
     }
   });
 
+  const patchLobbyInCache = (lobby: Lobby) => {
+    queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
+      const existing = previous?.lobbies ?? [];
+      const without = existing.filter((entry) => entry.id !== lobby.id);
+      return { lobbies: [lobby, ...without] };
+    });
+  };
+
+  const removeLobbyFromCache = (lobbyId: string) => {
+    queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
+      if (!previous?.lobbies) {
+        return previous;
+      }
+      return { ...previous, lobbies: previous.lobbies.filter((entry) => entry.id !== lobbyId) };
+    });
+  };
+
+  const softRefreshLobbies = () => {
+    // Background only — never block the Ready/Leave button on a full list reload.
+    void queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+  };
+
   const quickJoin = useMutation({
     mutationFn: (lobbyId: string) => apiPost<{ lobby: Lobby }>(`/api/lobbies/${lobbyId}/join`, {}),
-    onSuccess: async () => {
+    onSuccess: (data) => {
       playUiSound("interactionOpen");
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
-      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+      if (data.lobby) {
+        patchLobbyInCache(data.lobby);
+      }
+      softRefreshLobbies();
     }
   });
 
   const leaveLobby = useMutation({
-    mutationFn: (lobbyId: string) => apiPost<{ ok: true }>(`/api/lobbies/${lobbyId}/leave`, {}),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
-      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+    mutationFn: (lobbyId: string) => apiPost<{ ok: true; disbanded?: boolean }>(`/api/lobbies/${lobbyId}/leave`, {}),
+    onMutate: async (lobbyId) => {
+      // Instant UI: drop membership / party card before the network returns.
+      const previous = queryClient.getQueryData<LobbyResponse>(["lobbies"]);
+      if (!previous?.lobbies || !currentPlayerId) {
+        return { previous };
+      }
+      const nextLobbies = previous.lobbies
+        .map((lobby) => {
+          if (lobby.id !== lobbyId) {
+            return lobby;
+          }
+          const meMember = lobby.members.find((member) => member.playerId === currentPlayerId);
+          if (meMember?.host) {
+            return null;
+          }
+          return {
+            ...lobby,
+            members: lobby.members.filter((member) => member.playerId !== currentPlayerId)
+          };
+        })
+        .filter((lobby): lobby is Lobby => Boolean(lobby && lobby.members.length > 0));
+      queryClient.setQueryData<LobbyResponse>(["lobbies"], { lobbies: nextLobbies });
+      return { previous };
+    },
+    onError: (_error, _lobbyId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lobbies"], context.previous);
+      }
+    },
+    onSuccess: (data, lobbyId) => {
+      if (data.disbanded) {
+        removeLobbyFromCache(lobbyId);
+      }
+      softRefreshLobbies();
     }
   });
 
   const setReadyState = useMutation({
     mutationFn: ({ lobbyId, ready }: { lobbyId: string; ready: boolean }) =>
       apiPost<{ lobby: Lobby }>(`/api/lobbies/${lobbyId}/ready`, { ready }),
-    onSuccess: async () => {
+    onMutate: async ({ lobbyId, ready }) => {
+      const previous = queryClient.getQueryData<LobbyResponse>(["lobbies"]);
+      if (!previous?.lobbies || !currentPlayerId) {
+        return { previous };
+      }
+      queryClient.setQueryData<LobbyResponse>(["lobbies"], {
+        lobbies: previous.lobbies.map((lobby) => {
+          if (lobby.id !== lobbyId) {
+            return lobby;
+          }
+          return {
+            ...lobby,
+            members: lobby.members.map((member) =>
+              member.playerId === currentPlayerId ? { ...member, ready } : member
+            )
+          };
+        })
+      });
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["lobbies"], context.previous);
+      }
+    },
+    onSuccess: (data) => {
       playUiSound("success");
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
-      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+      if (data.lobby) {
+        patchLobbyInCache(data.lobby);
+      }
+      softRefreshLobbies();
     }
   });
 
   const kickMember = useMutation({
     mutationFn: ({ lobbyId, playerId }: { lobbyId: string; playerId: string }) =>
       apiPost<{ lobby: Lobby }>(`/api/lobbies/${lobbyId}/kick`, { playerId }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
-      await queryClient.refetchQueries({ queryKey: ["lobbies"] });
+    onSuccess: (data) => {
+      if (data.lobby) {
+        patchLobbyInCache(data.lobby);
+      }
+      softRefreshLobbies();
     }
   });
 
@@ -321,18 +404,60 @@ export function RaidPanel() {
         phase: "settle",
         idempotencyKey: idempotencyKey("raid")
       }),
-    onSuccess: async () => {
+    onSuccess: (data) => {
       playUiSound("success");
-      // Force a fresh player bootstrap so HUD XP/level and balances update immediately.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["me"] }),
-        queryClient.refetchQueries({ queryKey: ["me"] }),
-        queryClient.invalidateQueries({ queryKey: ["lobbies"] }),
-        queryClient.invalidateQueries({ queryKey: ["quests"] })
-      ]);
+      // End "Securing server rewards" as soon as settle returns — refresh HUD in the background.
+      if (data.raid) {
+        queryClient.setQueryData(["me"], (previous: unknown) => {
+          if (!previous || typeof previous !== "object") {
+            return previous;
+          }
+          const prev = previous as {
+            player?: { xp?: number; balances?: { EARNED_GOLD?: number }; accountLevel?: number };
+            profile?: { xp?: number; balances?: { EARNED_GOLD?: number }; accountLevel?: number };
+          };
+          const rewardXp = typeof data.raid?.rewardXp === "number" ? data.raid.rewardXp : 0;
+          const rewardGold =
+            typeof data.raid?.rewardEarnedGold === "number" ? data.raid.rewardEarnedGold : 0;
+          if (!prev.player) {
+            return previous;
+          }
+          const nextXp = (prev.player.xp ?? 0) + rewardXp;
+          const nextGold = (prev.player.balances?.EARNED_GOLD ?? 0) + rewardGold;
+          return {
+            ...prev,
+            player: {
+              ...prev.player,
+              xp: nextXp,
+              balances: {
+                ...prev.player.balances,
+                EARNED_GOLD: nextGold
+              }
+            },
+            profile: prev.profile
+              ? {
+                  ...prev.profile,
+                  xp: nextXp,
+                  balances: {
+                    ...prev.profile.balances,
+                    EARNED_GOLD: nextGold
+                  }
+                }
+              : prev.profile
+          };
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
+      void queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      void queryClient.invalidateQueries({ queryKey: ["quests"] });
     },
-    onError: () => {
+    onError: (error) => {
       playUiSound("raidLose");
+      setLobbyActionError(
+        error instanceof Error
+          ? error.message
+          : "Could not secure raid rewards. Try Return and claim again if needed."
+      );
     }
   });
 
@@ -345,18 +470,10 @@ export function RaidPanel() {
         phase: "begin",
         idempotencyKey: idempotencyKey("raid-begin")
       }),
-    onSuccess: async (_data, lobby) => {
+    onSuccess: (_data, lobby) => {
       // Drop immediately from the local open list (don't wait for refetch).
-      queryClient.setQueryData<LobbyResponse>(["lobbies"], (previous) => {
-        if (!previous?.lobbies) {
-          return previous;
-        }
-        return {
-          ...previous,
-          lobbies: previous.lobbies.filter((entry) => entry.id !== lobby.id)
-        };
-      });
-      await queryClient.invalidateQueries({ queryKey: ["lobbies"] });
+      removeLobbyFromCache(lobby.id);
+      softRefreshLobbies();
       beginRaid(lobby);
     },
     onError: (error) => {
@@ -451,12 +568,15 @@ export function RaidPanel() {
               : null
           }
           onVictory={() => {
-            if (!startRun.isPending && !startRun.isSuccess) {
-              startRun.mutate(activeRaid.lobby);
+            // Skip if already settling/succeeded; allow retry when last settle failed.
+            if (startRun.isPending || startRun.isSuccess) {
+              return;
             }
+            startRun.mutate(activeRaid.lobby);
           }}
           onExit={() => {
             setActiveRaid(null);
+            setLobbyActionError(null);
             startRun.reset();
           }}
         />

@@ -411,25 +411,14 @@ async function readBuyOrders<T>(): Promise<T> {
 }
 
 async function readLobbies<T>(): Promise<T> {
-  // Prefer service-role list (real names + stale cleanup). Always fall back to a direct table
-  // read so the board is never empty just because an edge deploy is lagging or returns the wrong shape.
+  // Prefer service-role list (real names). One edge call only — sequential fallbacks made Ready/Leave feel laggy.
   try {
     const edge = await invokeFunction<unknown>("list-open-lobbies", {});
     if (isLobbyListPayload(edge)) {
       return edge as T;
     }
   } catch {
-    // fall through
-  }
-  try {
-    const bootstrap = await invokeFunction<unknown>("get-player-bootstrap-data", {
-      section: "open-lobbies"
-    });
-    if (isLobbyListPayload(bootstrap)) {
-      return bootstrap as T;
-    }
-  } catch {
-    // fall through to table read
+    // fall through to direct table read
   }
   return (await readLobbiesFromTables()) as T;
 }

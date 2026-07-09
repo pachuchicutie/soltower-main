@@ -74,8 +74,8 @@ export function BlackjackPanel() {
     mutationFn: () =>
       apiPost<{ hand: Hand }>("/api/blackjack/deal", {
         balanceType,
-        bet: state.data?.practiceAllowed ? 0 : bet,
-        practice: Boolean(state.data?.practiceAllowed),
+        bet,
+        practice: false,
         idempotencyKey: idempotencyKey("deal")
       }),
     onSuccess: (data) => {
@@ -105,11 +105,10 @@ export function BlackjackPanel() {
 
   const current = activeHand ?? state.data?.history[0] ?? null;
   const limits = state.data?.limits;
-  const practiceAllowed = false; // Production: real gold only
   const minBet = limits?.minBet ?? 5;
   const maxBet = limits?.actualMaxBet ?? 0;
   const active = current?.status === "ACTIVE";
-  const validBet = practiceAllowed || (Number.isFinite(bet) && bet >= minBet && bet <= maxBet);
+  const validBet = Number.isFinite(bet) && bet >= minBet && bet <= maxBet;
 
   return (
     <div className="blackjack-layout blackjack-panel-v2">
@@ -119,99 +118,66 @@ export function BlackjackPanel() {
             <span className="game-eyebrow">Table Setup</span>
             <h3>Lady Vesper's Table</h3>
           </div>
-          <span className="blackjack-table-tier">
-            {practiceAllowed ? "Practice Table" : "Village Table"}
-          </span>
+          <span className="blackjack-table-tier">Village Table</span>
         </header>
 
-        {practiceAllowed ? (
-          <div className="blackjack-practice-callout" role="status">
-            <Sparkles size={21} />
-            <div>
-              <strong>Practice mode is active</strong>
-              <span>Play complete hands for free. Wins and losses never change your Gold.</span>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="blackjack-balance-toggle" role="group" aria-label="Choose wager source">
-              {balanceOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={balanceType === option.id}
-                  className={balanceType === option.id ? "active" : ""}
-                  onClick={() => setBalanceType(option.id)}
-                >
-                  <AssetIcon src={option.icon} />
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <label className="blackjack-bet-field">
-              <span>Wager</span>
-              <div className="blackjack-bet-input">
-                <AssetIcon src={uiAssetManifest.currencies.earnedGold} />
-                <input
-                  type="number"
-                  min={minBet}
-                  max={maxBet || undefined}
-                  value={bet}
-                  onChange={(event) => setBet(Number(event.target.value))}
-                  aria-label="Blackjack wager"
-                />
-                <span>Gold</span>
-              </div>
-            </label>
-
-            <div className="blackjack-limit-grid" aria-label="Table limits">
-              <LimitStat label="Minimum" value={minBet} />
-              <LimitStat label="Table limit" value={limits?.tableMaxBet ?? 25} />
-              <LimitStat label="Available now" value={maxBet} unavailable={maxBet <= 0} />
-            </div>
-
-            <div className="blackjack-profit-meter">
-              <div>
-                <span>Earned Gold profit today</span>
-                <strong>
-                  {state.data?.profitProgress ?? 0} / {state.data?.profitCap ?? 0}
-                </strong>
-              </div>
-              <div className="blackjack-meter-track" aria-hidden="true">
-                <span style={{ width: `${profitPercent(state.data?.profitProgress, state.data?.profitCap)}%` }} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {practiceAllowed ? (
-          <div className="blackjack-practice-facts" aria-label="Practice table rules">
-            <div>
-              <span>Entry cost</span>
-              <strong>0 Gold</strong>
-            </div>
-            <div>
-              <span>Rewards</span>
-              <strong>0 Gold</strong>
-            </div>
-            <div>
-              <span>Fairness</span>
-              <strong>Server dealt</strong>
-            </div>
-          </div>
-        ) : null}
-
-        <div className={`blackjack-deal-actions${practiceAllowed ? " practice" : ""}`}>
-          {!practiceAllowed ? (
-            <GameButton
-              variant="secondary"
-              onClick={() => setBet(maxBet)}
-              disabled={maxBet <= 0 || deal.isPending || active}
+        <div className="blackjack-balance-toggle" role="group" aria-label="Choose wager source">
+          {balanceOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={balanceType === option.id}
+              className={balanceType === option.id ? "active" : ""}
+              onClick={() => setBalanceType(option.id)}
             >
-              Max Bet
-            </GameButton>
-          ) : null}
+              <AssetIcon src={option.icon} />
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <label className="blackjack-bet-field">
+          <span>Wager</span>
+          <div className="blackjack-bet-input">
+            <AssetIcon src={uiAssetManifest.currencies.earnedGold} />
+            <input
+              type="number"
+              min={minBet}
+              max={maxBet || undefined}
+              value={bet}
+              onChange={(event) => setBet(Number(event.target.value))}
+              aria-label="Blackjack wager"
+            />
+            <span>Gold</span>
+          </div>
+        </label>
+
+        <div className="blackjack-limit-grid" aria-label="Table limits">
+          <LimitStat label="Minimum" value={minBet} />
+          <LimitStat label="Table limit" value={limits?.tableMaxBet ?? 25} />
+          <LimitStat label="Available now" value={maxBet} unavailable={maxBet <= 0} />
+        </div>
+
+        <div className="blackjack-profit-meter">
+          <div>
+            <span>Earned Gold profit today</span>
+            <strong>
+              {state.data?.profitProgress ?? 0} / {state.data?.profitCap ?? 0}
+            </strong>
+          </div>
+          <div className="blackjack-meter-track" aria-hidden="true">
+            <span style={{ width: `${profitPercent(state.data?.profitProgress, state.data?.profitCap)}%` }} />
+          </div>
+        </div>
+
+        <div className="blackjack-deal-actions">
+          <GameButton
+            variant="secondary"
+            onClick={() => setBet(maxBet)}
+            disabled={maxBet <= 0 || deal.isPending || active}
+          >
+            Max Bet
+          </GameButton>
           <GameButton
             variant="primary"
             onClick={() => {
@@ -221,29 +187,21 @@ export function BlackjackPanel() {
             disabled={!validBet || deal.isPending || active}
           >
             <Play size={17} />
-            {deal.isPending
-              ? "Dealing..."
-              : practiceAllowed
-                ? "Deal Practice Hand"
-                : "Deal Hand"}
+            {deal.isPending ? "Dealing..." : "Deal Hand"}
           </GameButton>
         </div>
 
         {deal.isError ? (
           <p className="blackjack-error" role="alert">
-            {practiceAllowed
-              ? "The practice table could not deal that hand. Try again."
+            {deal.error instanceof Error
+              ? deal.error.message
               : "The table could not accept that wager. Check your available Gold and try again."}
           </p>
         ) : null}
 
         <div className="blackjack-rules-note">
           <ShieldCheck size={18} />
-          <p>
-            {practiceAllowed
-              ? "Practice hands are server dealt and recorded with zero wager and zero reward."
-              : "Wagers and outcomes are settled by the game server. "}
-          </p>
+          <p>Real Gold wagers and wins are settled by the game server. Risk gold to win gold.</p>
         </div>
       </section>
 
@@ -273,17 +231,10 @@ export function BlackjackPanel() {
             </div>
 
             <div className="blackjack-hand-summary">
-              {current.practiceMode ? (
-                <span className="blackjack-practice-chip">
-                  <Sparkles size={15} />
-                  Practice hand · 0 Gold
-                </span>
-              ) : (
-                <span>
-                  <AssetIcon src={balanceIcon(current.balanceType)} />
-                  {current.totalWager} Gold wager
-                </span>
-              )}
+              <span>
+                <AssetIcon src={balanceIcon(current.balanceType)} />
+                {current.totalWager} Gold wager
+              </span>
               <span>
                 <ShieldCheck size={15} />
                 Fair shuffle secured
@@ -374,23 +325,11 @@ export function BlackjackPanel() {
                   <small>{resultDescription(hand)}</small>
                 </div>
                 <div className="blackjack-history-meta">
-                  {hand.practiceMode ? (
-                    <>
-                      <span className="blackjack-practice-chip">
-                        <Sparkles size={14} />
-                        Practice
-                      </span>
-                      <strong>0 Gold · No reward</strong>
-                    </>
-                  ) : (
-                    <>
-                      <span>
-                        <AssetIcon src={balanceIcon(hand.balanceType)} />
-                        {balanceLabel(hand.balanceType)}
-                      </span>
-                      <strong>{hand.totalWager} Gold wager</strong>
-                    </>
-                  )}
+                  <span>
+                    <AssetIcon src={balanceIcon(hand.balanceType)} />
+                    {balanceLabel(hand.balanceType)}
+                  </span>
+                  <strong>{hand.totalWager} Gold wager</strong>
                 </div>
               </div>
             ))}

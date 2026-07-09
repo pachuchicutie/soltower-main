@@ -243,6 +243,11 @@ export function RaidBattleOverlay({
             ) : null}
             {settling ? <small>Securing server rewards...</small> : null}
             {settlementError ? <small className="raid-settlement-error">{settlementError}</small> : null}
+            {battle.status === "VICTORY" && settlementError && !settling ? (
+              <GameButton variant="primary" onClick={onVictory}>
+                Retry claim rewards
+              </GameButton>
+            ) : null}
             <GameButton
               variant="primary"
               onClick={onExit}

@@ -235,14 +235,14 @@ describe("Supabase-first MVP architecture", () => {
     expect(migration).toContain("v_tax := floor");
     expect(actions).toContain("crypto.getRandomValues");
     expect(actions).toContain("Blackjack profit over Earned cap becomes Locked Gold");
-    expect(actions).toContain("practiceMode && !isDevMode()");
-    expect(actions).toContain("status !== \"ACTIVE\" && !practiceMode");
-    expect(actions).toContain("if (!practiceMode) {");
-    expect(actions).toContain("practiceAllowed: isDevMode()");
+    // Live table only: practice deals rejected; wins always settle ledger.
+    expect(actions).toContain('throw new HttpError(400, "Blackjack requires a positive Gold wager")');
+    expect(actions).toContain("practice_mode: false");
+    expect(actions).toContain("practiceAllowed: false");
+    expect(actions).toContain("Never honor practice_mode for settlement");
     expect(practiceMigration).toContain("practice_mode boolean not null default false");
     expect(practiceMigration).toContain("practice_mode = true and bet = 0");
     expect(practiceMigration).toContain("practice_mode = false and bet > 0");
-    expect(practiceMigration).toContain("Practice hands never debit or credit economy balances");
     expect(actions).toContain("requireAdmin(context");
     expect(actions).toContain("body.action === \"BAN\"");
     expect(actions).toContain("recordAdminAudit");
@@ -289,9 +289,11 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain('status: "IN_PROGRESS"');
     expect(actions).toContain("beginLobbyRaid");
     expect(actions).toContain('phase: z.enum(["begin", "settle"])');
-    expect(actions).toContain("for (const memberId of partyPlayerIds)");
-    expect(actions).toContain("recordQuestProgressFromRaid(context, { id: memberId }, raid)");
+    expect(actions).toContain("settleRaidMemberRewards");
     expect(actions).toContain("awardPlayerXp");
+    expect(actions).toContain("Ultra-fast settle path");
+    expect(actions).toContain("Only the lobby host can claim raid rewards");
+    expect(actions).toContain("No quest work on the settle path");
     expect(actions).toContain('rpc("add_player_xp"');
     expect(actions).toContain("applyAccountXpProgress");
     expect(actions).toContain("raidBaseXpReward");
@@ -303,6 +305,7 @@ describe("Supabase-first MVP architecture", () => {
     expect(api).toContain('invokeFunction<unknown>("list-open-lobbies"');
     expect(api).toContain("readLobbiesFromTables");
     expect(api).toContain("isLobbyListPayload");
+    expect(api).not.toContain('section: "open-lobbies"');
     expect(xpMigration).toContain("create or replace function private.add_player_xp");
     expect(xpMigration).toContain("private.player_xp_ledger");
   });

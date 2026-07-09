@@ -839,13 +839,13 @@ async function startBlackjackHand(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = blackjackDealSchema.parse(context.body);
-  const practiceMode = body.practice;
-  if (practiceMode && !isDevMode()) {
-    throw new HttpError(403, "Practice Blackjack is unavailable");
+  // Live table only: ignore any practice flag from clients. All hands risk and pay real Gold.
+  if (body.practice || body.bet <= 0) {
+    throw new HttpError(400, "Blackjack requires a positive Gold wager");
   }
   const balance = await loadBalances(context, player.id);
   const limits = getBlackjackLimits(player.accountLevel, balance[body.balanceType]);
-  if (!practiceMode && (body.bet < limits.minBet || body.bet > limits.actualMaxBet)) {
+  if (body.bet < limits.minBet || body.bet > limits.actualMaxBet) {
     throw new HttpError(400, `Bet must be between ${limits.minBet} and ${limits.actualMaxBet}`);
   }
   if (player.blackjackFrozen) {
@@ -864,18 +864,16 @@ async function startBlackjackHand(context: EdgeContext): Promise<JsonRecord> {
     return { hand: safeHand(asRecord(existing.data, "blackjack hand")) };
   }
 
-  if (!practiceMode) {
-    await applyBalance(context, {
-      playerId: player.id,
-      balanceType: body.balanceType,
-      sourceType: "BLACKJACK_WAGER",
-      direction: "DEBIT",
-      amount: body.bet,
-      reason: "Blackjack wager",
-      idempotencyKey: `${body.idempotencyKey}:wager`,
-      referenceEntityType: "blackjack_hand"
-    });
-  }
+  await applyBalance(context, {
+    playerId: player.id,
+    balanceType: body.balanceType,
+    sourceType: "BLACKJACK_WAGER",
+    direction: "DEBIT",
+    amount: body.bet,
+    reason: "Blackjack wager",
+    idempotencyKey: `${body.idempotencyKey}:wager`,
+    referenceEntityType: "blackjack_hand"
+  });
 
   const cards = drawCards(4);
   const seedHash = await hashText(`${crypto.randomUUID()}:${user.id}:${Date.now()}`);
@@ -888,7 +886,7 @@ async function startBlackjackHand(context: EdgeContext): Promise<JsonRecord> {
         balance_type: body.balanceType,
         bet: body.bet,
         total_wager: body.bet,
-        practice_mode: practiceMode,
+        practice_mode: false,
         status: "ACTIVE",
         player_cards: [cards[0], cards[2]],
         dealer_cards: [cards[1], cards[3]],
@@ -924,26 +922,24 @@ async function actOnBlackjack(context: EdgeContext, action: "HIT" | "STAND" | "D
   let dealerCards = cardArray(hand.dealer_cards);
   let totalWager = toNumber(hand.total_wager);
   const balanceType = toStringValue(hand.balance_type) as "EARNED_GOLD" | "LOCKED_GOLD";
-  const practiceMode = toBoolean(hand.practice_mode);
+  // Never honor practice_mode for settlement — live table always risks and pays Gold.
   const id = toStringValue(hand.id);
   let status = "ACTIVE";
   let metadata: JsonRecord = {};
 
   if (action === "DOUBLE_DOWN") {
-    if (!practiceMode) {
-      await applyBalance(context, {
-        playerId: player.id,
-        balanceType,
-        sourceType: "BLACKJACK_WAGER",
-        direction: "DEBIT",
-        amount: toNumber(hand.bet),
-        reason: "Blackjack double-down wager",
-        idempotencyKey: `${body.idempotencyKey}:double-down`,
-        referenceEntityType: "blackjack_hand",
-        referenceEntityId: id
-      });
-      totalWager += toNumber(hand.bet);
-    }
+    await applyBalance(context, {
+      playerId: player.id,
+      balanceType,
+      sourceType: "BLACKJACK_WAGER",
+      direction: "DEBIT",
+      amount: toNumber(hand.bet),
+      reason: "Blackjack double-down wager",
+      idempotencyKey: `${body.idempotencyKey}:double-down`,
+      referenceEntityType: "blackjack_hand",
+      referenceEntityId: id
+    });
+    totalWager += toNumber(hand.bet);
     playerCards = [...playerCards, drawCards(1)[0]];
     ({ status, metadata } = settleBlackjack(playerCards, dealerCards));
   } else if (action === "HIT") {
@@ -956,7 +952,7 @@ async function actOnBlackjack(context: EdgeContext, action: "HIT" | "STAND" | "D
     ({ status, metadata, dealerCards } = settleBlackjack(playerCards, dealerCards));
   }
 
-  if (status !== "ACTIVE" && !practiceMode) {
+  if (status !== "ACTIVE") {
     await settleBlackjackLedger(context, {
       playerId: player.id,
       accountLevel: player.accountLevel,
@@ -1220,7 +1216,7 @@ async function leaveLobby(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = lobbyIdSchema.parse(context.body);
-  await expireStaleRaidLobbies(context);
+  // No expireStaleRaidLobbies here — keep leave snappy; cleanup runs on list/create.
   const membershipResult = await checked(
     context.service
       .from("raid_lobby_members")
@@ -1246,7 +1242,7 @@ async function setReadyState(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = readySchema.parse(context.body);
-  await expireStaleRaidLobbies(context);
+  // Fast path: one membership update + one lobby read. Stale cleanup is not needed for Ready.
   await checked(
     context.service
       .from("raid_lobby_members")
@@ -1261,7 +1257,7 @@ async function kickLobbyPlayer(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   const body = kickSchema.parse(context.body);
-  await expireStaleRaidLobbies(context);
+  // Keep kick fast — no global stale-lobby scan.
   const hostResult = await checked(
     context.service
       .from("raid_lobby_members")
@@ -1310,137 +1306,103 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
   if (existing.data) {
     return { raid: camelRecord(asRecord(existing.data, "raid history")) };
   }
-  await expireStaleRaidLobbies(context);
+
+  // Ultra-fast settle path for "Securing server rewards":
+  // 1) validate host/lobby with minimal queries
+  // 2) pay gold+xp+history only (no quests)
+  // 3) host first, then other party members in parallel
   let partyPlayerIds = [player.id];
   if (body.lobbyId) {
-    const lobbyResult = await checked(context.service.from("raid_lobbies").select("*").eq("id", body.lobbyId).single());
-    const lobby = asRecord(lobbyResult.data, "raid lobby");
-    const lobbyStatus = toStringValue(lobby.status, "OPEN");
-    // Allow settlement after begin phase locked the lobby as IN_PROGRESS.
-    if (lobbyStatus !== "OPEN" && lobbyStatus !== "IN_PROGRESS") {
-      throw new HttpError(409, "Lobby is not available for settlement");
-    }
-    if (isExpiredLobby(lobby) && lobbyStatus === "OPEN") {
-      await expireRaidLobby(context, body.lobbyId);
-      throw new HttpError(409, "Lobby recruitment expired");
-    }
-    if (toStringValue(lobby.map_id) !== body.mapId) {
-      throw new HttpError(400, "Raid stage does not match the lobby");
-    }
-    const hostResult = await checked(
-      context.service
-        .from("raid_lobby_members")
-        .select("*")
-        .eq("lobby_id", body.lobbyId)
-        .eq("player_id", player.id)
-        .eq("host", true)
-        .maybeSingle()
-    );
-    if (!hostResult.data) {
-      throw new HttpError(403, "Only the lobby host can start the run");
-    }
-    const lobbyMembersResult = await checked(
-      context.service.from("raid_lobby_members").select("player_id,ready,host").eq("lobby_id", body.lobbyId)
-    );
-    const lobbyMembers = rows(lobbyMembersResult.data);
-    const partyIsReady = lobbyMembers.length >= 1 && lobbyMembers.every((member) => toBoolean(member.host) || toBoolean(member.ready));
-    if (!partyIsReady) {
-      throw new HttpError(409, "All non-host party members must be ready before the raid can start");
-    }
-    partyPlayerIds = lobbyMembers
-      .map((member) => toStringValue(member.player_id))
-      .filter(Boolean);
-  }
-  await assertRaidStageAccess(context, player, body.mapId);
-  const profilesResult = await checked(
-    context.service
-      .from("player_profiles")
-      .select("player_id,account_level,xp,power")
-      .in("player_id", partyPlayerIds)
-  );
-  const profiles = rows(profilesResult.data);
-  let hostRaid: JsonRecord | null = null;
-  for (const memberId of partyPlayerIds) {
-    const profile =
-      profiles.find((entry) => toStringValue(entry.player_id) === memberId) ??
-      (memberId === player.id
-        ? {
-            player_id: player.id,
-            account_level: player.accountLevel,
-            xp: player.xp,
-            power: player.power
-          }
-        : null);
-    if (!profile) {
-      continue;
-    }
-    const memberRaidKey =
-      memberId === player.id
-        ? body.idempotencyKey
-        : `${body.idempotencyKey}:member:${memberId}`;
-    const memberExisting = await checked(
-      context.service
-        .from("raid_history")
-        .select("*")
-        .eq("idempotency_key", memberRaidKey)
-        .maybeSingle()
-    );
-    if (memberExisting.data) {
-      if (memberId === player.id) {
-        hostRaid = asRecord(memberExisting.data, "raid history");
+    const [lobbyResult, hostResult, lobbyMembersResult] = await Promise.all([
+      checked(
+        context.service
+          .from("raid_lobbies")
+          .select("id,status,map_id")
+          .eq("id", body.lobbyId)
+          .maybeSingle()
+      ),
+      checked(
+        context.service
+          .from("raid_lobby_members")
+          .select("player_id,host")
+          .eq("lobby_id", body.lobbyId)
+          .eq("player_id", player.id)
+          .eq("host", true)
+          .maybeSingle()
+      ),
+      checked(
+        context.service
+          .from("raid_lobby_members")
+          .select("player_id,ready,host")
+          .eq("lobby_id", body.lobbyId)
+      )
+    ]);
+
+    if (lobbyResult.data) {
+      const lobby = asRecord(lobbyResult.data, "raid lobby");
+      const lobbyStatus = toStringValue(lobby.status, "OPEN");
+      if (lobbyStatus !== "OPEN" && lobbyStatus !== "IN_PROGRESS" && lobbyStatus !== "COMPLETED") {
+        throw new HttpError(409, "Lobby is not available for settlement");
       }
-      continue;
-    }
-    const memberPower = toNumber(profile.power);
-    const earnedGold =
-      economyConfig.raidBaseGoldReward + Math.floor(memberPower / 160);
-    const xp = economyConfig.raidBaseXpReward;
-    await applyBalance(context, {
-      playerId: memberId,
-      balanceType: "EARNED_GOLD",
-      sourceType: "RAID_REWARD",
-      direction: "CREDIT",
-      amount: earnedGold,
-      reason: "Synchronized raid victory reward",
-      idempotencyKey: `${memberRaidKey}:earned-gold`,
-      referenceEntityType: "raid",
-      referenceEntityId: body.mapId
-    });
-    // Account XP must always land on victory. Prefer ledger RPC, fall back to profile write.
-    await awardPlayerXp(context, {
-      playerId: memberId,
-      rewardXp: xp,
-      idempotencyKey: `${memberRaidKey}:xp`,
-      sourceType: "RAID_REWARD",
-      referenceEntityType: "raid",
-      referenceEntityId: body.mapId,
-      currentAccountLevel: toNumber(profile.account_level, 1),
-      currentXp: toNumber(profile.xp)
-    });
-    const raidResult = await checked(
-      context.service
-        .from("raid_history")
-        .insert({
-          lobby_id: body.lobbyId ?? null,
-          player_id: memberId,
-          map_id: body.mapId,
-          duration_seconds: 60,
-          wave_count: 10,
-          boss_defeated: true,
-          success: true,
-          reward_earned_gold: earnedGold,
-          reward_xp: xp,
-          idempotency_key: memberRaidKey
-        })
-        .select("*")
-        .single()
-    );
-    const raid = asRecord(raidResult.data, "raid history");
-    await recordQuestProgressFromRaid(context, { id: memberId }, raid);
-    if (memberId === player.id) {
-      hostRaid = raid;
+      if (toStringValue(lobby.map_id) !== body.mapId) {
+        throw new HttpError(400, "Raid stage does not match the lobby");
+      }
+      const lobbyMembers = rows(lobbyMembersResult.data);
+      if (lobbyMembers.length > 0 && !hostResult.data) {
+        throw new HttpError(403, "Only the lobby host can claim raid rewards");
+      }
+      // Ready only matters if settle is attempted without begin (OPEN).
+      if (lobbyStatus === "OPEN") {
+        const partyIsReady =
+          lobbyMembers.length >= 1 &&
+          lobbyMembers.every((member) => toBoolean(member.host) || toBoolean(member.ready));
+        if (!partyIsReady) {
+          throw new HttpError(409, "All non-host party members must be ready before the raid can start");
+        }
+      }
+      const memberIds = lobbyMembers.map((member) => toStringValue(member.player_id)).filter(Boolean);
+      if (memberIds.length > 0) {
+        partyPlayerIds = memberIds.includes(player.id) ? memberIds : [player.id, ...memberIds];
+      }
     }
   }
+
+  const hostProfile = {
+    player_id: player.id,
+    account_level: player.accountLevel,
+    xp: player.xp,
+    power: player.power
+  };
+
+  // Solo host: skip party profile bulk fetch — use in-memory host profile only.
+  const otherIds = partyPlayerIds.filter((id) => id !== player.id);
+  const profilesById = new Map<string, JsonRecord>([[player.id, hostProfile]]);
+  if (otherIds.length > 0) {
+    const profilesResult = await checked(
+      context.service
+        .from("player_profiles")
+        .select("player_id,account_level,xp,power")
+        .in("player_id", otherIds)
+    );
+    for (const row of rows(profilesResult.data)) {
+      profilesById.set(toStringValue(row.player_id), row);
+    }
+  }
+
+  // Host first so the victory UI can return ASAP with the host reward payload.
+  const hostRaidEntry = await settleRaidMemberRewards(context, {
+    memberId: player.id,
+    hostPlayerId: player.id,
+    hostProfile,
+    profile: hostProfile,
+    memberRaidKey: body.idempotencyKey,
+    lobbyId: body.lobbyId ?? null,
+    mapId: body.mapId
+  });
+  if (!hostRaidEntry) {
+    throw new HttpError(500, "Raid settlement did not produce a host record");
+  }
+
   if (body.lobbyId) {
     await checked(
       context.service
@@ -1450,10 +1412,114 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
         .in("status", ["OPEN", "IN_PROGRESS"])
     );
   }
-  if (!hostRaid) {
-    throw new HttpError(500, "Raid settlement did not produce a host record");
+
+  // Pay teammates after host rewards are secured. Prefer background so "Securing rewards" ends faster.
+  if (otherIds.length > 0) {
+    const payTeammates = Promise.all(
+      otherIds.map(async (memberId) => {
+        try {
+          await settleRaidMemberRewards(context, {
+            memberId,
+            hostPlayerId: player.id,
+            hostProfile,
+            profile: profilesById.get(memberId) ?? null,
+            memberRaidKey: `${body.idempotencyKey}:member:${memberId}`,
+            lobbyId: body.lobbyId ?? null,
+            mapId: body.mapId
+          });
+        } catch {
+          // Never fail host settlement because a teammate reward failed.
+        }
+      })
+    );
+    const edgeRuntime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+      .EdgeRuntime;
+    if (edgeRuntime?.waitUntil) {
+      edgeRuntime.waitUntil(payTeammates);
+    } else {
+      await payTeammates;
+    }
   }
-  return { raid: camelRecord(hostRaid) };
+
+  return { raid: camelRecord(hostRaidEntry.raid) };
+}
+
+async function settleRaidMemberRewards(
+  context: EdgeContext,
+  input: {
+    memberId: string;
+    hostPlayerId: string;
+    hostProfile: JsonRecord;
+    profile: JsonRecord | null;
+    memberRaidKey: string;
+    lobbyId: string | null;
+    mapId: string;
+  }
+): Promise<{ memberId: string; raid: JsonRecord } | null> {
+  const profile =
+    input.profile ?? (input.memberId === input.hostPlayerId ? input.hostProfile : null);
+  if (!profile) {
+    return null;
+  }
+
+  // Idempotent: if history already exists, return it (no second pay).
+  const existing = await checked(
+    context.service
+      .from("raid_history")
+      .select("*")
+      .eq("idempotency_key", input.memberRaidKey)
+      .maybeSingle()
+  );
+  if (existing.data) {
+    return { memberId: input.memberId, raid: asRecord(existing.data, "raid history") };
+  }
+
+  const memberPower = toNumber(profile.power);
+  const earnedGold = economyConfig.raidBaseGoldReward + Math.floor(memberPower / 160);
+  const xp = economyConfig.raidBaseXpReward;
+
+  // Gold then XP (ledger-safe). No quest work on the settle path — keeps victory claim fast.
+  await applyBalance(context, {
+    playerId: input.memberId,
+    balanceType: "EARNED_GOLD",
+    sourceType: "RAID_REWARD",
+    direction: "CREDIT",
+    amount: earnedGold,
+    reason: "Synchronized raid victory reward",
+    idempotencyKey: `${input.memberRaidKey}:earned-gold`,
+    referenceEntityType: "raid",
+    referenceEntityId: input.mapId
+  });
+  await awardPlayerXp(context, {
+    playerId: input.memberId,
+    rewardXp: xp,
+    idempotencyKey: `${input.memberRaidKey}:xp`,
+    sourceType: "RAID_REWARD",
+    referenceEntityType: "raid",
+    referenceEntityId: input.mapId,
+    currentAccountLevel: toNumber(profile.account_level, 1),
+    currentXp: toNumber(profile.xp)
+  });
+
+  const raidResult = await checked(
+    context.service
+      .from("raid_history")
+      .insert({
+        lobby_id: input.lobbyId,
+        player_id: input.memberId,
+        map_id: input.mapId,
+        duration_seconds: 60,
+        wave_count: 10,
+        boss_defeated: true,
+        success: true,
+        reward_earned_gold: earnedGold,
+        reward_xp: xp,
+        idempotency_key: input.memberRaidKey
+      })
+      .select("id,player_id,map_id,reward_earned_gold,reward_xp,success,boss_defeated,idempotency_key,created_at")
+      .single()
+  );
+  return { memberId: input.memberId, raid: asRecord(raidResult.data, "raid history") };
 }
 
 /** Host starts the client battle: lock party out of open-lobby lists immediately. */
@@ -1465,7 +1531,7 @@ async function beginLobbyRaid(
   if (!body.lobbyId) {
     throw new HttpError(400, "Lobby id is required to begin a raid");
   }
-  await expireStaleRaidLobbies(context);
+  // Skip expireStaleRaidLobbies on begin — keep Start Raid snappy.
   const lobbyResult = await checked(
     context.service.from("raid_lobbies").select("*").eq("id", body.lobbyId).single()
   );
@@ -1747,7 +1813,8 @@ async function recordQuestProgressFromRaid(
   if (!raidId) {
     return;
   }
-  await ensureQuestAssignments(context, player.id);
+  // Skip ensureQuestAssignments + achievement refresh here — those are heavy and made victory settle lag.
+  // Progress only existing period assignments; opening Quest Journal can re-sync assignments later.
   const now = new Date();
   const daily = periodFor(now, "DAILY");
   const weekly = periodFor(now, "WEEKLY");
@@ -1761,34 +1828,40 @@ async function recordQuestProgressFromRaid(
         .in("period_start", [daily.start.toISOString(), weekly.start.toISOString()])
     )
   ]);
-  const definitions = new Map(rows(definitionsResult.data).map((definition) => [toStringValue(definition.id), definition]));
-  for (const assignment of rows(assignmentsResult.data)) {
+  const definitions = new Map(
+    rows(definitionsResult.data).map((definition) => [toStringValue(definition.id), definition])
+  );
+  const progressJobs = rows(assignmentsResult.data).flatMap((assignment) => {
     const definition = definitions.get(toStringValue(assignment.quest_definition_id));
     if (!definition) {
-      continue;
+      return [];
     }
     const amount = questProgressAmount(definition, raid);
     if (amount <= 0) {
-      continue;
+      return [];
     }
-    await checked(
-      context.service.schema("private").rpc("record_quest_progress", {
-        p_player_id: player.id,
-        p_assignment_id: toStringValue(assignment.id),
-        p_source_type: "raid_history",
-        p_source_id: raidId,
-        p_amount: amount,
-        p_idempotency_key: `quest-progress:${raidId}:${assignment.id}`,
-        p_metadata: {
-          mapId: toStringValue(raid.map_id),
-          nonAfk: true,
-          success: toBoolean(raid.success),
-          bossDefeated: toBoolean(raid.boss_defeated)
-        }
-      })
-    );
+    return [
+      checked(
+        context.service.schema("private").rpc("record_quest_progress", {
+          p_player_id: player.id,
+          p_assignment_id: toStringValue(assignment.id),
+          p_source_type: "raid_history",
+          p_source_id: raidId,
+          p_amount: amount,
+          p_idempotency_key: `quest-progress:${raidId}:${assignment.id}`,
+          p_metadata: {
+            mapId: toStringValue(raid.map_id),
+            nonAfk: true,
+            success: toBoolean(raid.success),
+            bossDefeated: toBoolean(raid.boss_defeated)
+          }
+        })
+      )
+    ];
+  });
+  if (progressJobs.length > 0) {
+    await Promise.all(progressJobs);
   }
-  await refreshPlayerAchievements(context, player.id);
 }
 
 function questProgressAmount(definition: JsonRecord, raid: JsonRecord): number {
@@ -2360,7 +2433,8 @@ async function loadBlackjackState(context: EdgeContext, authUserId: string): Pro
       .limit(20)
   );
   return {
-    practiceAllowed: isDevMode(),
+    // Live village table only — never advertise practice mode to clients.
+    practiceAllowed: false,
     limits: getBlackjackLimits(player.accountLevel, balances.EARNED_GOLD),
     profitCap: getBlackjackEarnedProfitCap(player.accountLevel),
     profitProgress: counters.data ? toNumber(asRecord(counters.data, "blackjack counter").earned_profit) : 0,
