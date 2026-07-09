@@ -245,6 +245,43 @@ label {
   width: 22px;
   height: 22px;
   display: inline-block;
+/* Mobile fixes for pre-reg modal */
+@media (max-width: 480px) {
+  .pre-register-modal {
+    width: 95vw;
+    max-width: none;
+    margin: 10px;
+  }
+
+  .rewards-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .reward-card img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .reward-card .reward-name {
+    font-size: 11px;
+  }
+
+  .connect-wallet-btn,
+  .pre-reg-btn {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
+}
   flex: 0 0 auto;
   object-fit: contain;
   vertical-align: middle;
@@ -6845,9 +6882,41 @@ label {
 }
 
 .connect-wallet-btn,
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
 .pre-reg-btn {
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
   min-width: 180px;
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
   display: flex;
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -6996,6 +7065,43 @@ label {
   border-radius: 10px;
   color: #f3c969;
   display: inline-block;
+/* Mobile fixes for pre-reg modal */
+@media (max-width: 480px) {
+  .pre-register-modal {
+    width: 95vw;
+    max-width: none;
+    margin: 10px;
+  }
+
+  .rewards-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .reward-card img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .reward-card .reward-name {
+    font-size: 11px;
+  }
+
+  .connect-wallet-btn,
+  .pre-reg-btn {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
+}
 }
 
 .rewards-grid {
@@ -7004,33 +7110,6 @@ label {
   gap: 16px;
 }
 
-/* Mobile fixes for pre-reg modal */
-@media (max-width: 480px) {
-  .pre-register-modal {
-  width: min(780px, calc(100vw - 80px));
-  max-width: none;
-  }
-  
-  .rewards-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  
-  .reward-card img {
-    width: 56px;
-    height: 56px;
-  }
-  
-  .reward-card .reward-name {
-    font-size: 11px;
-  }
-  
-  .connect-wallet-btn,
-  .pre-reg-btn {
-    width: 100%;
-    font-size: 14px;
-  }
-}
 
 /* Countdown Timer - Shiny ticking */
 .countdown-section {
@@ -7399,3 +7478,15 @@ label {
   background: rgba(15, 23, 42, 0.8);
   padding: 10px 16px;
   border-radius: 6px;
+
+/* Mobile wallet address fix */
+@media (max-width: 480px) {
+  .wallet-address {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .disconnect-btn {
+    padding: 4px;
+  }
+}
