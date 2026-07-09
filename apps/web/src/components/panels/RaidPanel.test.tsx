@@ -2,7 +2,7 @@
 
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RaidPanel } from "./RaidPanel";
 
@@ -202,7 +202,7 @@ describe("RaidPanel", () => {
   it("starts solo raid battles without stale Unknown Guardian combatants", async () => {
     mockLobbies([
       {
-        id: "lobby-solo-with-stale-members",
+        id: "4f6643a1-7b58-4e54-9213-a537044be465",
         mapId: "tower-1-1",
         lobbyType: "PUBLIC",
         recommendedPower: 515,
@@ -251,10 +251,10 @@ describe("RaidPanel", () => {
     expect(await screen.findByText("Marky")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Start Raid/i }));
 
-    expect(await screen.findByRole("dialog", { name: /Sproutling Path raid battle/i })).toBeTruthy();
-    expect(screen.getByText("Marky")).toBeTruthy();
-    expect(screen.queryByText("Unknown Guardian")).toBeNull();
-    expect(document.querySelectorAll(".raid-guardian")).toHaveLength(1);
+    const dialog = await screen.findByRole("dialog", { name: /Sproutling Path raid battle/i });
+    expect(within(dialog).getByText("Marky")).toBeTruthy();
+    expect(within(dialog).queryByText("Unknown Guardian")).toBeNull();
+    expect(dialog.querySelectorAll(".raid-guardian")).toHaveLength(1);
   });
 
   it("blocks joining or creating another party while the player is already in one", async () => {
