@@ -17,7 +17,7 @@ import {
 } from "../lib/realtime";
 import type { ModalKey } from "../store/ui";
 
-const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 16000;
+const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 20000;
 
 interface TownCanvasProps {
   playerName: string;
@@ -60,6 +60,21 @@ export function TownCanvas({
   const sceneRef = useRef<TownScene | null>(null);
   const realtimeSessionRef = useRef<TownRealtimeSession | null>(null);
   const remotePlayersRef = useRef<TownRealtimePlayer[]>([]);
+  // Stable refs so identity/callback prop churn does not tear down the realtime socket.
+  const playerNameRef = useRef(playerName);
+  const selectedHeroIdRef = useRef(selectedHeroId);
+  const heroAppearanceRef = useRef(heroAppearance);
+  const initialPositionRef = useRef(initialPosition);
+  const onRealtimeOnlineChangeRef = useRef(onRealtimeOnlineChange);
+  const onRealtimeStatusChangeRef = useRef(onRealtimeStatusChange);
+
+  playerNameRef.current = playerName;
+  selectedHeroIdRef.current = selectedHeroId;
+  heroAppearanceRef.current = heroAppearance;
+  initialPositionRef.current = initialPosition;
+  onRealtimeOnlineChangeRef.current = onRealtimeOnlineChange;
+  onRealtimeStatusChangeRef.current = onRealtimeStatusChange;
+
   const publishRealtimeMovement = useCallback((movement: LocalTownMovement) => {
     realtimeSessionRef.current?.publishMovement(movement);
   }, []);
@@ -109,6 +124,8 @@ export function TownCanvas({
       sceneRef.current = null;
       game.destroy(true);
     };
+    // Scene is intentionally recreated only when mode/playerName change — not on every prop tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, playerName, publishRealtimeMovement]);
 
   useEffect(() => {
@@ -139,42 +156,44 @@ export function TownCanvas({
     if (mode !== "game" || !playerId) {
       remotePlayersRef.current = [];
       sceneRef.current?.syncRemotePlayers([], true);
-      onRealtimeOnlineChange?.(0);
+      onRealtimeOnlineChangeRef.current?.(0);
       return undefined;
     }
-    const heroId = normalizeHeroId(selectedHeroId);
+    const heroId = normalizeHeroId(selectedHeroIdRef.current);
+    const appearance = normalizeHeroAppearance(
+      heroId,
+      heroAppearanceRef.current ?? defaultHeroAppearance(heroId)
+    );
+    const spawnPosition = initialPositionRef.current ?? {
+      x: 627,
+      y: 776,
+      facingX: 0,
+      facingY: 1
+    };
     let session: TownRealtimeSession;
     try {
       session = new TownRealtimeSession({
         playerId,
-        displayName: playerName,
+        displayName: playerNameRef.current,
         heroId,
-        appearance: normalizeHeroAppearance(
-          heroId,
-          heroAppearance ?? defaultHeroAppearance(heroId)
-        ),
+        appearance,
         townChannel,
-        initialPosition: initialPosition ?? {
-          x: 627,
-          y: 776,
-          facingX: 0,
-          facingY: 1
-        },
+        initialPosition: spawnPosition,
         onPresence: (players) => {
           const visiblePlayers = mergeRemotePlayers(remotePlayersRef.current, players);
           remotePlayersRef.current = visiblePlayers;
           sceneRef.current?.syncRemotePlayers(visiblePlayers);
-          onRealtimeOnlineChange?.(visiblePlayers.length + 1);
+          onRealtimeOnlineChangeRef.current?.(visiblePlayers.length + 1);
         },
         onMovement: (movement) => {
           remotePlayersRef.current = mergeRemotePlayers(remotePlayersRef.current, [movement]);
           sceneRef.current?.applyRemoteMovement(movement);
-          onRealtimeOnlineChange?.(remotePlayersRef.current.length + 1);
+          onRealtimeOnlineChangeRef.current?.(remotePlayersRef.current.length + 1);
         },
-        onStatus: onRealtimeStatusChange
+        onStatus: (status) => onRealtimeStatusChangeRef.current?.(status)
       });
     } catch {
-      onRealtimeStatusChange?.("error");
+      onRealtimeStatusChangeRef.current?.("error");
       return undefined;
     }
     realtimeSessionRef.current = session;
@@ -185,17 +204,23 @@ export function TownCanvas({
       sceneRef.current?.syncRemotePlayers([], true);
       void session.disconnect();
     };
-  }, [
-    heroAppearance,
-    initialPosition,
-    mode,
-    onRealtimeOnlineChange,
-    onRealtimeStatusChange,
-    playerId,
-    playerName,
-    selectedHeroId,
-    townChannel
-  ]);
+    // Only reconnect when the player identity or town server changes — not when position
+    // snapshots / appearance object identity / parent callbacks churn every render.
+  }, [mode, playerId, townChannel]);
+
+  // Push cosmetic/name updates into the live session without reconnecting.
+  useEffect(() => {
+    const session = realtimeSessionRef.current;
+    if (!session || mode !== "game" || !playerId) {
+      return;
+    }
+    const heroId = normalizeHeroId(selectedHeroId);
+    session.updateIdentity({
+      displayName: playerName,
+      heroId,
+      appearance: normalizeHeroAppearance(heroId, heroAppearance ?? defaultHeroAppearance(heroId))
+    });
+  }, [heroAppearance, mode, playerId, playerName, selectedHeroId]);
 
   useEffect(() => {
     if (cameraResetSignal > 0) {

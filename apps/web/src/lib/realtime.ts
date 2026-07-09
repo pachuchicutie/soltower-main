@@ -11,10 +11,17 @@ import {
 } from "@soltower/shared";
 import { createBrowserSupabaseClient } from "./supabase";
 
-const MOVEMENT_SEND_INTERVAL_MS = 125;
-const PRESENCE_MOVEMENT_TRACK_INTERVAL_MS = 500;
-const PRESENCE_REFRESH_INTERVAL_MS = 5000;
-const PRESENCE_VISIBLE_UNTIL_MS = PRESENCE_REFRESH_INTERVAL_MS * 3;
+/** Movement broadcast cadence — ~8 Hz keeps walk smooth without flooding Realtime. */
+const MOVEMENT_SEND_INTERVAL_MS = 100;
+/** Presence is only for discovery/heartbeats — never per-step (rate limits freeze remotes). */
+const PRESENCE_TRACK_INTERVAL_MS = 2000;
+/** Keepalive so idle avatars and presence metas do not expire mid-session. */
+const PRESENCE_REFRESH_INTERVAL_MS = 4000;
+/** Drop presence metas older than this when building the roster. */
+const PRESENCE_VISIBLE_UNTIL_MS = PRESENCE_REFRESH_INTERVAL_MS * 4;
+/** Reconnect backoff after channel errors. */
+const RECONNECT_BASE_DELAY_MS = 750;
+const RECONNECT_MAX_DELAY_MS = 8000;
 
 export type TownRealtimeStatus = "connecting" | "connected" | "disconnected" | "error";
 
@@ -47,6 +54,8 @@ export class TownRealtimeSession {
   private pendingMovement?: LocalTownMovement;
   private movementTimer?: number;
   private presenceTimer?: number;
+  private reconnectTimer?: number;
+  private reconnectAttempt = 0;
   private disposed = false;
 
   constructor(options: TownRealtimeSessionOptions, client = createBrowserSupabaseClient()) {
@@ -71,9 +80,11 @@ export class TownRealtimeSession {
   }
 
   connect(): void {
-    if (this.channel || this.disposed) {
+    if (this.disposed) {
       return;
     }
+    this.clearReconnectTimer();
+    this.teardownChannel();
     this.options.onStatus?.("connecting");
     const topic = `town:${this.options.townChannel}`;
     for (const existingChannel of this.client.getChannels()) {
@@ -105,18 +116,24 @@ export class TownRealtimeSession {
           return;
         }
         if (status === "SUBSCRIBED") {
+          this.reconnectAttempt = 0;
           this.options.onStatus?.("connected");
+          // Full presence meta once on join for roster discovery.
           this.trackLatestPresence(true);
-          this.broadcastLatestState();
+          this.broadcastLatestState(true);
           this.startPresenceRefresh();
           return;
         }
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           this.options.onStatus?.("error");
+          this.scheduleReconnect();
           return;
         }
         if (status === "CLOSED") {
           this.options.onStatus?.("disconnected");
+          if (!this.disposed) {
+            this.scheduleReconnect();
+          }
         }
       });
   }
@@ -139,25 +156,78 @@ export class TownRealtimeSession {
     }
   }
 
+  /** Push the latest appearance/name without tearing down the socket. */
+  updateIdentity(patch: {
+    displayName?: string;
+    heroId?: HeroId;
+    appearance?: HeroAppearance;
+  }): void {
+    this.latestState = townRealtimePlayerSchema.parse({
+      ...this.latestState,
+      displayName: patch.displayName ?? this.latestState.displayName,
+      heroId: patch.heroId ?? this.latestState.heroId,
+      appearance: patch.appearance ?? this.latestState.appearance,
+      sentAt: Date.now()
+    });
+    this.trackLatestPresence(true);
+    this.broadcastLatestState(true);
+  }
+
   async disconnect(): Promise<void> {
     if (this.disposed) {
       return;
     }
     this.disposed = true;
+    this.clearReconnectTimer();
     if (this.movementTimer !== undefined) {
       window.clearTimeout(this.movementTimer);
+      this.movementTimer = undefined;
     }
     if (this.presenceTimer !== undefined) {
       window.clearInterval(this.presenceTimer);
+      this.presenceTimer = undefined;
     }
-    const channel = this.channel;
-    this.channel = undefined;
-    if (channel) {
-      await channel.untrack().catch(() => undefined);
-      await this.client.removeChannel(channel);
-    }
+    await this.teardownChannel();
     this.options.onPresence([]);
     this.options.onStatus?.("disconnected");
+  }
+
+  private async teardownChannel(): Promise<void> {
+    const channel = this.channel;
+    this.channel = undefined;
+    if (this.presenceTimer !== undefined) {
+      window.clearInterval(this.presenceTimer);
+      this.presenceTimer = undefined;
+    }
+    if (!channel) {
+      return;
+    }
+    await channel.untrack().catch(() => undefined);
+    await this.client.removeChannel(channel).catch(() => undefined);
+  }
+
+  private scheduleReconnect(): void {
+    if (this.disposed || this.reconnectTimer !== undefined) {
+      return;
+    }
+    const delay = Math.min(
+      RECONNECT_MAX_DELAY_MS,
+      RECONNECT_BASE_DELAY_MS * 2 ** this.reconnectAttempt
+    );
+    this.reconnectAttempt += 1;
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = undefined;
+      if (!this.disposed) {
+        this.connect();
+      }
+    }, delay);
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer !== undefined) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
   }
 
   private flushMovement(): void {
@@ -178,7 +248,9 @@ export class TownRealtimeSession {
       sequence: this.sequence,
       sentAt: Date.now()
     });
+    // Movement always goes over broadcast (high frequency). Presence is throttled separately.
     this.broadcastLatestState();
+    // Track presence on stop, first packet, or every PRESENCE_TRACK_INTERVAL_MS while moving.
     this.trackLatestPresence(!movement.moving || this.sequence === 1);
   }
 
@@ -212,15 +284,16 @@ export class TownRealtimeSession {
       return;
     }
     this.presenceTimer = window.setInterval(() => {
-      if (!this.channel) {
+      if (!this.channel || this.disposed) {
         return;
       }
-      this.latestState = {
+      // Heartbeat keeps idle avatars visible and re-syncs position if broadcasts were dropped.
+      this.latestState = townRealtimePlayerSchema.parse({
         ...this.latestState,
         sentAt: Date.now()
-      };
+      });
       this.trackLatestPresence(true);
-      this.broadcastLatestState();
+      this.broadcastLatestState(true);
     }, PRESENCE_REFRESH_INTERVAL_MS);
   }
 
@@ -229,23 +302,25 @@ export class TownRealtimeSession {
       return;
     }
     const now = performance.now();
-    if (!force && now - this.lastPresenceTrackAt < PRESENCE_MOVEMENT_TRACK_INTERVAL_MS) {
+    if (!force && now - this.lastPresenceTrackAt < PRESENCE_TRACK_INTERVAL_MS) {
       return;
     }
     this.lastPresenceTrackAt = now;
-    void this.channel.track(this.latestState);
+    void this.channel.track(this.latestState).catch(() => undefined);
   }
 
-  private broadcastLatestState(): void {
+  private broadcastLatestState(_force = false): void {
     if (!this.channel) {
       return;
     }
     const payload = townMovementBroadcastSchema.parse(this.latestState);
-    void this.channel.send({
-      type: "broadcast",
-      event: "player_move",
-      payload
-    });
+    void this.channel
+      .send({
+        type: "broadcast",
+        event: "player_move",
+        payload
+      })
+      .catch(() => undefined);
   }
 }
 

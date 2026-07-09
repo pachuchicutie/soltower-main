@@ -118,19 +118,26 @@ describe("authenticated town scene UX", () => {
     const canvas = read("src/components/TownCanvas.tsx");
     const scene = read("src/game/TownScene.ts");
 
-    expect(realtime).toContain("MOVEMENT_SEND_INTERVAL_MS = 125");
-    expect(realtime).toContain("PRESENCE_MOVEMENT_TRACK_INTERVAL_MS");
+    expect(realtime).toContain("MOVEMENT_SEND_INTERVAL_MS = 100");
+    expect(realtime).toContain("PRESENCE_TRACK_INTERVAL_MS = 2000");
+    expect(realtime).toContain("PRESENCE_REFRESH_INTERVAL_MS = 4000");
+    expect(realtime).toContain("scheduleReconnect");
     expect(realtime).toContain('event: "player_move"');
     expect(realtime).toContain("presenceState()");
     expect(realtime).toContain("trackLatestPresence");
     expect(realtime).toContain("isNewerRealtimePlayer");
     expect(realtime).toContain("townMovementBroadcastSchema.safeParse");
+    expect(realtime).toContain("updateIdentity");
     expect(canvas).toContain("new TownRealtimeSession");
     expect(canvas).toContain("syncRemotePlayers");
     expect(canvas).toContain("isNewerRemotePlayer");
+    // Realtime socket must not remount when initialPosition/appearance object identity churns.
+    expect(canvas).toContain("Only reconnect when the player identity or town server changes");
+    expect(canvas).toContain("}, [mode, playerId, townChannel]);");
     expect(scene).toContain("animateRemotePlayers");
     expect(scene).toContain("REMOTE_PLAYER_SNAP_DISTANCE");
-    expect(scene).toContain("Math.exp(-delta / 82)");
+    expect(scene).toContain("REMOTE_PLAYER_IDLE_AFTER_MS = 900");
+    expect(scene).toContain("Math.exp(-delta / 70)");
     expect(scene).toContain("const interpolating = distance > 0.75");
   });
 

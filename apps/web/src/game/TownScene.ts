@@ -95,8 +95,9 @@ const PLAYER_WORLD_MIN_Y = 120;
 const PLAYER_WORLD_MAX_Y = WORLD_HEIGHT - 46;
 const DEFAULT_INTERACTION_RANGE = 58;
 const REMOTE_PLAYER_SNAP_DISTANCE = 240;
-const REMOTE_PLAYER_IDLE_AFTER_MS = 320;
-const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 16000;
+/** Keep walk frames while packets are still flowing; was 320ms and looked AFK on mild lag. */
+const REMOTE_PLAYER_IDLE_AFTER_MS = 900;
+const REMOTE_PLAYER_VISIBLE_UNTIL_MS = 20000;
 const PLAYER_COLLISION_BODY: TownRect = { offsetX: -12, offsetY: -10, width: 24, height: 21 };
 const directionRows = { down: 0, left: 1, right: 2, up: 3 } as const;
 const eightDirectionWalkRows = {
@@ -526,8 +527,6 @@ export class TownScene extends Phaser.Scene {
   }
 
   private upsertRemotePlayer(player: TownRealtimePlayer): void {
-    // Skip self
-
     const current = this.remotePlayers.get(player.playerId);
     const heroChanged =
       current?.container.getData("heroId") !== player.heroId ||
@@ -566,13 +565,31 @@ export class TownScene extends Phaser.Scene {
       return;
     }
 
-    if (player.sequence < runtime.sequence) {
+    // Same session: ignore stale sequence. New session already recreated above.
+    if (player.sessionId === runtime.sessionId && player.sequence < runtime.sequence) {
       return;
     }
+    // Same sequence keepalive (presence heartbeat) — refresh liveness without rewinding.
+    if (
+      player.sessionId === runtime.sessionId &&
+      player.sequence === runtime.sequence &&
+      Math.hypot(player.x - runtime.target.x, player.y - runtime.target.y) < 0.5
+    ) {
+      runtime.lastReceivedAt = Date.now();
+      if (!player.moving) {
+        runtime.moving = false;
+        runtime.running = false;
+      }
+      return;
+    }
+    runtime.sessionId = player.sessionId;
     runtime.sequence = player.sequence;
     runtime.target.set(player.x, player.y);
     runtime.lastReceivedAt = Date.now();
-    runtime.moving = player.moving;
+    // If the avatar still has ground to cover, treat as moving even if the flag dropped mid-lag.
+    const stillHasDistance =
+      Math.hypot(player.x - runtime.container.x, player.y - runtime.container.y) > 1.5;
+    runtime.moving = player.moving || stillHasDistance;
     runtime.running = player.running;
     const facing = new Phaser.Math.Vector2(player.facingX, player.facingY);
     if (facing.lengthSq() > 0.001) {
@@ -593,13 +610,14 @@ export class TownScene extends Phaser.Scene {
       if (distance > REMOTE_PLAYER_SNAP_DISTANCE) {
         container.setPosition(runtime.target.x, runtime.target.y);
       } else if (distance > 0.35) {
-        const interpolation = 1 - Math.exp(-delta / 82);
+        // Slightly snappier follow so remotes don't feel stuck between packets.
+        const interpolation = 1 - Math.exp(-delta / 70);
         container.x = Phaser.Math.Linear(container.x, runtime.target.x, interpolation);
         container.y = Phaser.Math.Linear(container.y, runtime.target.y, interpolation);
       } else {
         container.setPosition(runtime.target.x, runtime.target.y);
       }
-      const interpolating = distance > 0.75 && distance <= REMOTE_PLAYER_SNAP_DISTANCE;
+      const interpolating = distance > 0.75;
       const recentlyMoving =
         interpolating ||
         (runtime.moving && now - runtime.lastReceivedAt <= REMOTE_PLAYER_IDLE_AFTER_MS);
@@ -614,6 +632,7 @@ export class TownScene extends Phaser.Scene {
     }
     const changedMovementState =
       moving !== this.localPlayerWasMoving || running !== this.localPlayerWasRunning;
+    // Always publish while moving; also publish the idle edge so remotes stop cleanly.
     if (!moving && !changedMovementState) {
       return;
     }
