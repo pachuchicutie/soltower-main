@@ -84,9 +84,11 @@ const HERO_FRAME_WIDTH = 64;
 const HERO_FRAME_HEIGHT = 64;
 const HERO_SCALE = 1;
 const GAME_DEBUG = import.meta.env.VITE_GAME_DEBUG === "true";
-const DESKTOP_GAME_ZOOM = 1.34;
+const DESKTOP_GAME_ZOOM = 1.92;
 const GAME_ZOOM_MIN = DESKTOP_GAME_ZOOM - 0.26;
 const GAME_ZOOM_MAX = DESKTOP_GAME_ZOOM + 0.34;
+const GAME_CAMERA_FOLLOW_MARGIN_X = 128;
+const GAME_CAMERA_FOLLOW_MARGIN_Y = 96;
 const DEFAULT_INTERACTION_RANGE = 58;
 const REMOTE_PLAYER_SNAP_DISTANCE = 240;
 const REMOTE_PLAYER_IDLE_AFTER_MS = 320;
@@ -276,7 +278,7 @@ export class TownScene extends Phaser.Scene {
 
     this.zoomInListener = () => {
       const cam = this.cameras.main;
-      const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
+      const minZoom = this.options.mode === "game" ? this.gameMinZoom() : 0.68;
       const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
       const newZoom = Phaser.Math.Clamp(cam.zoom * 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
@@ -287,7 +289,7 @@ export class TownScene extends Phaser.Scene {
     };
     this.zoomOutListener = () => {
       const cam = this.cameras.main;
-      const minZoom = this.options.mode === "game" ? Math.max(this.coverZoom(), GAME_ZOOM_MIN) : 0.68;
+      const minZoom = this.options.mode === "game" ? this.gameMinZoom() : 0.68;
       const maxZoom = this.options.mode === "game" ? GAME_ZOOM_MAX : 1.45;
       const newZoom = Phaser.Math.Clamp(cam.zoom / 1.15, minZoom, maxZoom);
       cam.setZoom(newZoom);
@@ -725,7 +727,7 @@ export class TownScene extends Phaser.Scene {
     const isMobile = width < 720;
     const targetZoom =
       this.options.mode === "game" && !isMobile
-        ? Math.max(coverZoom, this.gameZoomFromSetting())
+        ? Math.max(this.gameMinZoom(width, height), this.gameZoomFromSetting())
         : isMobile
           ? Math.max(width / 900, height / 1000)
           : coverZoom;
@@ -745,6 +747,15 @@ export class TownScene extends Phaser.Scene {
 
   private coverZoom(width = this.scale.width, height = this.scale.height): number {
     return Math.max(width / WORLD_WIDTH, height / WORLD_HEIGHT);
+  }
+
+  private gameMinZoom(width = this.scale.width, height = this.scale.height): number {
+    return Math.max(
+      this.coverZoom(width, height),
+      GAME_ZOOM_MIN,
+      width / (WORLD_WIDTH - GAME_CAMERA_FOLLOW_MARGIN_X * 2),
+      height / (WORLD_HEIGHT - GAME_CAMERA_FOLLOW_MARGIN_Y * 2)
+    );
   }
 
   private gameZoomFromSetting(): number {

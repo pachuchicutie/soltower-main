@@ -68,7 +68,20 @@ beforeEach(() => {
             ]
           : [...equippedStarter, ...replacements],
         consumables: [],
-        materials: []
+        materials: [],
+        cosmetics: [
+          {
+            id: "banana-guardian",
+            costumeId: "banana-guardian",
+            name: "Banana Guardian",
+            rarity: "UNCOMMON",
+            bound: true,
+            tradeable: false,
+            giftable: false,
+            source: "starlight_vault"
+          }
+        ],
+        equippedCosmetics: []
       });
     }
     return Promise.reject(new Error(`Unexpected GET ${path}`));
@@ -82,6 +95,9 @@ beforeEach(() => {
         returnedItem: equipment("item-basic-bow", "basic-bow", "Basic Bow", "WEAPON", null, { damage: 18, range: 12, critChance: 2 }),
         power: 286
       });
+    }
+    if (path === "/api/inventory/full-costume") {
+      return Promise.resolve({ heroId: "storm-archer", costumeId: "banana-guardian" });
     }
     return Promise.reject(new Error(`Unexpected POST ${path}`));
   });
@@ -104,9 +120,10 @@ describe("InventoryPanel equipment swaps", () => {
     expect(within(owned).queryByText("Basic Bow")).toBeNull();
     expect(within(owned).getByText("Emberstring Bow")).toBeTruthy();
     expect(within(owned).getByText("Tideglass Mantle")).toBeTruthy();
+    expect(within(owned).getAllByRole("button", { name: "Equip" })).toHaveLength(2);
   });
 
-  it("filters replacements by exact slot, confirms swap, returns old item, and refreshes stat totals", async () => {
+  it("filters replacements by exact slot, equips immediately, returns old item, and refreshes stat totals", async () => {
     renderWithClient(<InventoryPanel />);
 
     await screen.findByText("Basic Bow");
@@ -119,9 +136,6 @@ describe("InventoryPanel equipment swaps", () => {
     expect(picker.querySelector(".stat-positive")?.textContent).toBe("+14");
 
     await userEvent.click(within(picker).getByRole("button", { name: "Equip Emberstring Bow" }));
-    expect(screen.getByText("Equip Emberstring Bow?")).toBeTruthy();
-    expect(screen.getByText("Your Basic Bow will return to your Inventory.")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Confirm Swap" }));
 
     await waitFor(() =>
       expect(apiMocks.post).toHaveBeenCalledWith("/api/inventory/swap", {
@@ -132,6 +146,36 @@ describe("InventoryPanel equipment swaps", () => {
     );
     expect(await screen.findByText("Emberstring Bow equipped. Basic Bow returned to Inventory.")).toBeTruthy();
     await waitFor(() => expect(screen.getAllByText("Damage")[0].parentElement?.textContent).toContain("96"));
+  });
+
+  it("equips owned equipment directly from the inventory row", async () => {
+    renderWithClient(<InventoryPanel />);
+
+    await screen.findByText("Basic Bow");
+    const owned = screen.getByLabelText("Owned equipment");
+    await userEvent.click(within(owned).getAllByRole("button", { name: "Equip" })[0]);
+
+    await waitFor(() =>
+      expect(apiMocks.post).toHaveBeenCalledWith("/api/inventory/swap", {
+        equipmentId: "item-ember-bow",
+        slot: "WEAPON",
+        idempotencyKey: "equipment-swap-test-key"
+      })
+    );
+  });
+
+  it("equips owned Full Costumes from the cosmetics tab", async () => {
+    renderWithClient(<InventoryPanel />);
+
+    await userEvent.click(await screen.findByRole("tab", { name: "Cosmetics" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Equip Costume" }));
+
+    await waitFor(() =>
+      expect(apiMocks.post).toHaveBeenCalledWith("/api/inventory/full-costume", {
+        heroId: "storm-archer",
+        costumeId: "banana-guardian"
+      })
+    );
   });
 });
 

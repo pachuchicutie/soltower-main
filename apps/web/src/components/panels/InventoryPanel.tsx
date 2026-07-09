@@ -102,9 +102,9 @@ export function InventoryPanel() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<InventoryTab>("equipment");
   const [changingSlot, setChangingSlot] = useState<EquipmentSlot | null>(null);
-  const [pendingReplacement, setPendingReplacement] = useState<EquipmentItem | null>(null);
   const [showEquippedItems, setShowEquippedItems] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [giftTarget, setGiftTarget] = useState<GiftTarget | null>(null);
   const [giftRecipientPlayerId, setGiftRecipientPlayerId] = useState("");
   const [giftError, setGiftError] = useState<string | null>(null);
@@ -120,24 +120,38 @@ export function InventoryPanel() {
         slot: input.slot,
         idempotencyKey: idempotencyKey("equipment-swap")
       }),
+    onMutate: () => {
+      setActionError(null);
+      setSuccessMessage(null);
+    },
     onSuccess: async (result) => {
       setSuccessMessage(`${result.equippedItem.name} equipped. ${result.returnedItem.name} returned to Inventory.`);
       setChangingSlot(null);
-      setPendingReplacement(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["inventory"] }),
         queryClient.invalidateQueries({ queryKey: ["me"] })
       ]);
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Could not equip this item.");
     }
   });
   const equipCostume = useMutation({
     mutationFn: (input: { heroId: string; costumeId: string | null }) =>
       apiPost<{ heroId: string; costumeId: string | null }>("/api/inventory/full-costume", input),
-    onSuccess: async () => {
+    onMutate: () => {
+      setActionError(null);
+      setSuccessMessage(null);
+    },
+    onSuccess: async (_result, variables) => {
+      setSuccessMessage(variables.costumeId ? "Full Costume equipped." : "Default appearance restored.");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["inventory"] }),
         queryClient.invalidateQueries({ queryKey: ["me"] })
       ]);
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Could not equip this costume.");
     }
   });
   const giftItem = useMutation({
@@ -193,6 +207,18 @@ export function InventoryPanel() {
     setGiftTarget(target);
     setGiftRecipientPlayerId("");
     setGiftError(null);
+  };
+  const equipEquipment = (item: EquipmentItem) => {
+    if (item.equippedSlot) {
+      return;
+    }
+    const equippedInSlot = equippedBySlot.get(item.slot);
+    if (!equippedInSlot) {
+      setChangingSlot(item.slot);
+      setActionError(`${formatSlot(item.slot)} has no equipped item to replace.`);
+      return;
+    }
+    swap.mutate({ equipmentId: item.id, slot: item.slot });
   };
   const sendGift = () => {
     const recipientPlayerId = giftRecipientPlayerId.trim();
@@ -262,6 +288,7 @@ export function InventoryPanel() {
             </div>
           </GameCard>
           {successMessage ? <span className="equipment-success tag">{successMessage}</span> : null}
+          {actionError ? <span className="equipment-error tag">{actionError}</span> : null}
 
           <div className="equipment-slot-grid">
             {equipmentSlots.map((slot) => {
@@ -288,7 +315,6 @@ export function InventoryPanel() {
                         variant="secondary"
                         onClick={() => {
                           setChangingSlot(slot);
-                          setPendingReplacement(null);
                         }}
                       >
                         Change
@@ -312,29 +338,11 @@ export function InventoryPanel() {
                   variant="ghost"
                   onClick={() => {
                     setChangingSlot(null);
-                    setPendingReplacement(null);
                   }}
                 >
                   Cancel
                 </GameButton>
               </div>
-              {pendingReplacement && currentSlotItem ? (
-                <GameCard className="equipment-confirm-card">
-                  <strong>Equip {pendingReplacement.name}?</strong>
-                  <p>Your {currentSlotItem.name} will return to your Inventory.</p>
-                  <div className="button-row">
-                    <GameButton variant="ghost" onClick={() => setPendingReplacement(null)}>
-                      Cancel
-                    </GameButton>
-                    <GameButton
-                      onClick={() => swap.mutate({ equipmentId: pendingReplacement.id, slot: changingSlot })}
-                      disabled={swap.isPending}
-                    >
-                      Confirm Swap
-                    </GameButton>
-                  </div>
-                </GameCard>
-              ) : null}
               {replacementItems.length ? (
                 <div className="equipment-picker-grid">
                   {replacementItems.map((item) => (
@@ -348,7 +356,7 @@ export function InventoryPanel() {
                         <ItemStats stats={item.stats} compareTo={currentSlotItem?.stats} />
                       </ItemCard>
                       <GameButton
-                        onClick={() => setPendingReplacement(item)}
+                        onClick={() => equipEquipment(item)}
                         disabled={Boolean(item.equippedSlot) || swap.isPending}
                       >
                         Equip {item.name}
@@ -402,12 +410,15 @@ export function InventoryPanel() {
                       <div className="button-row inventory-row-actions">
                         <GameButton
                           variant="secondary"
+                          disabled={Boolean(item.equippedSlot) || swap.isPending}
                           onClick={() => {
-                            setChangingSlot(item.slot);
-                            setPendingReplacement(item.equippedSlot ? null : item);
+                            if (item.equippedSlot) {
+                              return;
+                            }
+                            equipEquipment(item);
                           }}
                         >
-                          {item.equippedSlot ? "Equipped" : "Select"}
+                          {item.equippedSlot ? "Equipped" : "Equip"}
                         </GameButton>
                         {giftable ? (
                           <GameButton
@@ -488,6 +499,8 @@ export function InventoryPanel() {
 
       {activeTab === "cosmetics" ? (
         <section className="cosmetics-panel" aria-label="Cosmetics">
+          {successMessage ? <span className="equipment-success tag">{successMessage}</span> : null}
+          {actionError ? <span className="equipment-error tag">{actionError}</span> : null}
           <GameCard className="active-hero-card">
             <HeroAppearancePreview
               heroId={selectedHero.id}

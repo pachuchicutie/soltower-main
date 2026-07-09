@@ -64,8 +64,8 @@ export function HeroInventoryPanel() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<HeroTab>("overview");
   const [changingSlot, setChangingSlot] = useState<EquipmentSlot | null>(null);
-  const [pendingReplacement, setPendingReplacement] = useState<EquipmentItem | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeResponse>("/api/player/me") });
   const inventory = useQuery({
     queryKey: ["inventory"],
@@ -78,14 +78,20 @@ export function HeroInventoryPanel() {
         slot: input.slot,
         idempotencyKey: idempotencyKey("equipment-swap")
       }),
+    onMutate: () => {
+      setActionError(null);
+      setSuccessMessage(null);
+    },
     onSuccess: async (result) => {
       setSuccessMessage(`${result.equippedItem.name} equipped. ${result.returnedItem.name} returned to Inventory.`);
       setChangingSlot(null);
-      setPendingReplacement(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["inventory"] }),
         queryClient.invalidateQueries({ queryKey: ["me"] })
       ]);
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Could not equip this item.");
     }
   });
 
@@ -106,6 +112,18 @@ export function HeroInventoryPanel() {
   const replacementItems = changingSlot
     ? equipment.filter((item) => item.slot === changingSlot && !item.equippedSlot && item.id !== currentSlotItem?.id)
     : [];
+  const equipEquipment = (item: EquipmentItem) => {
+    if (item.equippedSlot) {
+      return;
+    }
+    const equippedInSlot = equippedBySlot.get(item.slot);
+    if (!equippedInSlot) {
+      setChangingSlot(item.slot);
+      setActionError(`${formatSlot(item.slot)} has no equipped item to replace.`);
+      return;
+    }
+    swap.mutate({ equipmentId: item.id, slot: item.slot });
+  };
 
   return (
     <div className="hero-loadout-panel">
@@ -168,7 +186,6 @@ export function HeroInventoryPanel() {
                         variant="secondary"
                         onClick={() => {
                           setChangingSlot(slot);
-                          setPendingReplacement(null);
                         }}
                       >
                         Change
@@ -184,6 +201,7 @@ export function HeroInventoryPanel() {
             })}
           </div>
           {successMessage ? <span className="equipment-success tag">{successMessage}</span> : null}
+          {actionError ? <span className="equipment-error tag">{actionError}</span> : null}
           {changingSlot ? (
             <GameCard className="equipment-detail-panel">
               <div className="section-title-row">
@@ -192,29 +210,11 @@ export function HeroInventoryPanel() {
                   variant="ghost"
                   onClick={() => {
                     setChangingSlot(null);
-                    setPendingReplacement(null);
                   }}
                 >
                   Cancel
                 </GameButton>
               </div>
-              {pendingReplacement && currentSlotItem ? (
-                <div className="equipment-confirm-card">
-                  <strong>Equip {pendingReplacement.name}?</strong>
-                  <p>Your {currentSlotItem.name} will return to your Inventory.</p>
-                  <div className="button-row">
-                    <GameButton variant="ghost" onClick={() => setPendingReplacement(null)}>
-                      Cancel
-                    </GameButton>
-                    <GameButton
-                      onClick={() => swap.mutate({ equipmentId: pendingReplacement.id, slot: changingSlot })}
-                      disabled={swap.isPending}
-                    >
-                      Confirm Swap
-                    </GameButton>
-                  </div>
-                </div>
-              ) : null}
               {replacementItems.length ? (
                 <div className="equipment-picker-grid">
                   {replacementItems.map((item) => (
@@ -227,7 +227,7 @@ export function HeroInventoryPanel() {
                       >
                         <ItemStats stats={item.stats} compareTo={currentSlotItem?.stats} />
                       </ItemCard>
-                      <GameButton onClick={() => setPendingReplacement(item)} disabled={swap.isPending}>
+                      <GameButton onClick={() => equipEquipment(item)} disabled={swap.isPending}>
                         Equip {item.name}
                       </GameButton>
                       {currentSlotItem ? <small>Replaces {currentSlotItem.name}</small> : null}

@@ -309,6 +309,7 @@ describe("Supabase-first MVP architecture", () => {
   it("adds Starlight Vault as a Gold-only server-authoritative pull system with local asset-backed rewards", () => {
     const actions = read("supabase/functions/_shared/actions.ts");
     const migration = read("supabase/migrations/20260630000200_starlight_vault.sql");
+    const equipFixMigration = read("supabase/migrations/20260709000300_fix_active_hero_costume_equip.sql");
     const api = read("apps/web/src/lib/api.ts");
     const panel = read("apps/web/src/components/panels/StarlightVaultPanel.tsx");
     const inventory = read("apps/web/src/components/panels/InventoryPanel.tsx");
@@ -346,6 +347,9 @@ describe("Supabase-first MVP architecture", () => {
     expect(migration).toContain("'pool-tide-mage-vault-armor'");
     expect(migration).toContain("'pool-starcaller-vault-charm'");
     expect(migration).toContain("array['celestial-staff', 'star-focus', 'charm-weapon']");
+    expect(equipFixMigration).toContain("insert into public.player_heroes(player_id, hero_id)");
+    expect(equipFixMigration).toContain("v_hero_id = coalesce(nullif(v_player.selected_hero_id, ''), 'storm-archer')");
+    expect(equipFixMigration).toContain("Full Costume is not owned");
 
     expect(actions).toContain('"starlight-vault-state": starlightVaultState');
     expect(actions).toContain('"starlight-vault-draw": starlightVaultDraw');
