@@ -2509,7 +2509,7 @@ async function loadBlackjackState(context: EdgeContext, authUserId: string): Pro
       .select("*")
       .eq("player_id", player.id)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(80)
   );
   const earnedLimits = getBlackjackLimits(player.accountLevel, balances.EARNED_GOLD);
   const lockedLimits = getBlackjackLimits(player.accountLevel, balances.LOCKED_GOLD);

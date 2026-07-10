@@ -3251,12 +3251,37 @@ label {
 }
 
 .blackjack-history-panel {
-  gap: 16px;
+  gap: 14px;
+}
+
+.blackjack-history-tabs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.blackjack-history-tabs button {
+  min-height: 36px;
+  padding: 7px 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.blackjack-history-count {
+  margin: 0;
+  color: #8fa3b8;
+  font-size: 0.74rem;
 }
 
 .blackjack-history-list {
   display: grid;
   gap: 7px;
+}
+
+@media (max-width: 640px) {
+  .blackjack-history-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .blackjack-history-row {

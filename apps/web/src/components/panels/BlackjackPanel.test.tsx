@@ -143,6 +143,69 @@ describe("BlackjackPanel", () => {
     expect(screen.queryByText("Available now")).toBeNull();
     expect(screen.getByText(/20% of your selected balance/i)).toBeTruthy();
   });
+
+  it("filters hand history by period tabs", async () => {
+    const now = new Date();
+    const todayIso = now.toISOString();
+    const lastWeek = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    apiMocks.get.mockResolvedValue({
+      practiceAllowed: false,
+      limits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+      earnedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 8, actualMaxBet: 8 },
+      lockedLimits: { minBet: 5, tableMaxBet: 15, balanceMaxBet: 15, actualMaxBet: 15 },
+      balances: { EARNED_GOLD: 40, LOCKED_GOLD: 100 },
+      maxBetBalanceRate: 0.2,
+      profitCap: 100,
+      profitProgress: 20,
+      history: [
+        {
+          ...activeHand,
+          id: "hand-today",
+          status: "WON",
+          createdAt: todayIso,
+          playerCards: [
+            { rank: "K", suit: "S" },
+            { rank: "Q", suit: "H" }
+          ],
+          dealerCards: [
+            { rank: "9", suit: "D" },
+            { rank: "8", suit: "C" }
+          ]
+        },
+        {
+          ...activeHand,
+          id: "hand-old",
+          status: "LOST",
+          createdAt: lastWeek,
+          playerCards: [
+            { rank: "2", suit: "S" },
+            { rank: "3", suit: "H" }
+          ],
+          dealerCards: [
+            { rank: "A", suit: "D" },
+            { rank: "K", suit: "C" }
+          ]
+        }
+      ]
+    });
+    renderBlackjack();
+
+    expect(await screen.findByText(/Showing 2 of 2 loaded/i)).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Most recent" })).toBeTruthy();
+    const historyList = screen.getByText(/Showing 2 of 2 loaded/i).parentElement;
+    expect(historyList?.textContent).toMatch(/You won/);
+    expect(historyList?.textContent).toMatch(/Dealer wins/);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Today" }));
+    await waitFor(() => expect(screen.getByText(/Showing 1 from today/i)).toBeTruthy());
+    const todayList = screen.getByText(/Showing 1 from today/i).parentElement;
+    expect(todayList?.textContent).toMatch(/You won/);
+    expect(todayList?.textContent).not.toMatch(/Dealer wins/);
+
+    fireEvent.click(screen.getByRole("tab", { name: "This week" }));
+    // Old hand is 8 days ago; today hand remains.
+    await waitFor(() => expect(screen.getByText(/Showing 1 from this week/i)).toBeTruthy());
+  });
 });
 
 function renderBlackjack() {

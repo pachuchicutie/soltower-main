@@ -26,6 +26,7 @@ import {
   type RaidStageDefinition
 } from "@soltower/game-engine";
 import {
+  applyAccountXp,
   raidRealtimeEventSchema,
   type RaidRealtimeEvent
 } from "@soltower/shared";
@@ -422,13 +423,19 @@ export function RaidPanel() {
           if (!prev.player) {
             return previous;
           }
-          const nextXp = (prev.player.xp ?? 0) + rewardXp;
+          // Apply the shared XP curve so Level ticks up immediately (not just the XP bar).
+          const progressed = applyAccountXp(
+            prev.player.accountLevel ?? 1,
+            prev.player.xp ?? 0,
+            rewardXp
+          );
           const nextGold = (prev.player.balances?.EARNED_GOLD ?? 0) + rewardGold;
           return {
             ...prev,
             player: {
               ...prev.player,
-              xp: nextXp,
+              accountLevel: progressed.accountLevel,
+              xp: progressed.xp,
               balances: {
                 ...prev.player.balances,
                 EARNED_GOLD: nextGold
@@ -437,7 +444,8 @@ export function RaidPanel() {
             profile: prev.profile
               ? {
                   ...prev.profile,
-                  xp: nextXp,
+                  accountLevel: progressed.accountLevel,
+                  xp: progressed.xp,
                   balances: {
                     ...prev.profile.balances,
                     EARNED_GOLD: nextGold

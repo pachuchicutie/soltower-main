@@ -1,10 +1,19 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUp, History, Play, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { blackjackConfig, uiAssetManifest, type BalanceType } from "@soltower/shared";
 import { apiGet, apiPost, idempotencyKey } from "../../lib/api";
 import { playUiSound } from "../../lib/audio";
 import { AssetIcon, GameButton } from "../ui/GameUi";
+
+type HistoryPeriod = "recent" | "today" | "week" | "month";
+
+const historyPeriodTabs: Array<{ id: HistoryPeriod; label: string }> = [
+  { id: "recent", label: "Most recent" },
+  { id: "today", label: "Today" },
+  { id: "week", label: "This week" },
+  { id: "month", label: "This month" }
+];
 
 interface Card {
   rank: string;
@@ -61,6 +70,7 @@ export function BlackjackPanel() {
     useState<Extract<BalanceType, "EARNED_GOLD" | "LOCKED_GOLD">>("EARNED_GOLD");
   const [bet, setBet] = useState(5);
   const [activeHand, setActiveHand] = useState<Hand | null>(null);
+  const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("recent");
   const lastResolvedSoundHandId = useRef<string | null>(null);
   const state = useQuery({
     queryKey: ["blackjack"],
@@ -128,6 +138,11 @@ export function BlackjackPanel() {
   );
   const active = current?.status === "ACTIVE";
   const validBet = Number.isFinite(bet) && bet >= minBet && bet <= maxBet;
+  const historyHands = useMemo(
+    () => filterHistoryByPeriod(state.data?.history ?? [], historyPeriod),
+    [state.data?.history, historyPeriod]
+  );
+  const totalHistoryCount = state.data?.history.length ?? 0;
 
   useEffect(() => {
     if (maxBet <= 0) return;
@@ -363,27 +378,58 @@ export function BlackjackPanel() {
           <History size={20} />
         </header>
 
-        {state.data?.history.length ? (
-          <div className="blackjack-history-list">
-            {state.data.history.map((hand) => (
-              <div className="blackjack-history-row" key={hand.id}>
-                <span className={`blackjack-history-mark blackjack-history-${hand.status.toLowerCase()}`}>
-                  {statusMark(hand.status)}
-                </span>
-                <div className="blackjack-history-copy">
-                  <strong>{statusLabel(hand.status)}</strong>
-                  <small>{resultDescription(hand)}</small>
-                </div>
-                <div className="blackjack-history-meta">
-                  <span>
-                    <AssetIcon src={balanceIcon(hand.balanceType)} />
-                    {balanceLabel(hand.balanceType)}
-                  </span>
-                  <strong>{hand.totalWager} Gold wager</strong>
-                </div>
+        <div className="segmented blackjack-history-tabs" role="tablist" aria-label="Hand history period">
+          {historyPeriodTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={historyPeriod === tab.id}
+              className={historyPeriod === tab.id ? "active" : ""}
+              onClick={() => setHistoryPeriod(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {totalHistoryCount > 0 ? (
+          historyHands.length > 0 ? (
+            <>
+              <p className="blackjack-history-count" aria-live="polite">
+                Showing {historyHands.length}
+                {historyPeriod === "recent" ? "" : ` from ${historyPeriodLabel(historyPeriod).toLowerCase()}`}
+                {historyPeriod === "recent" ? ` of ${totalHistoryCount} loaded` : ""}
+              </p>
+              <div className="blackjack-history-list">
+                {historyHands.map((hand) => (
+                  <div className="blackjack-history-row" key={hand.id}>
+                    <span className={`blackjack-history-mark blackjack-history-${hand.status.toLowerCase()}`}>
+                      {statusMark(hand.status)}
+                    </span>
+                    <div className="blackjack-history-copy">
+                      <strong>{statusLabel(hand.status)}</strong>
+                      <small>
+                        {resultDescription(hand)}
+                        {hand.createdAt ? ` · ${formatHandWhen(hand.createdAt)}` : ""}
+                      </small>
+                    </div>
+                    <div className="blackjack-history-meta">
+                      <span>
+                        <AssetIcon src={balanceIcon(hand.balanceType)} />
+                        {balanceLabel(hand.balanceType)}
+                      </span>
+                      <strong>{hand.totalWager} Gold wager</strong>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <p className="blackjack-history-empty">
+              No hands {historyPeriodLabel(historyPeriod).toLowerCase()}. Try another filter.
+            </p>
+          )
         ) : (
           <p className="blackjack-history-empty">Completed hands will appear here.</p>
         )}
@@ -401,6 +447,67 @@ function resolveLimitsForBalance(
     return state.lockedLimits ?? state.limits;
   }
   return state.earnedLimits ?? state.limits;
+}
+
+function historyPeriodLabel(period: HistoryPeriod): string {
+  switch (period) {
+    case "today":
+      return "Today";
+    case "week":
+      return "This week";
+    case "month":
+      return "This month";
+    default:
+      return "Most recent";
+  }
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function filterHistoryByPeriod(history: Hand[], period: HistoryPeriod): Hand[] {
+  if (period === "recent") {
+    return history;
+  }
+  const now = new Date();
+  let cutoff: Date;
+  if (period === "today") {
+    cutoff = startOfUtcDay(now);
+  } else if (period === "week") {
+    cutoff = startOfUtcDay(now);
+    const day = cutoff.getUTCDay();
+    const daysSinceMonday = (day + 6) % 7;
+    cutoff.setUTCDate(cutoff.getUTCDate() - daysSinceMonday);
+  } else {
+    cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  }
+  const cutoffMs = cutoff.getTime();
+  return history.filter((hand) => {
+    if (!hand.createdAt) {
+      // Keep undated hands only under "Most recent" so period tabs stay honest.
+      return false;
+    }
+    const createdMs = Date.parse(hand.createdAt);
+    return Number.isFinite(createdMs) && createdMs >= cutoffMs;
+  });
+}
+
+function formatHandWhen(createdAt: string): string {
+  const createdMs = Date.parse(createdAt);
+  if (!Number.isFinite(createdMs)) {
+    return "";
+  }
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(new Date(createdMs));
+  } catch {
+    return new Date(createdMs).toLocaleString();
+  }
 }
 
 function LimitStat({
