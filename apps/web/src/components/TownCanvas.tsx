@@ -9,7 +9,7 @@ import {
   type TownRealtimePlayer,
   type TownServerId
 } from "@soltower/shared";
-import { TownScene, type NearbyInteraction } from "../game/TownScene";
+import { TownScene, type EquippedRarityPresentation, type NearbyInteraction } from "../game/TownScene";
 import {
   TownRealtimeSession,
   type LocalTownMovement,
@@ -26,6 +26,7 @@ interface TownCanvasProps {
   mode?: "landing" | "spectate" | "game";
   selectedHeroId?: string;
   heroAppearance?: HeroAppearance;
+  equippedRarities?: EquippedRarityPresentation;
   controlsEnabled?: boolean;
   onNearbyInteraction?: (interaction: NearbyInteraction | null) => void;
   cameraResetSignal?: number;
@@ -45,6 +46,7 @@ export function TownCanvas({
   mode = "game",
   selectedHeroId,
   heroAppearance,
+  equippedRarities,
   controlsEnabled = true,
   onNearbyInteraction,
   cameraResetSignal = 0,
@@ -133,6 +135,7 @@ export function TownCanvas({
       onNpc,
       selectedHeroId,
       heroAppearance,
+      equippedRarities,
       controlsEnabled,
       onNearbyInteraction,
       chatBubbleId,
@@ -144,6 +147,7 @@ export function TownCanvas({
     chatBubbleId,
     chatBubbleText,
     controlsEnabled,
+    equippedRarities,
     heroAppearance,
     onNearbyInteraction,
     onNpc,

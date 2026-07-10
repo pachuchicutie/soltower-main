@@ -9,6 +9,7 @@ import {
   type HeroAppearance,
   type HeroAnimationName,
   type HeroId,
+  type ItemRarity,
   type TownMovementBroadcast,
   type TownPosition,
   type TownRealtimePlayer
@@ -34,12 +35,20 @@ export interface NearbyInteraction {
   prompt: string;
 }
 
+export interface EquippedRarityPresentation {
+  weapon?: ItemRarity | null;
+  armor?: ItemRarity | null;
+  costume?: ItemRarity | null;
+}
+
 export interface TownSceneOptions {
   playerName: string;
   onNpc: (npcId: ModalKey) => void;
   mode?: "landing" | "spectate" | "game";
   selectedHeroId?: string;
   heroAppearance?: HeroAppearance;
+  /** Local player rarity cosmetics for weapon/armor auras and premium nameplates. */
+  equippedRarities?: EquippedRarityPresentation;
   controlsEnabled?: boolean;
   onNearbyInteraction?: (interaction: NearbyInteraction | null) => void;
   chatBubbleId?: string;
@@ -247,7 +256,8 @@ export class TownScene extends Phaser.Scene {
         this.options.playerName,
         normalizeHeroId(this.options.selectedHeroId),
         1,
-        this.currentHeroAppearance()
+        this.currentHeroAppearance(),
+        this.options.equippedRarities
       );
     }
 
@@ -491,7 +501,13 @@ export class TownScene extends Phaser.Scene {
     if (controlsWereEnabled && !this.controlsEnabled()) {
       this.clearMovement();
     }
-    if (this.player && (options.selectedHeroId || options.heroAppearance)) {
+    if (
+      this.player &&
+      (options.selectedHeroId ||
+        options.heroAppearance ||
+        options.equippedRarities ||
+        options.playerName)
+    ) {
       this.refreshActivePlayerVisual();
     }
     if (chatBubbleUpdated) {
@@ -1311,26 +1327,81 @@ export class TownScene extends Phaser.Scene {
     name: string,
     heroId: HeroId,
     alpha = 1,
-    appearance: HeroAppearance = defaultHeroAppearance(heroId)
+    appearance: HeroAppearance = defaultHeroAppearance(heroId),
+    rarities?: EquippedRarityPresentation
   ): Phaser.GameObjects.Container {
     const container = this.add.container(x, y).setDepth(y + 70);
     const normalizedAppearance = normalizeHeroAppearance(heroId, appearance);
     const sprites = this.createHeroSprites(heroId, normalizedAppearance, alpha);
     const shadow = this.add.ellipse(0, 18, 38, 13, 0x000000, 0.24 * alpha);
+    const armorStyle = rarityVisualStyle(rarities?.armor);
+    const weaponStyle = rarityVisualStyle(rarities?.weapon);
+    const nameStyle = rarityVisualStyle(rarities?.costume ?? highestRarity(rarities?.weapon, rarities?.armor));
+    const parts: Phaser.GameObjects.GameObject[] = [shadow];
+
+    // Armor body aura (behind hero)
+    if (rarities?.armor && rarities.armor !== "COMMON") {
+      const armorAura = this.add
+        .ellipse(0, 4, 46, 58, armorStyle.glow, 0.22 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      armorAura.setData("role", "armor-aura");
+      parts.push(armorAura);
+      this.tweens.add({
+        targets: armorAura,
+        alpha: { from: 0.14 * alpha, to: 0.3 * alpha },
+        scaleX: { from: 0.96, to: 1.06 },
+        scaleY: { from: 0.96, to: 1.05 },
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+    }
+
+    parts.push(...sprites);
+
+    // Weapon hand glow near the weapon layer
+    if (rarities?.weapon && rarities.weapon !== "COMMON") {
+      const weaponAura = this.add
+        .circle(12, -2, 11, weaponStyle.glow, 0.34 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      weaponAura.setData("role", "weapon-aura");
+      parts.push(weaponAura);
+      this.tweens.add({
+        targets: weaponAura,
+        alpha: { from: 0.18 * alpha, to: 0.42 * alpha },
+        scale: { from: 0.85, to: 1.2 },
+        duration: 720,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+    }
+
     const label = this.add
       .text(0, -58, name, {
-        color: "#ffffff",
-        fontSize: "11px",
-        fontFamily: "monospace",
-        backgroundColor: "rgba(5, 12, 22, .62)",
-        padding: { x: 4, y: 2 }
+        color: nameStyle.nameColor,
+        fontSize: nameStyle.fontSize,
+        fontFamily: "Cinzel, Inter, monospace",
+        fontStyle: nameStyle.fontStyle,
+        backgroundColor: nameStyle.nameBg,
+        padding: { x: nameStyle.padX, y: nameStyle.padY },
+        stroke: nameStyle.stroke,
+        strokeThickness: nameStyle.strokeThickness
       })
       .setOrigin(0.5);
-    container.add([shadow, ...sprites, label]);
+    label.setData("role", "nameplate");
+    if (nameStyle.shadow) {
+      label.setShadow(0, 0, nameStyle.shadow, nameStyle.shadowBlur, true, true);
+    }
+    parts.push(label);
+
+    container.add(parts);
     container.setData("heroSprites", sprites);
     container.setData("facing", "down");
     container.setData("heroId", heroId);
     container.setData("appearance", normalizedAppearance);
+    container.setData("equippedRarities", rarities ?? null);
     return container;
   }
 
@@ -1456,7 +1527,8 @@ export class TownScene extends Phaser.Scene {
       this.options.playerName,
       normalizeHeroId(this.options.selectedHeroId),
       1,
-      this.currentHeroAppearance()
+      this.currentHeroAppearance(),
+      this.options.equippedRarities
     );
     this.playerChatBubble = undefined;
     this.playerChatBubbleBackground = undefined;
@@ -1635,4 +1707,124 @@ function cloakTint(heroId: HeroId, cloak: HeroAppearance["backAccessory"]): stri
   if (cloak === "wing-cape") return "#2f5368";
   if (cloak === "long-cloak") return "#17223f";
   return base[heroId];
+}
+
+const rarityRank: Record<ItemRarity, number> = {
+  COMMON: 0,
+  UNCOMMON: 1,
+  RARE: 2,
+  EPIC: 3,
+  LEGENDARY: 4,
+  MYTHIC: 5
+};
+
+function highestRarity(...values: Array<ItemRarity | null | undefined>): ItemRarity | null {
+  let best: ItemRarity | null = null;
+  for (const value of values) {
+    if (!value) continue;
+    if (!best || rarityRank[value] > rarityRank[best]) {
+      best = value;
+    }
+  }
+  return best;
+}
+
+function rarityVisualStyle(rarity: ItemRarity | null | undefined): {
+  glow: number;
+  nameColor: string;
+  nameBg: string;
+  stroke: string;
+  strokeThickness: number;
+  fontSize: string;
+  fontStyle: string;
+  padX: number;
+  padY: number;
+  shadow?: string;
+  shadowBlur: number;
+} {
+  switch (rarity) {
+    case "UNCOMMON":
+      return {
+        glow: 0x4ade80,
+        nameColor: "#dcfce7",
+        nameBg: "rgba(6, 28, 16, .78)",
+        stroke: "#166534",
+        strokeThickness: 2,
+        fontSize: "11px",
+        fontStyle: "bold",
+        padX: 5,
+        padY: 2,
+        shadow: "#22c55e",
+        shadowBlur: 4
+      };
+    case "RARE":
+      return {
+        glow: 0x60a5fa,
+        nameColor: "#dbeafe",
+        nameBg: "rgba(8, 20, 42, .82)",
+        stroke: "#1d4ed8",
+        strokeThickness: 3,
+        fontSize: "12px",
+        fontStyle: "bold",
+        padX: 6,
+        padY: 3,
+        shadow: "#3b82f6",
+        shadowBlur: 8
+      };
+    case "EPIC":
+      return {
+        glow: 0xc084fc,
+        nameColor: "#f3e8ff",
+        nameBg: "rgba(28, 12, 42, .86)",
+        stroke: "#7e22ce",
+        strokeThickness: 3,
+        fontSize: "12px",
+        fontStyle: "bold",
+        padX: 7,
+        padY: 3,
+        shadow: "#a855f7",
+        shadowBlur: 10
+      };
+    case "LEGENDARY":
+      return {
+        glow: 0xfbbf24,
+        nameColor: "#fff7d6",
+        nameBg: "rgba(42, 28, 8, .9)",
+        stroke: "#b45309",
+        strokeThickness: 3,
+        fontSize: "12px",
+        fontStyle: "bold",
+        padX: 7,
+        padY: 3,
+        shadow: "#f59e0b",
+        shadowBlur: 12
+      };
+    case "MYTHIC":
+      return {
+        glow: 0xf472b6,
+        nameColor: "#fdf2f8",
+        nameBg: "rgba(42, 10, 28, .92)",
+        stroke: "#db2777",
+        strokeThickness: 4,
+        fontSize: "13px",
+        fontStyle: "bold",
+        padX: 8,
+        padY: 3,
+        shadow: "#ec4899",
+        shadowBlur: 14
+      };
+    default:
+      return {
+        glow: 0x9aa6b5,
+        nameColor: "#ffffff",
+        nameBg: "rgba(5, 12, 22, .62)",
+        stroke: "#000000",
+        strokeThickness: 0,
+        fontSize: "11px",
+        fontStyle: "normal",
+        padX: 4,
+        padY: 2,
+        shadowBlur: 0
+      };
+  }
 }

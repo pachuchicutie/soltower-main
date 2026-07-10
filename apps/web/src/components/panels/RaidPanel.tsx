@@ -242,15 +242,31 @@ export function RaidPanel() {
           if (!lobby || event.lobbyId !== lobby.id) {
             return;
           }
-          // Sender already sees a local confirmation — skip duplicate echo for them.
+          // Sender already sees a local "sent" confirmation — skip echo for them.
           if (event.fromPlayerId === currentPlayerId) {
+            return;
+          }
+          const iAmHost = lobby.members.some(
+            (member) => member.host && member.playerId === currentPlayerId
+          );
+          // Please Ready → members. Please Start → host only.
+          if (event.nudge === "please_ready" && iAmHost) {
+            return;
+          }
+          if (event.nudge === "please_start" && !iAmHost) {
             return;
           }
           playUiSound("interactionOpen", { throttleMs: 400 });
           if (event.nudge === "please_ready") {
-            pushPartyNudgeToast(`${event.fromDisplayName}: Please ready up!`, "ready");
+            pushPartyNudgeToast(
+              `${event.fromDisplayName} (host): Please ready up for the raid!`,
+              "ready"
+            );
           } else {
-            pushPartyNudgeToast(`${event.fromDisplayName}: Please start the raid!`, "start");
+            pushPartyNudgeToast(
+              `${event.fromDisplayName}: Please start the raid!`,
+              "start"
+            );
           }
           return;
         }
@@ -323,10 +339,17 @@ export function RaidPanel() {
       .then(() => {
         setNudgeCooldownUntil(nowMs + PARTY_NUDGE_COOLDOWN_MS);
         playUiSound("interactionOpen", { throttleMs: 300 });
-        pushPartyNudgeToast(
-          nudge === "please_ready" ? "Ready alert sent to the party." : "Start alert sent to the host.",
-          "info"
-        );
+        if (nudge === "please_ready") {
+          pushPartyNudgeToast(
+            "Sent! Members got a “Please Ready” alert.",
+            "info"
+          );
+        } else {
+          pushPartyNudgeToast(
+            "Sent! Host got a “Please Start” alert.",
+            "info"
+          );
+        }
       })
       .catch(() => {
         pushPartyNudgeToast("Could not send party alert. Try again.", "info");
@@ -1146,7 +1169,8 @@ function LobbyCard({
   const nonHostMembersReady = lobby.members.every((member) => member.host || member.ready);
   const someoneNotReady = lobby.members.some((member) => !member.host && !member.ready);
   const canStart = isHost && lobby.members.length >= 1 && nonHostMembersReady;
-  const canNudgeReady = alreadyJoined && someoneNotReady;
+  // Host only: ping members to ready. Members only: ping host to start.
+  const canNudgeReady = alreadyJoined && isHost && someoneNotReady;
   const canNudgeStart = alreadyJoined && !isHost;
   const lobbyType = lobby.lobbyType === "PRIVATE" ? "Private" : "Public";
   const hostName = safeGuardianName(host?.displayName, host?.playerId);
@@ -1252,7 +1276,7 @@ function LobbyCard({
                 title={
                   nudgeOnCooldown
                     ? `Wait ${nudgeCooldownSeconds}s before sending another alert.`
-                    : "Ping party members who are not ready."
+                    : "Host only — send a ready-up alert to all members."
                 }
               >
                 <Bell size={15} />{" "}
@@ -1268,7 +1292,7 @@ function LobbyCard({
                 title={
                   nudgeOnCooldown
                     ? `Wait ${nudgeCooldownSeconds}s before sending another alert.`
-                    : "Ask the host to start the raid."
+                    : "Members only — ask the host to start the raid."
                 }
               >
                 <Bell size={15} />{" "}

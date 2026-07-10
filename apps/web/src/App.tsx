@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Backpack, BookOpen, Map, Menu, MessageCircle, Settings, Speech, X, ZoomIn, ZoomOut } from "lucide-react";
-import type { PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
+import type { ItemRarity, PlayerBootstrapData, TownPosition, TownServerId } from "@soltower/shared";
 import { Hud } from "./components/Hud";
 import { LandingPage } from "./components/LandingPage";
 import { NpcModal } from "./components/NpcModal";
@@ -17,7 +17,7 @@ import { ProfilePanel } from "./components/ProfilePanel";
 import { TownChat } from "./components/TownChat";
 import { TownCanvas } from "./components/TownCanvas";
 import { ShortcutHint } from "./components/ui/ShortcutHint";
-import type { NearbyInteraction } from "./game/TownScene";
+import type { EquippedRarityPresentation, NearbyInteraction } from "./game/TownScene";
 import { useTownShortcuts } from "./hooks/useTownShortcuts";
 import { apiGet, apiPost, hasStoredSupabaseSession } from "./lib/api";
 import { applyAudioSettings, pauseTownMusic, playUiSound, startTownMusic } from "./lib/audio";
@@ -29,6 +29,23 @@ import type { ModalKey } from "./store/ui";
 import { useUiStore } from "./store/ui";
 
 const BOOTSTRAP_LOADING_MAX_MS = 10_000;
+
+const itemRaritySet = new Set<ItemRarity>([
+  "COMMON",
+  "UNCOMMON",
+  "RARE",
+  "EPIC",
+  "LEGENDARY",
+  "MYTHIC"
+]);
+
+function asItemRarity(value: unknown): ItemRarity | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const upper = value.toUpperCase() as ItemRarity;
+  return itemRaritySet.has(upper) ? upper : null;
+}
 
 type MeResponse = PlayerBootstrapData;
 interface TownServerStatus {
@@ -85,7 +102,36 @@ export function App() {
     queryFn: () => apiGet<TownServersResponse>("/api/town/servers"),
     staleTime: 15000
   });
+  const inventory = useQuery({
+    queryKey: ["inventory"],
+    queryFn: () =>
+      apiGet<{
+        equipment: Array<{ rarity?: string; equippedSlot?: string | null }>;
+        cosmetics?: Array<{ rarity?: string; costumeId?: string }>;
+        equippedCosmetics?: Array<{ costumeId?: string; costume_id?: string }>;
+      }>("/api/inventory"),
+    enabled: Boolean(me.data?.player?.id) && !disconnected,
+    staleTime: 20_000
+  });
   const activeBootstrap = me.data;
+  const equippedRarities = useMemo<EquippedRarityPresentation>(() => {
+    const equipment = inventory.data?.equipment ?? [];
+    const weapon = equipment.find((item) => item.equippedSlot === "WEAPON");
+    const armor = equipment.find((item) => item.equippedSlot === "ARMOR");
+    const equippedCostumeIds = new Set(
+      (inventory.data?.equippedCosmetics ?? []).map((row) =>
+        String(row.costumeId ?? row.costume_id ?? "")
+      )
+    );
+    const costume = (inventory.data?.cosmetics ?? []).find((entry) =>
+      equippedCostumeIds.has(String(entry.costumeId ?? ""))
+    );
+    return {
+      weapon: asItemRarity(weapon?.rarity),
+      armor: asItemRarity(armor?.rarity),
+      costume: asItemRarity(costume?.rarity)
+    };
+  }, [inventory.data]);
 
   useEffect(() => {
     if (activeBootstrap || !sessionHint || !me.isLoading) {
@@ -356,6 +402,7 @@ export function App() {
         mode="game"
         selectedHeroId={activeBootstrap.selectedHeroId}
         heroAppearance={heroAppearance}
+        equippedRarities={equippedRarities}
         controlsEnabled={controlsEnabled}
         onNearbyInteraction={setNearbyInteraction}
         cameraResetSignal={cameraResetSignal}
