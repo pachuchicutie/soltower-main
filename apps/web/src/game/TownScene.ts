@@ -92,6 +92,11 @@ const RUN_SPEED = 292;
 const HERO_FRAME_WIDTH = 64;
 const HERO_FRAME_HEIGHT = 64;
 const HERO_SCALE = 1;
+/** Dedicated rarity VFX textures (additive-friendly, black-bg light sprites). */
+const RARITY_BODY_AURA_KEY = "fx-rarity-body-aura";
+const RARITY_GROUND_RING_KEY = "fx-rarity-ground-ring";
+const RARITY_WEAPON_BLOOM_KEY = "fx-rarity-weapon-bloom";
+const RARITY_SPARK_KEY = "fx-rarity-spark";
 const GAME_DEBUG = import.meta.env.VITE_GAME_DEBUG === "true";
 const DESKTOP_GAME_ZOOM = 1.46;
 const GAME_ZOOM_MIN = DESKTOP_GAME_ZOOM - 0.28;
@@ -184,6 +189,11 @@ export class TownScene extends Phaser.Scene {
         this.load.image(environmentAssetKey(name as TownAssetKey), definition.path);
       }
     });
+    // Dedicated rarity gear VFX (body halo, foot ring, weapon bloom, spark).
+    this.load.image(RARITY_BODY_AURA_KEY, "/assets/fx/rarity/body-aura.png");
+    this.load.image(RARITY_GROUND_RING_KEY, "/assets/fx/rarity/ground-ring.png");
+    this.load.image(RARITY_WEAPON_BLOOM_KEY, "/assets/fx/rarity/weapon-bloom.png");
+    this.load.image(RARITY_SPARK_KEY, "/assets/fx/rarity/spark.png");
     heroAnimationNames.forEach((action) => {
       this.load.spritesheet(heroSpriteKey("fallback", action), `/assets/soltower/heroes/shared/fallback-${action}.png`, {
         frameWidth: HERO_FRAME_WIDTH,
@@ -1340,77 +1350,146 @@ export class TownScene extends Phaser.Scene {
     const nameStyle = rarityVisualStyle(rarities?.costume ?? null);
     const parts: Phaser.GameObjects.GameObject[] = [shadow];
 
-    // Armor body aura — multi-layer so rare+ gear is obvious in town.
+    // Armor body aura — dedicated oval halo + foot magic ring, tinted by armor rarity.
     if (rarities?.armor && rarities.armor !== "COMMON") {
-      const armorOuter = this.add
-        .ellipse(0, 6, 62, 78, armorStyle.glow, 0.2 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      const armorInner = this.add
-        .ellipse(0, 4, 44, 58, armorStyle.glow, 0.38 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      const armorRing = this.add
-        .ellipse(0, 10, 52, 20, armorStyle.glow, 0.28 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      armorOuter.setData("role", "armor-aura");
-      armorInner.setData("role", "armor-aura");
-      armorRing.setData("role", "armor-aura");
-      parts.push(armorOuter, armorInner, armorRing);
-      this.tweens.add({
-        targets: [armorOuter, armorInner],
-        alpha: { from: 0.16 * alpha, to: 0.48 * alpha },
-        scaleX: { from: 0.94, to: 1.1 },
-        scaleY: { from: 0.94, to: 1.08 },
-        duration: 820,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut"
-      });
-      this.tweens.add({
-        targets: armorRing,
-        alpha: { from: 0.12 * alpha, to: 0.36 * alpha },
-        scaleX: { from: 0.9, to: 1.18 },
-        duration: 1100,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut"
-      });
+      if (this.textures.exists(RARITY_BODY_AURA_KEY)) {
+        const armorHalo = this.add
+          .image(0, 0, RARITY_BODY_AURA_KEY)
+          .setOrigin(0.5, 0.58)
+          .setDisplaySize(86, 108)
+          .setTint(armorStyle.glow)
+          .setAlpha(0.48 * alpha)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        const armorCore = this.add
+          .image(0, 2, RARITY_BODY_AURA_KEY)
+          .setOrigin(0.5, 0.58)
+          .setDisplaySize(52, 68)
+          .setTint(0xffffff)
+          .setAlpha(0.28 * alpha)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        armorHalo.setData("role", "armor-aura");
+        armorCore.setData("role", "armor-aura");
+        parts.push(armorHalo, armorCore);
+        this.tweens.add({
+          targets: armorHalo,
+          alpha: { from: 0.32 * alpha, to: 0.62 * alpha },
+          scaleX: { from: 0.96, to: 1.06 },
+          scaleY: { from: 0.96, to: 1.06 },
+          duration: 1100,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+        this.tweens.add({
+          targets: armorCore,
+          alpha: { from: 0.16 * alpha, to: 0.38 * alpha },
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+      }
+      if (this.textures.exists(RARITY_GROUND_RING_KEY)) {
+        const armorGround = this.add
+          .image(0, 18, RARITY_GROUND_RING_KEY)
+          .setOrigin(0.5, 0.5)
+          .setDisplaySize(78, 34)
+          .setTint(armorStyle.glow)
+          .setAlpha(0.55 * alpha)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        armorGround.setData("role", "armor-aura");
+        parts.push(armorGround);
+        this.tweens.add({
+          targets: armorGround,
+          alpha: { from: 0.3 * alpha, to: 0.7 * alpha },
+          scaleX: { from: 0.92, to: 1.12 },
+          scaleY: { from: 0.92, to: 1.08 },
+          angle: { from: -4, to: 4 },
+          duration: 1400,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+      }
     }
 
     parts.push(...sprites);
 
-    // Weapon hand / blade aura — brighter dual rings near weapon hand.
+    // Weapon hand aura — weapon bloom + rotating star sparks near the hand/weapon.
     if (rarities?.weapon && rarities.weapon !== "COMMON") {
-      const weaponOuter = this.add
-        .circle(14, -4, 18, weaponStyle.glow, 0.28 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      const weaponInner = this.add
-        .circle(14, -4, 10, weaponStyle.glow, 0.55 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      const weaponSpark = this.add
-        .circle(14, -4, 4, 0xffffff, 0.7 * alpha)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      weaponOuter.setData("role", "weapon-aura");
-      weaponInner.setData("role", "weapon-aura");
-      weaponSpark.setData("role", "weapon-aura");
-      parts.push(weaponOuter, weaponInner, weaponSpark);
-      this.tweens.add({
-        targets: [weaponOuter, weaponInner],
-        alpha: { from: 0.22 * alpha, to: 0.62 * alpha },
-        scale: { from: 0.82, to: 1.28 },
-        duration: 680,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut"
-      });
-      this.tweens.add({
-        targets: weaponSpark,
-        alpha: { from: 0.35 * alpha, to: 0.95 * alpha },
-        scale: { from: 0.7, to: 1.4 },
-        duration: 480,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut"
-      });
+      if (this.textures.exists(RARITY_WEAPON_BLOOM_KEY)) {
+        const weaponHalo = this.add
+          .image(13, -3, RARITY_WEAPON_BLOOM_KEY)
+          .setOrigin(0.5, 0.5)
+          .setDisplaySize(48, 48)
+          .setTint(weaponStyle.glow)
+          .setAlpha(0.62 * alpha)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        const weaponCore = this.add
+          .image(13, -3, RARITY_WEAPON_BLOOM_KEY)
+          .setOrigin(0.5, 0.5)
+          .setDisplaySize(26, 26)
+          .setTint(0xffffff)
+          .setAlpha(0.4 * alpha)
+          .setBlendMode(Phaser.BlendModes.ADD);
+        weaponHalo.setData("role", "weapon-aura");
+        weaponCore.setData("role", "weapon-aura");
+        parts.push(weaponHalo, weaponCore);
+        this.tweens.add({
+          targets: weaponHalo,
+          angle: 360,
+          duration: 3200,
+          repeat: -1,
+          ease: "Linear"
+        });
+        this.tweens.add({
+          targets: weaponHalo,
+          alpha: { from: 0.38 * alpha, to: 0.78 * alpha },
+          scale: { from: 0.9, to: 1.16 },
+          duration: 850,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+        this.tweens.add({
+          targets: weaponCore,
+          alpha: { from: 0.22 * alpha, to: 0.55 * alpha },
+          scale: { from: 0.85, to: 1.2 },
+          duration: 700,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut"
+        });
+      }
+      if (this.textures.exists(RARITY_SPARK_KEY)) {
+        for (const offset of [
+          { x: 18, y: -12, s: 16, spin: 40 },
+          { x: 7, y: 1, s: 12, spin: -28 },
+          { x: 21, y: 5, s: 11, spin: 22 },
+          { x: 11, y: -8, s: 9, spin: -35 }
+        ]) {
+          const spark = this.add
+            .image(offset.x, offset.y, RARITY_SPARK_KEY)
+            .setOrigin(0.5, 0.5)
+            .setDisplaySize(offset.s, offset.s)
+            .setTint(weaponStyle.glow)
+            .setAlpha(0.82 * alpha)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          spark.setData("role", "weapon-aura");
+          parts.push(spark);
+          this.tweens.add({
+            targets: spark,
+            alpha: { from: 0.2 * alpha, to: 0.95 * alpha },
+            y: offset.y - 6,
+            angle: offset.spin,
+            scale: { from: 0.7, to: 1.15 },
+            duration: 480 + offset.s * 28,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.easeInOut"
+          });
+        }
+      }
     }
 
     const label = this.add
