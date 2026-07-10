@@ -119,17 +119,21 @@ export function App() {
     const weapon = equipment.find((item) => item.equippedSlot === "WEAPON");
     const armor = equipment.find((item) => item.equippedSlot === "ARMOR");
     const equippedCostumeIds = new Set(
-      (inventory.data?.equippedCosmetics ?? []).map((row) =>
-        String(row.costumeId ?? row.costume_id ?? "")
-      )
+      (inventory.data?.equippedCosmetics ?? [])
+        .map((row) => String(row.costumeId ?? row.costume_id ?? "").trim())
+        .filter(Boolean)
     );
     const costume = (inventory.data?.cosmetics ?? []).find((entry) =>
-      equippedCostumeIds.has(String(entry.costumeId ?? ""))
+      equippedCostumeIds.has(String(entry.costumeId ?? "").trim())
     );
+    // Prefer explicit rarity; fall back to RARE for known launch-reward bound rares if missing.
+    const weaponRarity = asItemRarity(weapon?.rarity);
+    const armorRarity = asItemRarity(armor?.rarity);
+    const costumeRarity = asItemRarity(costume?.rarity);
     return {
-      weapon: asItemRarity(weapon?.rarity),
-      armor: asItemRarity(armor?.rarity),
-      costume: asItemRarity(costume?.rarity)
+      weapon: weaponRarity,
+      armor: armorRarity,
+      costume: costumeRarity
     };
   }, [inventory.data]);
 

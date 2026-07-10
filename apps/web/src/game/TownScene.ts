@@ -1336,22 +1336,40 @@ export class TownScene extends Phaser.Scene {
     const shadow = this.add.ellipse(0, 18, 38, 13, 0x000000, 0.24 * alpha);
     const armorStyle = rarityVisualStyle(rarities?.armor);
     const weaponStyle = rarityVisualStyle(rarities?.weapon);
-    const nameStyle = rarityVisualStyle(rarities?.costume ?? highestRarity(rarities?.weapon, rarities?.armor));
+    // Nameplate premium glow is costume-only — weapons/armor never restyle the name.
+    const nameStyle = rarityVisualStyle(rarities?.costume ?? null);
     const parts: Phaser.GameObjects.GameObject[] = [shadow];
 
-    // Armor body aura (behind hero)
+    // Armor body aura — multi-layer so rare+ gear is obvious in town.
     if (rarities?.armor && rarities.armor !== "COMMON") {
-      const armorAura = this.add
-        .ellipse(0, 4, 46, 58, armorStyle.glow, 0.22 * alpha)
+      const armorOuter = this.add
+        .ellipse(0, 6, 62, 78, armorStyle.glow, 0.2 * alpha)
         .setBlendMode(Phaser.BlendModes.ADD);
-      armorAura.setData("role", "armor-aura");
-      parts.push(armorAura);
+      const armorInner = this.add
+        .ellipse(0, 4, 44, 58, armorStyle.glow, 0.38 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      const armorRing = this.add
+        .ellipse(0, 10, 52, 20, armorStyle.glow, 0.28 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      armorOuter.setData("role", "armor-aura");
+      armorInner.setData("role", "armor-aura");
+      armorRing.setData("role", "armor-aura");
+      parts.push(armorOuter, armorInner, armorRing);
       this.tweens.add({
-        targets: armorAura,
-        alpha: { from: 0.14 * alpha, to: 0.3 * alpha },
-        scaleX: { from: 0.96, to: 1.06 },
-        scaleY: { from: 0.96, to: 1.05 },
-        duration: 900,
+        targets: [armorOuter, armorInner],
+        alpha: { from: 0.16 * alpha, to: 0.48 * alpha },
+        scaleX: { from: 0.94, to: 1.1 },
+        scaleY: { from: 0.94, to: 1.08 },
+        duration: 820,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+      this.tweens.add({
+        targets: armorRing,
+        alpha: { from: 0.12 * alpha, to: 0.36 * alpha },
+        scaleX: { from: 0.9, to: 1.18 },
+        duration: 1100,
         yoyo: true,
         repeat: -1,
         ease: "Sine.easeInOut"
@@ -1360,18 +1378,35 @@ export class TownScene extends Phaser.Scene {
 
     parts.push(...sprites);
 
-    // Weapon hand glow near the weapon layer
+    // Weapon hand / blade aura — brighter dual rings near weapon hand.
     if (rarities?.weapon && rarities.weapon !== "COMMON") {
-      const weaponAura = this.add
-        .circle(12, -2, 11, weaponStyle.glow, 0.34 * alpha)
+      const weaponOuter = this.add
+        .circle(14, -4, 18, weaponStyle.glow, 0.28 * alpha)
         .setBlendMode(Phaser.BlendModes.ADD);
-      weaponAura.setData("role", "weapon-aura");
-      parts.push(weaponAura);
+      const weaponInner = this.add
+        .circle(14, -4, 10, weaponStyle.glow, 0.55 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      const weaponSpark = this.add
+        .circle(14, -4, 4, 0xffffff, 0.7 * alpha)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      weaponOuter.setData("role", "weapon-aura");
+      weaponInner.setData("role", "weapon-aura");
+      weaponSpark.setData("role", "weapon-aura");
+      parts.push(weaponOuter, weaponInner, weaponSpark);
       this.tweens.add({
-        targets: weaponAura,
-        alpha: { from: 0.18 * alpha, to: 0.42 * alpha },
-        scale: { from: 0.85, to: 1.2 },
-        duration: 720,
+        targets: [weaponOuter, weaponInner],
+        alpha: { from: 0.22 * alpha, to: 0.62 * alpha },
+        scale: { from: 0.82, to: 1.28 },
+        duration: 680,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+      this.tweens.add({
+        targets: weaponSpark,
+        alpha: { from: 0.35 * alpha, to: 0.95 * alpha },
+        scale: { from: 0.7, to: 1.4 },
+        duration: 480,
         yoyo: true,
         repeat: -1,
         ease: "Sine.easeInOut"
@@ -1707,26 +1742,6 @@ function cloakTint(heroId: HeroId, cloak: HeroAppearance["backAccessory"]): stri
   if (cloak === "wing-cape") return "#2f5368";
   if (cloak === "long-cloak") return "#17223f";
   return base[heroId];
-}
-
-const rarityRank: Record<ItemRarity, number> = {
-  COMMON: 0,
-  UNCOMMON: 1,
-  RARE: 2,
-  EPIC: 3,
-  LEGENDARY: 4,
-  MYTHIC: 5
-};
-
-function highestRarity(...values: Array<ItemRarity | null | undefined>): ItemRarity | null {
-  let best: ItemRarity | null = null;
-  for (const value of values) {
-    if (!value) continue;
-    if (!best || rarityRank[value] > rarityRank[best]) {
-      best = value;
-    }
-  }
-  return best;
 }
 
 function rarityVisualStyle(rarity: ItemRarity | null | undefined): {

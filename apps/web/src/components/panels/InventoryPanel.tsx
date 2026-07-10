@@ -290,7 +290,7 @@ export function InventoryPanel() {
           {successMessage ? <span className="equipment-success tag">{successMessage}</span> : null}
           {actionError ? <span className="equipment-error tag">{actionError}</span> : null}
 
-          <div className="equipment-slot-grid">
+          <div className="equipment-slot-grid equipment-slot-grid-with-costume">
             {equipmentSlots.map((slot) => {
               const item = equippedBySlot.get(slot);
               return (
@@ -328,7 +328,84 @@ export function InventoryPanel() {
                 </GameCard>
               );
             })}
+            <GameCard
+              className="equipment-slot-card costume-slot-card"
+              style={{ borderColor: equippedFullCostume ? rarityColors[equippedFullCostume.rarity] : undefined }}
+            >
+              <span>Full Costume</span>
+              {equippedFullCostume ? (
+                <>
+                  <ItemCard
+                    iconSrc={uiAssetManifest.icons.settings}
+                    frameSrc={rarityFrame(equippedFullCostume.rarity)}
+                    title={equippedFullCostume.name}
+                    meta={`Costume · ${equippedFullCostume.rarity} · ${equippedFullCostume.bound ? "Bound" : "Tradeable"}`}
+                  >
+                    <span className="tag">Equipped</span>
+                    {equippedFullCostume.source === "pre_registration" ? (
+                      <small>Launch reward</small>
+                    ) : null}
+                  </ItemCard>
+                  <div className="button-row">
+                    <GameButton variant="secondary" onClick={() => setActiveTab("cosmetics")}>
+                      Change
+                    </GameButton>
+                    <GameButton
+                      variant="ghost"
+                      disabled={equipCostume.isPending}
+                      onClick={() => equipCostume.mutate({ heroId: selectedHero.id, costumeId: null })}
+                    >
+                      Unequip
+                    </GameButton>
+                  </div>
+                </>
+              ) : (
+                <EmptyState title="No costume equipped" iconSrc={uiAssetManifest.icons.settings}>
+                  Open Cosmetics to equip a Full Costume (appearance only).
+                  <GameButton variant="secondary" onClick={() => setActiveTab("cosmetics")}>
+                    Open Cosmetics
+                  </GameButton>
+                </EmptyState>
+              )}
+            </GameCard>
           </div>
+
+          {ownedCostumes.length > 0 ? (
+            <section className="inventory-subsection" aria-label="Owned full costumes">
+              <div className="section-title-row">
+                <strong>Owned Full Costumes ({ownedCostumes.length})</strong>
+                <span className="tag">Appearance-only</span>
+              </div>
+              <div className="equipment-picker-grid">
+                {ownedCostumes.map((costume) => {
+                  const equipped = costume.costumeId === equippedFullCostumeId;
+                  return (
+                    <GameCard
+                      key={costume.costumeId}
+                      className="equipment-replacement-card"
+                      style={{ borderColor: rarityColors[costume.rarity] }}
+                    >
+                      <span className="game-eyebrow">{costume.rarity}</span>
+                      <strong>{costume.name}</strong>
+                      <small>
+                        {costume.bound ? "Bound" : "Tradeable"}
+                        {costume.source === "pre_registration" ? " · Launch reward" : ""}
+                        {equipped ? " · Equipped" : ""}
+                      </small>
+                      <GameButton
+                        disabled={equipped || equipCostume.isPending}
+                        onClick={() =>
+                          equipCostume.mutate({ heroId: selectedHero.id, costumeId: costume.costumeId })
+                        }
+                      >
+                        {equipped ? "Equipped" : "Equip Costume"}
+                      </GameButton>
+                    </GameCard>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           {changingSlot ? (
             <section className="inventory-subsection equipment-picker" aria-label={`${formatSlot(changingSlot)} replacement picker`}>

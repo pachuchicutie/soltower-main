@@ -4402,6 +4402,20 @@ label {
   gap: 16px;
 }
 
+.equipment-slot-grid-with-costume {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.costume-slot-card .button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.costume-slot-card .empty-state .game-button {
+  margin-top: 10px;
+}
+
 .equipment-slot-card,
 .inventory-stack-card,
 .quest-card,
