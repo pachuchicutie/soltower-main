@@ -3,6 +3,11 @@ export const economyConfig = {
   marketMinimumGoldQuantity: 100,
   marketSellerTaxRate: 0.1,
   blackjackProfitCapRate: 0.6,
+  /**
+   * Pre-market accounts (level &lt; 10) have 0 daily sell capacity. Without a floor,
+   * every Earned Gold blackjack profit would dump into Locked Gold.
+   */
+  blackjackPreMarketEarnedProfitCap: 60,
   treasuryPlayerId: "treasury",
   towerToken: {
     symbol: "$TOWER",
@@ -34,7 +39,11 @@ export function getDailySellCapacity(accountLevel: number): number {
 }
 
 export function getBlackjackEarnedProfitCap(accountLevel: number): number {
-  return Math.floor(getDailySellCapacity(accountLevel) * economyConfig.blackjackProfitCapRate);
+  const sellLinked = Math.floor(getDailySellCapacity(accountLevel) * economyConfig.blackjackProfitCapRate);
+  // Levels without market sell capacity still need fair Earned profit room at the table.
+  const preMarketFloor =
+    accountLevel < 10 ? economyConfig.blackjackPreMarketEarnedProfitCap : 0;
+  return Math.max(sellLinked, preMarketFloor);
 }
 
 export function calculateMarketTax(grossTestToken: number): {

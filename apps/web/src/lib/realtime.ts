@@ -14,9 +14,9 @@ import { createBrowserSupabaseClient } from "./supabase";
 /** Movement broadcast cadence — ~8 Hz keeps walk smooth without flooding Realtime. */
 const MOVEMENT_SEND_INTERVAL_MS = 100;
 /** Presence is only for discovery/heartbeats — never per-step (rate limits freeze remotes). */
-const PRESENCE_TRACK_INTERVAL_MS = 2000;
+const PRESENCE_TRACK_INTERVAL_MS = 5000;
 /** Keepalive so idle avatars and presence metas do not expire mid-session. */
-const PRESENCE_REFRESH_INTERVAL_MS = 4000;
+const PRESENCE_REFRESH_INTERVAL_MS = 12_000;
 /** Drop presence metas older than this when building the roster. */
 const PRESENCE_VISIBLE_UNTIL_MS = PRESENCE_REFRESH_INTERVAL_MS * 4;
 /** Reconnect backoff after channel errors. */

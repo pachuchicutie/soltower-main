@@ -58,7 +58,7 @@ const townServerIds = [
   "solbloom-5"
 ] as const;
 const TOWN_SERVER_CAPACITY = 40;
-const TOWN_PRESENCE_STALE_AFTER_SECONDS = 20;
+const TOWN_PRESENCE_STALE_AFTER_SECONDS = 60;
 const DEFAULT_SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com";
 const townServerIdSchema = z.enum(townServerIds);
 const lobbyNeededHeroIdsSchema = z
@@ -1389,6 +1389,8 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
     }
   }
 
+  const partySize = Math.max(1, partyPlayerIds.length);
+
   // Host first so the victory UI can return ASAP with the host reward payload.
   const hostRaidEntry = await settleRaidMemberRewards(context, {
     memberId: player.id,
@@ -1397,7 +1399,8 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
     profile: hostProfile,
     memberRaidKey: body.idempotencyKey,
     lobbyId: body.lobbyId ?? null,
-    mapId: body.mapId
+    mapId: body.mapId,
+    partySize
   });
   if (!hostRaidEntry) {
     throw new HttpError(500, "Raid settlement did not produce a host record");
@@ -1425,7 +1428,8 @@ async function startPrototypeRaid(context: EdgeContext): Promise<JsonRecord> {
             profile: profilesById.get(memberId) ?? null,
             memberRaidKey: `${body.idempotencyKey}:member:${memberId}`,
             lobbyId: body.lobbyId ?? null,
-            mapId: body.mapId
+            mapId: body.mapId,
+            partySize
           });
         } catch {
           // Never fail host settlement because a teammate reward failed.
@@ -1454,6 +1458,7 @@ async function settleRaidMemberRewards(
     memberRaidKey: string;
     lobbyId: string | null;
     mapId: string;
+    partySize: number;
   }
 ): Promise<{ memberId: string; raid: JsonRecord } | null> {
   const profile =
@@ -1462,7 +1467,7 @@ async function settleRaidMemberRewards(
     return null;
   }
 
-  // Idempotent: if history already exists, return it (no second pay).
+  // Idempotent: if history already exists, return it (no second pay) but still catch up quests.
   const existing = await checked(
     context.service
       .from("raid_history")
@@ -1471,14 +1476,16 @@ async function settleRaidMemberRewards(
       .maybeSingle()
   );
   if (existing.data) {
-    return { memberId: input.memberId, raid: asRecord(existing.data, "raid history") };
+    const raid = asRecord(existing.data, "raid history");
+    await applyQuestProgressAfterRaid(context, input.memberId, raid, input.partySize);
+    return { memberId: input.memberId, raid };
   }
 
   const memberPower = toNumber(profile.power);
   const earnedGold = economyConfig.raidBaseGoldReward + Math.floor(memberPower / 160);
   const xp = economyConfig.raidBaseXpReward;
 
-  // Gold then XP (ledger-safe). No quest work on the settle path — keeps victory claim fast.
+  // Gold then XP first so rewards always land even if quest writes lag.
   await applyBalance(context, {
     playerId: input.memberId,
     balanceType: "EARNED_GOLD",
@@ -1516,10 +1523,37 @@ async function settleRaidMemberRewards(
         reward_xp: xp,
         idempotency_key: input.memberRaidKey
       })
-      .select("id,player_id,map_id,reward_earned_gold,reward_xp,success,boss_defeated,idempotency_key,created_at")
+      .select(
+        "id,player_id,map_id,lobby_id,duration_seconds,wave_count,reward_earned_gold,reward_xp,success,boss_defeated,idempotency_key,created_at"
+      )
       .single()
   );
-  return { memberId: input.memberId, raid: asRecord(raidResult.data, "raid history") };
+  const raid = asRecord(raidResult.data, "raid history");
+  await applyQuestProgressAfterRaid(context, input.memberId, raid, input.partySize);
+  return { memberId: input.memberId, raid };
+}
+
+/** Assignments + raid progress + achievements. Never throws to callers — rewards already paid. */
+async function applyQuestProgressAfterRaid(
+  context: EdgeContext,
+  playerId: string,
+  raid: JsonRecord,
+  partySize: number
+): Promise<void> {
+  try {
+    await ensureQuestAssignments(context, playerId);
+    await recordQuestProgressFromRaid(context, { id: playerId }, raid, partySize);
+    await refreshPlayerAchievements(context, playerId);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        scope: "applyQuestProgressAfterRaid",
+        playerId,
+        raidId: toStringValue(raid.id),
+        message: error instanceof Error ? error.message : "quest progress failed"
+      })
+    );
+  }
 }
 
 /** Host starts the client battle: lock party out of open-lobby lists immediately. */
@@ -1594,6 +1628,8 @@ async function getPlayerQuests(context: EdgeContext): Promise<JsonRecord> {
   const user = requireUser(context);
   const player = await loadPlayer(context, user.id);
   await ensureQuestAssignments(context, player.id);
+  // Catch up progress for raids that settled before quest writes were wired back in.
+  await catchUpQuestProgressFromRecentRaids(context, player.id);
   await refreshPlayerAchievements(context, player.id);
 
   const now = new Date();
@@ -1697,8 +1733,9 @@ function eligibilityFlags(): {
 } {
   return {
     bossAvailable: true,
-    partyAvailable: false,
-    fullPartyAvailable: false,
+    // Multiparty lobbies are live — weekly/daily party quests can be assigned again.
+    partyAvailable: true,
+    fullPartyAvailable: true,
     skillEventsAvailable: false
   };
 }
@@ -1804,17 +1841,43 @@ function stableHash(value: string): number {
   return hash;
 }
 
+async function catchUpQuestProgressFromRecentRaids(
+  context: EdgeContext,
+  playerId: string
+): Promise<void> {
+  const raidsResult = await checked(
+    context.service
+      .from("raid_history")
+      .select(
+        "id,player_id,map_id,lobby_id,duration_seconds,wave_count,success,boss_defeated,created_at"
+      )
+      .eq("player_id", playerId)
+      .eq("success", true)
+      .order("created_at", { ascending: false })
+      .limit(12)
+  );
+  const raids = rows(raidsResult.data);
+  if (raids.length === 0) {
+    return;
+  }
+  // Process oldest first so progress accumulates in raid order.
+  for (const raid of [...raids].reverse()) {
+    // Party size unknown for historical rows — count multiplayer only when lobby is present as best-effort.
+    const partySize = toStringValue(raid.lobby_id) ? 2 : 1;
+    await recordQuestProgressFromRaid(context, { id: playerId }, raid, partySize);
+  }
+}
+
 async function recordQuestProgressFromRaid(
   context: EdgeContext,
   player: { id: string },
-  raid: JsonRecord
+  raid: JsonRecord,
+  partySize = 1
 ): Promise<void> {
   const raidId = toStringValue(raid.id);
   if (!raidId) {
     return;
   }
-  // Skip ensureQuestAssignments + achievement refresh here — those are heavy and made victory settle lag.
-  // Progress only existing period assignments; opening Quest Journal can re-sync assignments later.
   const now = new Date();
   const daily = periodFor(now, "DAILY");
   const weekly = periodFor(now, "WEEKLY");
@@ -1836,7 +1899,16 @@ async function recordQuestProgressFromRaid(
     if (!definition) {
       return [];
     }
-    const amount = questProgressAmount(definition, raid);
+    // Skip finished assignments so catch-up does not spam RPCs.
+    if (assignment.claimed_at || assignment.completed_at) {
+      return [];
+    }
+    const progress = toNumber(assignment.progress);
+    const target = toNumber(assignment.target_value, toNumber(definition.target_value, 1));
+    if (progress >= target) {
+      return [];
+    }
+    const amount = questProgressAmount(definition, raid, partySize);
     if (amount <= 0) {
       return [];
     }
@@ -1853,7 +1925,9 @@ async function recordQuestProgressFromRaid(
             mapId: toStringValue(raid.map_id),
             nonAfk: true,
             success: toBoolean(raid.success),
-            bossDefeated: toBoolean(raid.boss_defeated)
+            bossDefeated: toBoolean(raid.boss_defeated),
+            partySize,
+            waveCount: toNumber(raid.wave_count)
           }
         })
       )
@@ -1864,15 +1938,20 @@ async function recordQuestProgressFromRaid(
   }
 }
 
-function questProgressAmount(definition: JsonRecord, raid: JsonRecord): number {
+function questProgressAmount(definition: JsonRecord, raid: JsonRecord, partySize = 1): number {
   if (!toBoolean(raid.success)) {
     return 0;
   }
   const metric = toStringValue(definition.metric);
   if (metric === "raid_completed") return 1;
-  if (metric === "waves_cleared") return toNumber(raid.wave_count);
+  if (metric === "waves_cleared") {
+    const waves = toNumber(raid.wave_count);
+    return waves > 0 ? waves : 10;
+  }
   if (metric === "boss_defeated") return toBoolean(raid.boss_defeated) ? 1 : 0;
   if (metric === "non_afk_raid_completed") return 1;
+  if (metric === "party_raid_completed") return partySize >= 2 ? 1 : 0;
+  if (metric === "full_party_raid_completed") return partySize >= 4 ? 1 : 0;
   return 0;
 }
 

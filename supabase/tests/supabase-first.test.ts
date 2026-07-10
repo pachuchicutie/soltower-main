@@ -293,7 +293,8 @@ describe("Supabase-first MVP architecture", () => {
     expect(actions).toContain("awardPlayerXp");
     expect(actions).toContain("Ultra-fast settle path");
     expect(actions).toContain("Only the lobby host can claim raid rewards");
-    expect(actions).toContain("No quest work on the settle path");
+    expect(actions).toContain("applyQuestProgressAfterRaid");
+    expect(actions).toContain("catchUpQuestProgressFromRecentRaids");
     expect(actions).toContain('rpc("add_player_xp"');
     expect(actions).toContain("applyAccountXpProgress");
     expect(actions).toContain("raidBaseXpReward");

@@ -119,8 +119,8 @@ describe("authenticated town scene UX", () => {
     const scene = read("src/game/TownScene.ts");
 
     expect(realtime).toContain("MOVEMENT_SEND_INTERVAL_MS = 100");
-    expect(realtime).toContain("PRESENCE_TRACK_INTERVAL_MS = 2000");
-    expect(realtime).toContain("PRESENCE_REFRESH_INTERVAL_MS = 4000");
+    expect(realtime).toContain("PRESENCE_TRACK_INTERVAL_MS = 5000");
+    expect(realtime).toContain("PRESENCE_REFRESH_INTERVAL_MS = 12_000");
     expect(realtime).toContain("scheduleReconnect");
     expect(realtime).toContain('event: "player_move"');
     expect(realtime).toContain("presenceState()");
@@ -491,7 +491,7 @@ describe("authenticated town scene UX", () => {
     expect(realtime).toContain("parsed.data.sentAt < freshSince");
     expect(chat).toContain("players / {server.capacity} max");
     expect(chat).toContain("/ {activeServer?.capacity ?? TOWN_SERVER_CAPACITY} max");
-    expect(chat).toContain("refetchInterval: realtimeOnline == null ? 5000 : 15000");
+    expect(chat).toContain("refetchInterval: realtimeOnline == null ? 20_000 : 45_000");
     expect(chat).toContain("queryClient.setQueryData([\"town-servers\"], { servers: data.servers })");
     expect(chat).toContain("townServerIds");
     expect(chat).toContain("/api/town/server");
@@ -501,7 +501,7 @@ describe("authenticated town scene UX", () => {
     expect(api).toContain(".eq(\"town_channel\", channel)");
     expect(api).toContain(".gte(\"last_seen_at\", freshSince)");
     expect(actions).toContain("TOWN_SERVER_CAPACITY = 40");
-    expect(actions).toContain("TOWN_PRESENCE_STALE_AFTER_SECONDS = 20");
+    expect(actions).toContain("TOWN_PRESENCE_STALE_AFTER_SECONDS = 60");
     expect(actions).toContain(".select(\"player_id,town_channel,last_seen_at\")");
     expect(actions).toContain("playersByServer");
     expect(actions).toContain(".gte(\"last_seen_at\", freshSince)");

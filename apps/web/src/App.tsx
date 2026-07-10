@@ -19,7 +19,7 @@ import { TownCanvas } from "./components/TownCanvas";
 import { ShortcutHint } from "./components/ui/ShortcutHint";
 import type { NearbyInteraction } from "./game/TownScene";
 import { useTownShortcuts } from "./hooks/useTownShortcuts";
-import { apiGet, apiPost } from "./lib/api";
+import { apiGet, apiPost, hasStoredSupabaseSession } from "./lib/api";
 import { applyAudioSettings, pauseTownMusic, playUiSound, startTownMusic } from "./lib/audio";
 import { emitMobileMovement } from "./lib/gameInput";
 import { useHeroAppearance } from "./lib/heroAppearance";
@@ -27,6 +27,8 @@ import type { TownRealtimeStatus } from "./lib/realtime";
 import { disconnectActiveWallet } from "./lib/wallets";
 import type { ModalKey } from "./store/ui";
 import { useUiStore } from "./store/ui";
+
+const BOOTSTRAP_LOADING_MAX_MS = 10_000;
 
 type MeResponse = PlayerBootstrapData;
 interface TownServerStatus {
@@ -62,14 +64,20 @@ export function App() {
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [showChannelModal, setShowChannelModal] = useState(false);
   const latestTownPositionRef = useRef<TownPosition | undefined>(undefined);
+  /** Server position writes are throttled — free-tier DB cannot take 1 write/sec per player. */
+  const lastServerPositionSaveAtRef = useRef(0);
   const setTownChannel = useCallback((nextTownChannel: TownServerId) => {
     saveLocalTownChannel(nextTownChannel);
     setTownChannelState(nextTownChannel);
   }, []);
+  // Skip the network bootstrap when there is no local session — otherwise a hung
+  // Auth/API call keeps players stuck on "Lighting SolBloom lanterns..." forever.
+  const sessionHint = !disconnected && hasStoredSupabaseSession();
+  const [bootstrapTimedOut, setBootstrapTimedOut] = useState(false);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => apiGet<MeResponse>("/api/player/me"),
-    enabled: !disconnected,
+    enabled: sessionHint,
     retry: false
   });
   const servers = useQuery({
@@ -78,6 +86,17 @@ export function App() {
     staleTime: 15000
   });
   const activeBootstrap = me.data;
+
+  useEffect(() => {
+    if (activeBootstrap || !sessionHint || !me.isLoading) {
+      setBootstrapTimedOut(false);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setBootstrapTimedOut(true);
+    }, BOOTSTRAP_LOADING_MAX_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeBootstrap, me.isLoading, sessionHint]);
   const [heroAppearance] = useHeroAppearance(activeBootstrap?.selectedHeroId ?? "storm-archer");
   const restoredTownPosition = useMemo(() => {
     if (!activeBootstrap?.player) {
@@ -182,6 +201,12 @@ export function App() {
     (position: TownPosition) => {
       latestTownPositionRef.current = position;
       saveLocalTownPosition(activeBootstrap?.player.id, townChannel, position);
+      const now = Date.now();
+      // Local cache stays fresh; Postgres only needs occasional checkpoints.
+      if (now - lastServerPositionSaveAtRef.current < 20_000) {
+        return;
+      }
+      lastServerPositionSaveAtRef.current = now;
       void Promise.resolve(
         apiPost<{ position: TownPosition }>("/api/town/position", {
           townChannel,
@@ -204,6 +229,7 @@ export function App() {
         return;
       }
       saveLocalTownPosition(playerId, townChannel, position);
+      lastServerPositionSaveAtRef.current = Date.now();
       void Promise.resolve(
         apiPost<{ position: TownPosition }>("/api/town/position", {
           townChannel,
@@ -238,11 +264,29 @@ export function App() {
     onInteract: handleInteract
   });
 
-  if (!activeBootstrap && me.isLoading && !disconnected) {
-    return <div className="loading-screen">Lighting SolBloom lanterns...</div>;
+  const restoringSession =
+    Boolean(sessionHint) && !activeBootstrap && me.isLoading && !disconnected && !bootstrapTimedOut;
+
+  if (restoringSession) {
+    return (
+      <div className="loading-screen" role="status" aria-live="polite">
+        <div className="loading-screen-card">
+          <p>Lighting SolBloom lanterns...</p>
+          <span>Restoring your session</span>
+        </div>
+      </div>
+    );
   }
 
   if (!activeBootstrap?.player) {
+    const restoreError =
+      bootstrapTimedOut || me.isError
+        ? me.error instanceof Error
+          ? me.error.message
+          : bootstrapTimedOut
+            ? "Session restore timed out. The village servers may be busy — try Play Now again."
+            : "Could not restore your session."
+        : null;
     return (
       <>
         <LandingPage
@@ -250,6 +294,37 @@ export function App() {
           spectating={spectating}
           onSpectatingChange={setSpectating}
         />
+        {restoreError ? (
+          <div className="bootstrap-restore-banner" role="alert">
+            <div>
+              <strong>Couldn&apos;t jump back into the village</strong>
+              <p>{restoreError}</p>
+            </div>
+            <div className="bootstrap-restore-actions">
+              <button
+                type="button"
+                className="game-button game-button-primary"
+                onClick={() => {
+                  setBootstrapTimedOut(false);
+                  void me.refetch();
+                }}
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                className="game-button game-button-secondary"
+                onClick={() => {
+                  setDisconnected(true);
+                  queryClient.removeQueries({ queryKey: ["me"] });
+                  void apiPost<{ ok: boolean }>("/api/auth/logout", {}).catch(() => undefined);
+                }}
+              >
+                Clear session
+              </button>
+            </div>
+          </div>
+        ) : null}
         {walletOpen ? (
           <Suspense fallback={<div className="wallet-modal-loading">Opening wallet gate...</div>}>
             <WalletOnboardingModal
@@ -262,6 +337,7 @@ export function App() {
                 setWalletOpen(false);
                 setSpectating(false);
                 setDisconnected(false);
+                setBootstrapTimedOut(false);
                 queryClient.setQueryData(["me"], bootstrap);
               }}
             />

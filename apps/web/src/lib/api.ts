@@ -108,7 +108,11 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   }
   if (path === "/api/auth/logout") {
     const client = getSupabaseClient();
-    await client.auth.signOut();
+    try {
+      await withTimeout(client.auth.signOut(), AUTH_TIMEOUT_MS, "Sign out");
+    } catch {
+      // Always leave the local session even if Auth is unreachable.
+    }
     return { ok: true } as T;
   }
   if (path === "/api/auth/wallet/nonce") {
@@ -232,6 +236,9 @@ interface SupabaseResult<T> {
   error: { message: string } | null;
 }
 
+const AUTH_TIMEOUT_MS = 5_000;
+const FUNCTION_TIMEOUT_MS = 12_000;
+
 function getSupabaseClient(): SupabaseClient {
   const client = createBrowserSupabaseClient();
   if (!client) {
@@ -240,15 +247,66 @@ function getSupabaseClient(): SupabaseClient {
   return client;
 }
 
+/** Local-only peek — no network. Used so the app can skip bootstrap when logged out. */
+export function hasStoredSupabaseSession(): boolean {
+  if (typeof localStorage === "undefined") {
+    return false;
+  }
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith("sb-") || !key.includes("auth-token")) {
+        continue;
+      }
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        continue;
+      }
+      const parsed = JSON.parse(raw) as { access_token?: unknown; currentSession?: { access_token?: unknown } };
+      if (typeof parsed.access_token === "string" && parsed.access_token.length > 0) {
+        return true;
+      }
+      if (
+        parsed.currentSession &&
+        typeof parsed.currentSession.access_token === "string" &&
+        parsed.currentSession.access_token.length > 0
+      ) {
+        return true;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${ms}ms. The village servers may be waking up — try again.`));
+        }, ms);
+      })
+    ]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
+}
+
 async function ensureSession(client: SupabaseClient): Promise<string> {
-  const current = await client.auth.getSession();
+  const current = await withTimeout(client.auth.getSession(), AUTH_TIMEOUT_MS, "Auth session check");
   if (current.error) {
     throw new Error(current.error.message);
   }
   if (current.data.session?.access_token) {
     return current.data.session.access_token;
   }
-  const created = await client.auth.signInAnonymously();
+  const created = await withTimeout(client.auth.signInAnonymously(), AUTH_TIMEOUT_MS, "Anonymous sign-in");
   if (created.error || !created.data.session?.access_token) {
     throw new Error(created.error?.message ?? "Anonymous Supabase Auth is not enabled");
   }
@@ -256,7 +314,7 @@ async function ensureSession(client: SupabaseClient): Promise<string> {
 }
 
 async function requireExistingSession(client: SupabaseClient): Promise<string> {
-  const current = await client.auth.getSession();
+  const current = await withTimeout(client.auth.getSession(), AUTH_TIMEOUT_MS, "Auth session check");
   if (current.error) {
     throw new Error(current.error.message);
   }
@@ -273,10 +331,14 @@ async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
     name === "create-wallet-nonce" || name === "verify-wallet-signature"
       ? await ensureSession(client)
       : await requireExistingSession(client);
-  const { data, error } = await client.functions.invoke(name, {
-    body: bodyRecord(body),
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  const { data, error } = await withTimeout(
+    client.functions.invoke(name, {
+      body: bodyRecord(body),
+      headers: { Authorization: `Bearer ${token}` }
+    }),
+    FUNCTION_TIMEOUT_MS,
+    `Edge function ${name}`
+  );
   if (error) {
     // Some SDK versions put the JSON error body on `data` even when `error` is set.
     const detail = await functionErrorDetail(error, data);
@@ -293,7 +355,11 @@ async function invokeFunction<T>(name: string, body: unknown): Promise<T> {
 
 async function invokePublicFunction<T>(name: string, body: unknown): Promise<T> {
   const client = getSupabaseClient();
-  const { data, error } = await client.functions.invoke(name, { body: bodyRecord(body) });
+  const { data, error } = await withTimeout(
+    client.functions.invoke(name, { body: bodyRecord(body) }),
+    FUNCTION_TIMEOUT_MS,
+    `Edge function ${name}`
+  );
   if (error) {
     throw new Error((await functionErrorDetail(error)).message);
   }
@@ -571,7 +637,7 @@ async function readFriends<T>(): Promise<T> {
 async function readTownServers<T>(): Promise<T> {
   const client = getSupabaseClient();
   await requireExistingSession(client);
-  const freshSince = new Date(Date.now() - 30 * 1000).toISOString(); // Only count players seen in last 30 seconds
+  const freshSince = new Date(Date.now() - 60 * 1000).toISOString();
   const result = await checked<Array<JsonRecord>>(
     client
       .from("player_presence")

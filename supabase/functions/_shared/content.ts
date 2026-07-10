@@ -5,6 +5,8 @@ export const economyConfig = {
   raidBaseGoldReward: 24,
   raidBaseXpReward: 80,
   blackjackProfitCapRate: 0.6,
+  /** Matches packages/shared — pre-market BJ profit must stay on Earned Gold. */
+  blackjackPreMarketEarnedProfitCap: 60,
   towerToken: {
     symbol: "$TOWER",
     mint: "93HefHtbz4ghJUpfv7nXCuJiaHYnxcgahbJFNXvfpump",
@@ -103,5 +105,8 @@ export function getBlackjackLimits(accountLevel: number, selectedBalance: number
 }
 
 export function getBlackjackEarnedProfitCap(accountLevel: number): number {
-  return Math.floor(getDailySellCapacity(accountLevel) * economyConfig.blackjackProfitCapRate);
+  const sellLinked = Math.floor(getDailySellCapacity(accountLevel) * economyConfig.blackjackProfitCapRate);
+  const preMarketFloor =
+    accountLevel < 10 ? economyConfig.blackjackPreMarketEarnedProfitCap : 0;
+  return Math.max(sellLinked, preMarketFloor);
 }

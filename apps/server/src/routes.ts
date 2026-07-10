@@ -718,7 +718,7 @@ export function registerRoutes(app: FastifyInstance, store: DevStore): void {
         raids: store.raids,
         lobbies: Array.from(store.lobbies.values()),
         maps: mapDefinitions,
-        heroPickRates: heroDefinitions.map((hero) => ({ hero: hero.name, picks: hero.id === "storm-archer" ? 1 : 0 }))
+        heroPickRates: heroDefinitions.map((hero) => ({ hero: hero.name, picks: hero.id === "s" ? 1 : 0 }))
       };
     } catch (error) {
       sendError(reply, error);

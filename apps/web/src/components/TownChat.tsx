@@ -80,13 +80,15 @@ export function TownChat({
   const servers = useQuery({
     queryKey: ["town-servers"],
     queryFn: () => apiGet<TownServersResponse>("/api/town/servers"),
-    refetchInterval: realtimeOnline == null ? 5000 : 15000,
-    staleTime: 2500
+    // Realtime already reports online counts — keep SQL polling light for free-tier.
+    refetchInterval: realtimeOnline == null ? 20_000 : 45_000,
+    staleTime: 10_000
   });
   const chat = useQuery({
     queryKey: ["chat", townChannel],
     queryFn: () => apiGet<TownChatResponse>(`/api/chat/recent?townChannel=${townChannel}`),
-    refetchInterval: 3500
+    refetchInterval: 12_000,
+    staleTime: 8_000
   });
   const serverList = useMemo(() => {
     const list =
@@ -130,7 +132,8 @@ return list;
     };
 
     refreshPresence();
-    const heartbeatMs = Math.max(5000, Math.floor((TOWN_PRESENCE_STALE_AFTER_SECONDS * 1000) / 3));
+    // Presence heartbeat is a full edge write + capacity scan — keep well under free-tier limits.
+    const heartbeatMs = Math.max(20_000, Math.floor((TOWN_PRESENCE_STALE_AFTER_SECONDS * 1000) / 2));
     const interval = window.setInterval(refreshPresence, heartbeatMs);
     const onVisibilityChange = () => {
       refreshPresence();

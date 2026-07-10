@@ -78,7 +78,8 @@ export const townServerIds = [
 ] as const;
 export type TownServerId = (typeof townServerIds)[number];
 export const TOWN_SERVER_CAPACITY = 40;
-export const TOWN_PRESENCE_STALE_AFTER_SECONDS = 5;
+/** Players idle longer than this are dropped from town capacity / online counts. */
+export const TOWN_PRESENCE_STALE_AFTER_SECONDS = 60;
 
 export interface BalanceSnapshot {
   EARNED_GOLD: number;

@@ -213,6 +213,11 @@ export function BlackjackPanel() {
           <div className="blackjack-meter-track" aria-hidden="true">
             <span style={{ width: `${profitPercent(state.data?.profitProgress, state.data?.profitCap)}%` }} />
           </div>
+          <p className="blackjack-wager-note">
+            Earned Gold bets pay wins back to Earned Gold first. Only profit past today&apos;s Earned
+            cap becomes Locked Gold. Locked Gold bets always pay Locked Gold. Max wager scales with
+            the balance you selected (20% rule) — win more Earned Gold to raise the max.
+          </p>
         </div>
 
         <div className="blackjack-deal-actions">

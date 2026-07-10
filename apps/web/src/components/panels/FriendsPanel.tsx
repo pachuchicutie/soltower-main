@@ -29,7 +29,8 @@ export function FriendsPanel() {
   const chat = useQuery({
     queryKey: ["chat"],
     queryFn: () => apiGet<ChatResponse>("/api/chat/recent"),
-    refetchInterval: 3500
+    refetchInterval: 15_000,
+    staleTime: 10_000
   });
   const tavernMessages = useMemo(
     () =>

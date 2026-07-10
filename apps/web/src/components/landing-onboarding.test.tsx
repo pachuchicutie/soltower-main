@@ -408,7 +408,9 @@ describe("wallet onboarding", () => {
     const app = readFileSync(join(webRoot, "src/App.tsx"), "utf8");
     expect(main).toContain("refetchOnWindowFocus: false");
     expect(main).toContain("refetchOnReconnect: false");
-    expect(app).toContain("!activeBootstrap && me.isLoading");
+    expect(app).toContain("Lighting SolBloom lanterns");
+    expect(app).toContain("hasStoredSupabaseSession");
+    expect(app).toContain("BOOTSTRAP_LOADING_MAX_MS");
   });
 
   it("creates a first-time profile once after name availability succeeds", async () => {
@@ -552,6 +554,17 @@ describe("wallet onboarding", () => {
 
 describe("authenticated town", () => {
   beforeEach(() => {
+    // App only restores bootstrap when a local Supabase session is present.
+    localStorage.setItem(
+      "sb-test-auth-token",
+      JSON.stringify({
+        access_token: "test-access-token",
+        token_type: "bearer",
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        refresh_token: "test-refresh-token"
+      })
+    );
     apiMocks.get.mockImplementation((path: string) => {
       if (path === "/api/player/me") {
         return Promise.resolve(bootstrap);
