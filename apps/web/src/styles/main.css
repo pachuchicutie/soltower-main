@@ -6248,32 +6248,45 @@ label {
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
+  display: grid;
+  place-items: center;
+  background: #07101a;
 }
 
 .raid-battlefield::after {
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
   content: "";
+  pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(3, 8, 15, 0.18), rgba(3, 8, 15, 0.5)),
-    linear-gradient(90deg, rgba(7, 16, 25, 0.5), transparent 24%, transparent 76%, rgba(7, 16, 25, 0.42));
+    linear-gradient(180deg, rgba(3, 8, 15, 0.12), rgba(3, 8, 15, 0.28)),
+    linear-gradient(90deg, rgba(7, 16, 25, 0.28), transparent 18%, transparent 82%, rgba(7, 16, 25, 0.24));
 }
 
+/* Keep the full stage art visible so path % coords match the drawn road + circles. */
 .raid-battlefield-art {
   position: absolute;
   z-index: -2;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  image-rendering: pixelated;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
 }
 
 .raid-lane {
-  position: absolute;
-  inset: 0;
+  /* Match stage art aspect (1672x941) so hero/enemy % positions sit on map features. */
+  position: relative;
+  z-index: 1;
+  width: min(100%, calc(100dvh * 1.777));
+  max-width: 100%;
+  aspect-ratio: 1672 / 941;
+  height: auto;
+  max-height: 100%;
   border: 0;
+  margin: 0 auto;
 }
 
 .raid-path-guide {

@@ -350,404 +350,410 @@ const lockedChapterStageSeeds = {
   }>
 >;
 
+/**
+ * Map-art-aligned layouts (percent coords over the full 1672x941 stage art).
+ * Portal = enemy spawn, wardstone / exit portal = base. Circles = defender posts.
+ */
 const defaultBattleLayout: RaidBattleLayout = {
-  base: { x: 8, y: 24 },
+  // Stage 1-1 Sproutling Path: purple portal (NW) → winding road → crystal tower (center)
+  base: { x: 50, y: 48 },
   defenderSlots: [
-    { x: 29, y: 77, progress: 0.45, facing: "right" },
-    { x: 68, y: 77, progress: 0.12, facing: "left" },
-    { x: 31, y: 39, progress: 0.78, facing: "right" },
-    { x: 74, y: 31, progress: 0.22, facing: "left" }
+    { x: 27, y: 38, progress: 0.22, facing: "right" },
+    { x: 30, y: 68, progress: 0.48, facing: "right" },
+    { x: 62, y: 68, progress: 0.62, facing: "left" },
+    { x: 78, y: 28, progress: 0.18, facing: "left" }
   ],
   enemyPath: [
-    { x: 78, y: 75 },
-    { x: 69, y: 76 },
-    { x: 59, y: 78 },
-    { x: 48, y: 79 },
-    { x: 38, y: 78 },
-    { x: 29, y: 77 },
-    { x: 25, y: 66 },
-    { x: 30, y: 55 },
-    { x: 36, y: 44 },
-    { x: 29, y: 36 },
-    { x: 18, y: 29 },
-    { x: 8, y: 24 }
+    { x: 14, y: 20 },
+    { x: 17, y: 28 },
+    { x: 24, y: 38 },
+    { x: 20, y: 50 },
+    { x: 22, y: 60 },
+    { x: 30, y: 70 },
+    { x: 42, y: 74 },
+    { x: 54, y: 70 },
+    { x: 56, y: 58 },
+    { x: 52, y: 52 },
+    { x: 50, y: 48 }
   ]
 };
 
 const mapOneBattleLayouts: Record<number, RaidBattleLayout> = {
   1: defaultBattleLayout,
+  // Stage 1-2: purple portal left → S-road → blue portal right
   2: {
-    base: { x: 8, y: 69 },
+    base: { x: 90, y: 56 },
     defenderSlots: [
-      { x: 31, y: 72, progress: 0.68, facing: "right" },
-      { x: 54, y: 67, progress: 0.48, facing: "left" },
-      { x: 36, y: 50, progress: 0.34, facing: "right" },
-      { x: 72, y: 44, progress: 0.18, facing: "left" }
+      { x: 28, y: 24, progress: 0.2, facing: "right" },
+      { x: 22, y: 68, progress: 0.28, facing: "right" },
+      { x: 74, y: 24, progress: 0.72, facing: "left" },
+      { x: 72, y: 68, progress: 0.78, facing: "left" }
     ],
     enemyPath: [
-      { x: 91, y: 46 },
-      { x: 77, y: 47 },
-      { x: 65, y: 55 },
-      { x: 54, y: 66 },
-      { x: 42, y: 70 },
-      { x: 30, y: 72 },
-      { x: 17, y: 70 },
-      { x: 8, y: 69 }
+      { x: 12, y: 22 },
+      { x: 22, y: 30 },
+      { x: 34, y: 32 },
+      { x: 44, y: 38 },
+      { x: 50, y: 44 },
+      { x: 56, y: 52 },
+      { x: 62, y: 48 },
+      { x: 72, y: 42 },
+      { x: 82, y: 50 },
+      { x: 90, y: 56 }
     ]
   },
   3: {
-    base: { x: 8, y: 58 },
+    base: { x: 88, y: 54 },
     defenderSlots: [
-      { x: 31, y: 61, progress: 0.69, facing: "right" },
-      { x: 56, y: 60, progress: 0.47, facing: "left" },
-      { x: 42, y: 42, progress: 0.32, facing: "right" },
-      { x: 73, y: 36, progress: 0.17, facing: "left" }
+      { x: 26, y: 26, progress: 0.18, facing: "right" },
+      { x: 24, y: 66, progress: 0.3, facing: "right" },
+      { x: 72, y: 28, progress: 0.7, facing: "left" },
+      { x: 70, y: 66, progress: 0.8, facing: "left" }
     ],
     enemyPath: [
-      { x: 91, y: 38 },
-      { x: 78, y: 39 },
-      { x: 66, y: 47 },
-      { x: 56, y: 59 },
-      { x: 43, y: 60 },
-      { x: 30, y: 61 },
-      { x: 17, y: 59 },
-      { x: 8, y: 58 }
+      { x: 12, y: 24 },
+      { x: 24, y: 30 },
+      { x: 36, y: 34 },
+      { x: 48, y: 42 },
+      { x: 56, y: 52 },
+      { x: 64, y: 48 },
+      { x: 74, y: 44 },
+      { x: 84, y: 50 },
+      { x: 88, y: 54 }
     ]
   },
   4: {
-    base: { x: 7, y: 71 },
+    base: { x: 89, y: 58 },
     defenderSlots: [
-      { x: 30, y: 70, progress: 0.71, facing: "right" },
-      { x: 57, y: 69, progress: 0.47, facing: "left" },
-      { x: 42, y: 49, progress: 0.33, facing: "right" },
-      { x: 75, y: 48, progress: 0.16, facing: "left" }
+      { x: 27, y: 28, progress: 0.18, facing: "right" },
+      { x: 24, y: 70, progress: 0.32, facing: "right" },
+      { x: 72, y: 30, progress: 0.7, facing: "left" },
+      { x: 70, y: 70, progress: 0.82, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 48 },
-      { x: 80, y: 48 },
-      { x: 69, y: 57 },
-      { x: 57, y: 68 },
-      { x: 44, y: 69 },
-      { x: 30, y: 70 },
-      { x: 17, y: 71 },
-      { x: 7, y: 71 }
+      { x: 12, y: 26 },
+      { x: 24, y: 32 },
+      { x: 36, y: 36 },
+      { x: 48, y: 44 },
+      { x: 56, y: 54 },
+      { x: 66, y: 50 },
+      { x: 76, y: 48 },
+      { x: 86, y: 54 },
+      { x: 89, y: 58 }
     ]
   },
   5: {
-    base: { x: 8, y: 63 },
+    base: { x: 88, y: 52 },
     defenderSlots: [
-      { x: 33, y: 66, progress: 0.7, facing: "right" },
-      { x: 60, y: 64, progress: 0.47, facing: "left" },
-      { x: 43, y: 45, progress: 0.32, facing: "right" },
-      { x: 75, y: 39, progress: 0.17, facing: "left" }
+      { x: 28, y: 26, progress: 0.18, facing: "right" },
+      { x: 24, y: 68, progress: 0.3, facing: "right" },
+      { x: 74, y: 26, progress: 0.72, facing: "left" },
+      { x: 72, y: 68, progress: 0.8, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 41 },
-      { x: 80, y: 42 },
-      { x: 70, y: 52 },
-      { x: 60, y: 63 },
-      { x: 47, y: 65 },
-      { x: 33, y: 66 },
-      { x: 19, y: 64 },
-      { x: 8, y: 63 }
+      { x: 12, y: 24 },
+      { x: 24, y: 30 },
+      { x: 36, y: 34 },
+      { x: 48, y: 42 },
+      { x: 58, y: 50 },
+      { x: 68, y: 46 },
+      { x: 78, y: 44 },
+      { x: 86, y: 50 },
+      { x: 88, y: 52 }
     ]
   },
   6: {
-    base: { x: 7, y: 74 },
+    base: { x: 89, y: 60 },
     defenderSlots: [
-      { x: 31, y: 74, progress: 0.7, facing: "right" },
-      { x: 58, y: 72, progress: 0.48, facing: "left" },
-      { x: 42, y: 52, progress: 0.33, facing: "right" },
-      { x: 75, y: 50, progress: 0.16, facing: "left" }
+      { x: 28, y: 28, progress: 0.18, facing: "right" },
+      { x: 24, y: 70, progress: 0.32, facing: "right" },
+      { x: 74, y: 28, progress: 0.7, facing: "left" },
+      { x: 72, y: 70, progress: 0.82, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 52 },
-      { x: 80, y: 52 },
-      { x: 69, y: 62 },
-      { x: 58, y: 72 },
-      { x: 45, y: 73 },
-      { x: 31, y: 74 },
-      { x: 18, y: 74 },
-      { x: 7, y: 74 }
+      { x: 12, y: 28 },
+      { x: 24, y: 34 },
+      { x: 36, y: 38 },
+      { x: 48, y: 46 },
+      { x: 58, y: 56 },
+      { x: 68, y: 52 },
+      { x: 78, y: 50 },
+      { x: 86, y: 56 },
+      { x: 89, y: 60 }
     ]
   },
   7: {
-    base: { x: 8, y: 68 },
+    base: { x: 88, y: 54 },
     defenderSlots: [
-      { x: 34, y: 69, progress: 0.68, facing: "right" },
-      { x: 61, y: 67, progress: 0.46, facing: "left" },
-      { x: 45, y: 45, progress: 0.32, facing: "right" },
-      { x: 76, y: 40, progress: 0.16, facing: "left" }
+      { x: 28, y: 26, progress: 0.18, facing: "right" },
+      { x: 24, y: 68, progress: 0.3, facing: "right" },
+      { x: 74, y: 26, progress: 0.72, facing: "left" },
+      { x: 72, y: 68, progress: 0.8, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 41 },
-      { x: 79, y: 41 },
-      { x: 70, y: 52 },
-      { x: 61, y: 67 },
-      { x: 48, y: 68 },
-      { x: 34, y: 69 },
-      { x: 20, y: 68 },
-      { x: 8, y: 68 }
+      { x: 12, y: 24 },
+      { x: 24, y: 30 },
+      { x: 36, y: 36 },
+      { x: 48, y: 44 },
+      { x: 58, y: 52 },
+      { x: 68, y: 48 },
+      { x: 78, y: 46 },
+      { x: 86, y: 52 },
+      { x: 88, y: 54 }
     ]
   },
   8: {
-    base: { x: 8, y: 75 },
+    base: { x: 89, y: 58 },
     defenderSlots: [
-      { x: 34, y: 76, progress: 0.71, facing: "right" },
-      { x: 62, y: 74, progress: 0.47, facing: "left" },
-      { x: 47, y: 51, progress: 0.31, facing: "right" },
-      { x: 76, y: 48, progress: 0.16, facing: "left" }
+      { x: 28, y: 28, progress: 0.18, facing: "right" },
+      { x: 24, y: 70, progress: 0.32, facing: "right" },
+      { x: 74, y: 28, progress: 0.7, facing: "left" },
+      { x: 72, y: 70, progress: 0.82, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 50 },
-      { x: 80, y: 50 },
-      { x: 71, y: 62 },
-      { x: 62, y: 73 },
-      { x: 48, y: 75 },
-      { x: 34, y: 76 },
-      { x: 20, y: 76 },
-      { x: 8, y: 75 }
+      { x: 12, y: 26 },
+      { x: 24, y: 32 },
+      { x: 36, y: 38 },
+      { x: 48, y: 46 },
+      { x: 58, y: 54 },
+      { x: 68, y: 50 },
+      { x: 78, y: 48 },
+      { x: 86, y: 54 },
+      { x: 89, y: 58 }
     ]
   },
   9: {
-    base: { x: 8, y: 70 },
+    base: { x: 88, y: 54 },
     defenderSlots: [
-      { x: 35, y: 71, progress: 0.69, facing: "right" },
-      { x: 63, y: 70, progress: 0.46, facing: "left" },
-      { x: 47, y: 48, progress: 0.31, facing: "right" },
-      { x: 77, y: 44, progress: 0.15, facing: "left" }
+      { x: 28, y: 26, progress: 0.18, facing: "right" },
+      { x: 24, y: 68, progress: 0.3, facing: "right" },
+      { x: 74, y: 26, progress: 0.72, facing: "left" },
+      { x: 72, y: 68, progress: 0.8, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 45 },
-      { x: 80, y: 45 },
-      { x: 72, y: 57 },
-      { x: 63, y: 69 },
-      { x: 49, y: 70 },
-      { x: 35, y: 71 },
-      { x: 21, y: 70 },
-      { x: 8, y: 70 }
+      { x: 12, y: 24 },
+      { x: 24, y: 30 },
+      { x: 36, y: 36 },
+      { x: 48, y: 44 },
+      { x: 58, y: 52 },
+      { x: 68, y: 48 },
+      { x: 78, y: 46 },
+      { x: 86, y: 52 },
+      { x: 88, y: 54 }
     ]
   },
   10: {
-    base: { x: 7, y: 76 },
+    base: { x: 50, y: 48 },
     defenderSlots: [
-      { x: 34, y: 77, progress: 0.72, facing: "right" },
-      { x: 66, y: 76, progress: 0.46, facing: "left" },
-      { x: 46, y: 47, progress: 0.31, facing: "right" },
-      { x: 78, y: 42, progress: 0.14, facing: "left" }
+      { x: 26, y: 36, progress: 0.22, facing: "right" },
+      { x: 28, y: 70, progress: 0.5, facing: "right" },
+      { x: 64, y: 70, progress: 0.62, facing: "left" },
+      { x: 76, y: 30, progress: 0.2, facing: "left" }
     ],
     enemyPath: [
-      { x: 94, y: 43 },
-      { x: 81, y: 43 },
-      { x: 73, y: 57 },
-      { x: 66, y: 75 },
-      { x: 50, y: 76 },
-      { x: 34, y: 77 },
-      { x: 20, y: 77 },
-      { x: 7, y: 76 }
+      { x: 14, y: 22 },
+      { x: 20, y: 32 },
+      { x: 26, y: 40 },
+      { x: 22, y: 54 },
+      { x: 28, y: 68 },
+      { x: 42, y: 74 },
+      { x: 56, y: 70 },
+      { x: 58, y: 58 },
+      { x: 52, y: 52 },
+      { x: 50, y: 48 }
     ]
   }
 };
 
 const mapTwoBattleLayouts: Record<number, RaidBattleLayout> = {
   1: {
-    base: { x: 9, y: 59 },
+    base: { x: 90, y: 58 },
     defenderSlots: [
-      { x: 23, y: 58, progress: 0.78, facing: "right" },
-      { x: 39, y: 55, progress: 0.58, facing: "right" },
-      { x: 58, y: 53, progress: 0.37, facing: "left" },
-      { x: 78, y: 49, progress: 0.17, facing: "left" }
+      { x: 24, y: 58, progress: 0.2, facing: "right" },
+      { x: 40, y: 54, progress: 0.38, facing: "right" },
+      { x: 60, y: 52, progress: 0.62, facing: "left" },
+      { x: 78, y: 48, progress: 0.82, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 48 },
-      { x: 82, y: 48 },
-      { x: 72, y: 50 },
-      { x: 62, y: 53 },
-      { x: 51, y: 54 },
-      { x: 40, y: 55 },
-      { x: 29, y: 57 },
-      { x: 19, y: 58 },
-      { x: 9, y: 59 }
+      { x: 10, y: 56 },
+      { x: 20, y: 55 },
+      { x: 32, y: 54 },
+      { x: 44, y: 53 },
+      { x: 56, y: 52 },
+      { x: 68, y: 50 },
+      { x: 80, y: 50 },
+      { x: 90, y: 58 }
     ]
   },
   2: {
-    base: { x: 12, y: 63 },
+    base: { x: 90, y: 56 },
     defenderSlots: [
-      { x: 28, y: 64, progress: 0.76, facing: "right" },
-      { x: 45, y: 60, progress: 0.56, facing: "right" },
-      { x: 61, y: 52, progress: 0.35, facing: "left" },
-      { x: 79, y: 42, progress: 0.15, facing: "left" }
+      { x: 26, y: 60, progress: 0.22, facing: "right" },
+      { x: 44, y: 56, progress: 0.42, facing: "right" },
+      { x: 62, y: 48, progress: 0.64, facing: "left" },
+      { x: 80, y: 40, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 91, y: 38 },
-      { x: 82, y: 40 },
-      { x: 73, y: 44 },
-      { x: 64, y: 51 },
-      { x: 55, y: 57 },
-      { x: 45, y: 60 },
-      { x: 34, y: 63 },
-      { x: 23, y: 64 },
-      { x: 12, y: 63 }
+      { x: 12, y: 62 },
+      { x: 24, y: 60 },
+      { x: 36, y: 58 },
+      { x: 48, y: 54 },
+      { x: 58, y: 50 },
+      { x: 68, y: 44 },
+      { x: 80, y: 40 },
+      { x: 90, y: 56 }
     ]
   },
   3: {
-    base: { x: 10, y: 55 },
+    base: { x: 90, y: 52 },
     defenderSlots: [
-      { x: 27, y: 56, progress: 0.76, facing: "right" },
-      { x: 44, y: 51, progress: 0.56, facing: "right" },
-      { x: 61, y: 46, progress: 0.35, facing: "left" },
-      { x: 80, y: 40, progress: 0.14, facing: "left" }
+      { x: 26, y: 54, progress: 0.22, facing: "right" },
+      { x: 44, y: 50, progress: 0.42, facing: "right" },
+      { x: 62, y: 46, progress: 0.64, facing: "left" },
+      { x: 80, y: 40, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 37 },
-      { x: 83, y: 39 },
-      { x: 74, y: 41 },
-      { x: 64, y: 45 },
-      { x: 54, y: 49 },
-      { x: 44, y: 51 },
-      { x: 33, y: 54 },
-      { x: 21, y: 56 },
-      { x: 10, y: 55 }
+      { x: 12, y: 54 },
+      { x: 24, y: 54 },
+      { x: 36, y: 52 },
+      { x: 48, y: 50 },
+      { x: 60, y: 46 },
+      { x: 72, y: 42 },
+      { x: 82, y: 40 },
+      { x: 90, y: 52 }
     ]
   },
   4: {
-    base: { x: 11, y: 67 },
+    base: { x: 90, y: 62 },
     defenderSlots: [
-      { x: 28, y: 66, progress: 0.78, facing: "right" },
-      { x: 45, y: 63, progress: 0.57, facing: "right" },
-      { x: 62, y: 58, progress: 0.36, facing: "left" },
-      { x: 80, y: 53, progress: 0.15, facing: "left" }
+      { x: 26, y: 64, progress: 0.22, facing: "right" },
+      { x: 44, y: 60, progress: 0.42, facing: "right" },
+      { x: 62, y: 56, progress: 0.64, facing: "left" },
+      { x: 80, y: 52, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 52 },
-      { x: 83, y: 52 },
-      { x: 74, y: 54 },
-      { x: 64, y: 58 },
-      { x: 55, y: 61 },
-      { x: 45, y: 63 },
-      { x: 34, y: 65 },
-      { x: 22, y: 66 },
-      { x: 11, y: 67 }
+      { x: 12, y: 64 },
+      { x: 24, y: 63 },
+      { x: 36, y: 62 },
+      { x: 48, y: 60 },
+      { x: 60, y: 58 },
+      { x: 72, y: 54 },
+      { x: 82, y: 52 },
+      { x: 90, y: 62 }
     ]
   },
   5: {
-    base: { x: 12, y: 58 },
+    base: { x: 90, y: 54 },
     defenderSlots: [
-      { x: 29, y: 59, progress: 0.76, facing: "right" },
-      { x: 47, y: 56, progress: 0.55, facing: "right" },
-      { x: 63, y: 48, progress: 0.34, facing: "left" },
-      { x: 81, y: 39, progress: 0.14, facing: "left" }
+      { x: 28, y: 58, progress: 0.22, facing: "right" },
+      { x: 46, y: 54, progress: 0.42, facing: "right" },
+      { x: 64, y: 48, progress: 0.64, facing: "left" },
+      { x: 80, y: 40, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 36 },
-      { x: 84, y: 38 },
-      { x: 75, y: 41 },
-      { x: 66, y: 47 },
-      { x: 57, y: 53 },
-      { x: 47, y: 56 },
-      { x: 36, y: 58 },
-      { x: 24, y: 59 },
-      { x: 12, y: 58 }
+      { x: 12, y: 58 },
+      { x: 26, y: 57 },
+      { x: 38, y: 56 },
+      { x: 50, y: 54 },
+      { x: 62, y: 50 },
+      { x: 74, y: 44 },
+      { x: 84, y: 40 },
+      { x: 90, y: 54 }
     ]
   },
   6: {
-    base: { x: 10, y: 64 },
+    base: { x: 90, y: 58 },
     defenderSlots: [
-      { x: 27, y: 64, progress: 0.77, facing: "right" },
-      { x: 43, y: 60, progress: 0.57, facing: "right" },
-      { x: 61, y: 54, progress: 0.36, facing: "left" },
-      { x: 80, y: 47, progress: 0.15, facing: "left" }
+      { x: 26, y: 62, progress: 0.22, facing: "right" },
+      { x: 44, y: 58, progress: 0.42, facing: "right" },
+      { x: 62, y: 52, progress: 0.64, facing: "left" },
+      { x: 80, y: 46, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 92, y: 45 },
-      { x: 83, y: 46 },
-      { x: 74, y: 48 },
-      { x: 64, y: 53 },
-      { x: 54, y: 57 },
-      { x: 43, y: 60 },
-      { x: 32, y: 63 },
-      { x: 21, y: 64 },
-      { x: 10, y: 64 }
+      { x: 12, y: 62 },
+      { x: 24, y: 61 },
+      { x: 36, y: 60 },
+      { x: 48, y: 56 },
+      { x: 60, y: 52 },
+      { x: 72, y: 48 },
+      { x: 82, y: 46 },
+      { x: 90, y: 58 }
     ]
   },
   7: {
-    base: { x: 12, y: 69 },
+    base: { x: 90, y: 64 },
     defenderSlots: [
-      { x: 30, y: 68, progress: 0.77, facing: "right" },
-      { x: 48, y: 65, progress: 0.55, facing: "right" },
-      { x: 64, y: 57, progress: 0.35, facing: "left" },
-      { x: 82, y: 48, progress: 0.14, facing: "left" }
+      { x: 28, y: 66, progress: 0.22, facing: "right" },
+      { x: 46, y: 62, progress: 0.42, facing: "right" },
+      { x: 64, y: 56, progress: 0.64, facing: "left" },
+      { x: 82, y: 48, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 93, y: 47 },
+      { x: 12, y: 66 },
+      { x: 26, y: 65 },
+      { x: 38, y: 64 },
+      { x: 50, y: 60 },
+      { x: 62, y: 56 },
+      { x: 74, y: 50 },
       { x: 84, y: 48 },
-      { x: 76, y: 51 },
-      { x: 67, y: 56 },
-      { x: 58, y: 62 },
-      { x: 48, y: 65 },
-      { x: 37, y: 67 },
-      { x: 25, y: 69 },
-      { x: 12, y: 69 }
+      { x: 90, y: 64 }
     ]
   },
   8: {
-    base: { x: 11, y: 61 },
+    base: { x: 90, y: 56 },
     defenderSlots: [
-      { x: 29, y: 62, progress: 0.76, facing: "right" },
-      { x: 46, y: 59, progress: 0.56, facing: "right" },
-      { x: 63, y: 52, progress: 0.35, facing: "left" },
-      { x: 82, y: 43, progress: 0.14, facing: "left" }
+      { x: 28, y: 60, progress: 0.22, facing: "right" },
+      { x: 46, y: 56, progress: 0.42, facing: "right" },
+      { x: 64, y: 50, progress: 0.64, facing: "left" },
+      { x: 82, y: 42, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 94, y: 41 },
-      { x: 85, y: 42 },
-      { x: 76, y: 45 },
-      { x: 66, y: 51 },
-      { x: 56, y: 56 },
-      { x: 46, y: 59 },
-      { x: 35, y: 61 },
-      { x: 23, y: 62 },
-      { x: 11, y: 61 }
+      { x: 12, y: 60 },
+      { x: 26, y: 58 },
+      { x: 38, y: 56 },
+      { x: 50, y: 54 },
+      { x: 62, y: 50 },
+      { x: 74, y: 44 },
+      { x: 84, y: 42 },
+      { x: 90, y: 56 }
     ]
   },
   9: {
-    base: { x: 10, y: 66 },
+    base: { x: 90, y: 60 },
     defenderSlots: [
-      { x: 28, y: 66, progress: 0.77, facing: "right" },
-      { x: 46, y: 61, progress: 0.56, facing: "right" },
-      { x: 64, y: 55, progress: 0.35, facing: "left" },
-      { x: 83, y: 47, progress: 0.14, facing: "left" }
+      { x: 28, y: 64, progress: 0.22, facing: "right" },
+      { x: 46, y: 58, progress: 0.42, facing: "right" },
+      { x: 64, y: 54, progress: 0.64, facing: "left" },
+      { x: 82, y: 46, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 94, y: 46 },
-      { x: 85, y: 47 },
-      { x: 76, y: 50 },
-      { x: 67, y: 54 },
-      { x: 57, y: 58 },
-      { x: 46, y: 61 },
-      { x: 35, y: 64 },
-      { x: 23, y: 66 },
-      { x: 10, y: 66 }
+      { x: 12, y: 64 },
+      { x: 26, y: 62 },
+      { x: 38, y: 60 },
+      { x: 50, y: 56 },
+      { x: 62, y: 52 },
+      { x: 74, y: 48 },
+      { x: 84, y: 46 },
+      { x: 90, y: 60 }
     ]
   },
   10: {
-    base: { x: 9, y: 58 },
+    base: { x: 90, y: 54 },
     defenderSlots: [
-      { x: 28, y: 59, progress: 0.78, facing: "right" },
-      { x: 47, y: 56, progress: 0.56, facing: "right" },
-      { x: 65, y: 49, progress: 0.34, facing: "left" },
-      { x: 84, y: 42, progress: 0.13, facing: "left" }
+      { x: 28, y: 58, progress: 0.22, facing: "right" },
+      { x: 46, y: 54, progress: 0.42, facing: "right" },
+      { x: 64, y: 48, progress: 0.64, facing: "left" },
+      { x: 82, y: 42, progress: 0.84, facing: "left" }
     ],
     enemyPath: [
-      { x: 94, y: 41 },
-      { x: 85, y: 42 },
-      { x: 77, y: 44 },
-      { x: 68, y: 48 },
-      { x: 58, y: 53 },
-      { x: 47, y: 56 },
-      { x: 36, y: 58 },
-      { x: 23, y: 59 },
-      { x: 9, y: 58 }
+      { x: 12, y: 58 },
+      { x: 26, y: 56 },
+      { x: 38, y: 54 },
+      { x: 50, y: 52 },
+      { x: 62, y: 48 },
+      { x: 74, y: 44 },
+      { x: 84, y: 42 },
+      { x: 90, y: 54 }
     ]
   }
 };

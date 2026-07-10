@@ -23,14 +23,24 @@ describe("raid lane combat", () => {
       })),
       stage
     );
-    expect(party.map((member) => member.position)).toEqual([0.45, 0.12, 0.78, 0.22]);
+    expect(party.map((member) => member.position)).toEqual([0.22, 0.48, 0.62, 0.18]);
   });
 
   it("uses a curved stage 1-1 path that follows the map road", () => {
     const yPoints = new Set(stage.battleLayout.enemyPath.map((point) => point.y));
-    expect(stage.battleLayout.base).toEqual({ x: 8, y: 24 });
-    expect(stage.battleLayout.enemyPath[0]).toEqual({ x: 78, y: 75 });
+    expect(stage.battleLayout.base).toEqual({ x: 50, y: 48 });
+    expect(stage.battleLayout.enemyPath[0]).toEqual({ x: 14, y: 20 });
     expect(yPoints.size).toBeGreaterThan(6);
+  });
+
+  it("spawns multiple spaced enemies per wave instead of one stacked unit", () => {
+    const battle = createRaidBattle(stage, [
+      { playerId: "storm", displayName: "Storm", heroId: "storm-archer", power: 500 }
+    ]);
+    const afterStart = tickRaidBattle(battle, stage);
+    expect(afterStart.enemies.length).toBeGreaterThanOrEqual(3);
+    const progresses = afterStart.enemies.map((enemy) => enemy.progress);
+    expect(new Set(progresses.map((value) => value.toFixed(3))).size).toBe(afterStart.enemies.length);
   });
 
   it("damages enemies using their visual map-path distance", () => {

@@ -83,14 +83,16 @@ describe("raid battle layouts", () => {
   it("places stage 1-1 guardians on the visible arena circles and routes enemies toward the wardstone", () => {
     const stage = mapOne.stages[0];
     expect(stage.battleLayout.defenderSlots.map(({ x, y, progress }) => ({ x, y, progress }))).toEqual([
-      { x: 29, y: 77, progress: 0.45 },
-      { x: 68, y: 77, progress: 0.12 },
-      { x: 31, y: 39, progress: 0.78 },
-      { x: 74, y: 31, progress: 0.22 }
+      { x: 27, y: 38, progress: 0.22 },
+      { x: 30, y: 68, progress: 0.48 },
+      { x: 62, y: 68, progress: 0.62 },
+      { x: 78, y: 28, progress: 0.18 }
     ]);
-    expect(stage.battleLayout.enemyPath[0].x).toBeGreaterThan(stage.battleLayout.enemyPath.at(-1)!.x);
+    // Enemies enter from the purple portal (left/top) and march to the crystal tower.
+    expect(stage.battleLayout.enemyPath[0].x).toBeLessThan(stage.battleLayout.enemyPath.at(-1)!.x);
     expect(new Set(stage.battleLayout.enemyPath.map((point) => point.y)).size).toBeGreaterThan(6);
-    expect(stage.battleLayout.base).toEqual({ x: 8, y: 24 });
+    expect(stage.battleLayout.base).toEqual({ x: 50, y: 48 });
+    expect(stage.battleLayout.enemyPath[0]).toEqual({ x: 14, y: 20 });
   });
 
   it("does not reuse Map 1 paths for later chapters", () => {
@@ -102,7 +104,7 @@ describe("raid battle layouts", () => {
     for (const stage of mapTwo.stages) {
       expect(stage.thumbnailPath).toMatch(new RegExp(`/assets/raids/stages/stage-2-${stage.stageIndex}-`));
       expect(stage.largePreviewPath).toBe(stage.thumbnailPath);
-      expect(stage.battleLayout.enemyPath[0].x).toBeGreaterThan(stage.battleLayout.enemyPath.at(-1)!.x);
+      expect(stage.battleLayout.enemyPath.length).toBeGreaterThanOrEqual(8);
       expect(new Set(stage.battleLayout.enemyPath.map((point) => point.y)).size).toBeGreaterThan(3);
     }
   });

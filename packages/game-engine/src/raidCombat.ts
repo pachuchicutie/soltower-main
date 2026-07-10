@@ -134,6 +134,7 @@ export function tickRaidBattle(
   const stepSeconds = deltaMs / 1000;
   for (const enemy of next.enemies) {
     if (enemy.hp <= 0) continue;
+    // Pre-spawn (progress < 0) still advances so the pack streams onto the road.
     enemy.progress = Math.min(1, enemy.progress + (enemy.speed / 100) * stepSeconds);
     if (enemy.progress >= 1) {
       enemy.hp = 0;
@@ -197,6 +198,8 @@ function spawnWaveEnemies(stage: RaidStageDefinition, waveIndex: number): RaidEn
   const wave = stage.waves[waveIndex];
   if (!wave) return [];
   const stageScale = 0.86 + stage.stageIndex * 0.045;
+  // Stagger spawn spacing along the path so packs are visibly multiple units, not one stacked sprite.
+  const spacing = Math.max(0.1, Math.min(0.18, 0.55 / Math.max(1, wave.count)));
   return Array.from({ length: wave.count }, (_, index) => ({
     id: `${stage.id}-${wave.wave}-${index}`,
     enemyKey: wave.enemyKey,
@@ -204,15 +207,15 @@ function spawnWaveEnemies(stage: RaidStageDefinition, waveIndex: number): RaidEn
     hp: Math.round(wave.hp * stageScale),
     maxHp: Math.round(wave.hp * stageScale),
     speed: Math.max(4, wave.speed / 8.6) * (wave.boss ? 0.7 : 1),
-    progress: Math.max(0, -index * 0.05),
+    progress: -index * spacing,
     boss: Boolean(wave.boss)
   }));
 }
 
-function pointAlongRaidPath(path: RaidBattlePoint[], progress: number): RaidBattlePoint {
+/** Public path sampler used by combat + battle UI (supports pre-spawn progress < 0). */
+export function pointAlongRaidPath(path: RaidBattlePoint[], progress: number): RaidBattlePoint {
   if (path.length === 0) return { x: 50, y: 50 };
   if (path.length === 1) return path[0];
-  const clamped = Math.max(0, Math.min(1, progress));
   const segments = path.slice(0, -1).map((point, index) => {
     const next = path[index + 1];
     return {
@@ -223,12 +226,28 @@ function pointAlongRaidPath(path: RaidBattlePoint[], progress: number): RaidBatt
   });
   const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
   if (totalLength <= 0) return path[0];
+
+  // Before the portal: place enemies along the reverse of the first segment so packs fan out.
+  if (progress < 0) {
+    const first = segments[0];
+    const lead = Math.hypot(first.to.x - first.from.x, first.to.y - first.from.y) || 1;
+    const behind = Math.abs(progress) * totalLength;
+    const ux = (first.from.x - first.to.x) / lead;
+    const uy = (first.from.y - first.to.y) / lead;
+    return {
+      x: first.from.x + ux * behind,
+      y: first.from.y + uy * behind
+    };
+  }
+
+  const clamped = Math.min(1, progress);
   let distance = clamped * totalLength;
-  const segment = segments.find((candidate) => {
-    if (distance <= candidate.length) return true;
-    distance -= candidate.length;
-    return false;
-  }) ?? segments[segments.length - 1];
+  const segment =
+    segments.find((candidate) => {
+      if (distance <= candidate.length) return true;
+      distance -= candidate.length;
+      return false;
+    }) ?? segments[segments.length - 1];
   const local = segment.length <= 0 ? 0 : distance / segment.length;
   return {
     x: segment.from.x + (segment.to.x - segment.from.x) * local,

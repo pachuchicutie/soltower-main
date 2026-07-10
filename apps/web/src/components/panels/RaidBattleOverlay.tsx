@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Heart, Shield, Swords, Trophy, X } from "lucide-react";
 import {
   createRaidBattle,
+  pointAlongRaidPath,
   raidEnemyAssets,
   tickRaidBattle,
   RAID_COMBAT_TICK_MS,
@@ -162,7 +163,9 @@ export function RaidBattleOverlay({
               slot,
               combatant.range
             );
-            const targetPoint = target ? pointAlongPath(stage.battleLayout.enemyPath, target.progress) : null;
+            const targetPoint = target
+              ? pointAlongRaidPath(stage.battleLayout.enemyPath, target.progress)
+              : null;
             const effectDelta = targetPoint
               ? {
                   x: targetPoint.x - slot.x,
@@ -199,13 +202,18 @@ export function RaidBattleOverlay({
 
           {activeEnemies.map((enemy) => {
             const asset = raidEnemyAssets[enemy.enemyKey as keyof typeof raidEnemyAssets];
-            const point = pointAlongPath(stage.battleLayout.enemyPath, enemy.progress);
+            const point = pointAlongRaidPath(stage.battleLayout.enemyPath, enemy.progress);
+            // Hide far pre-spawn units that are still well off the portal edge.
+            if (enemy.progress < -0.45) {
+              return null;
+            }
             return (
               <div
                 className={`raid-enemy${enemy.boss ? " boss" : ""}`}
                 style={{
                   left: `${point.x}%`,
-                  top: `${point.y}%`
+                  top: `${point.y}%`,
+                  zIndex: 5 + Math.round(Math.max(0, enemy.progress) * 40)
                 }}
                 key={enemy.id}
               >
@@ -262,33 +270,6 @@ export function RaidBattleOverlay({
   );
 }
 
-function pointAlongPath(path: RaidBattlePoint[], progress: number): RaidBattlePoint {
-  if (path.length === 0) return { x: 50, y: 50 };
-  if (path.length === 1) return path[0];
-  const clamped = Math.max(0, Math.min(1, progress));
-  const segments = path.slice(0, -1).map((point, index) => {
-    const next = path[index + 1];
-    return {
-      from: point,
-      to: next,
-      length: Math.hypot(next.x - point.x, next.y - point.y)
-    };
-  });
-  const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
-  if (totalLength <= 0) return path[0];
-  let distance = clamped * totalLength;
-  const segment = segments.find((candidate) => {
-    if (distance <= candidate.length) return true;
-    distance -= candidate.length;
-    return false;
-  }) ?? segments[segments.length - 1];
-  const local = segment.length <= 0 ? 0 : distance / segment.length;
-  return {
-    x: segment.from.x + (segment.to.x - segment.from.x) * local,
-    y: segment.from.y + (segment.to.y - segment.from.y) * local
-  };
-}
-
 function pathToPolyline(path: RaidBattlePoint[]): string {
   return path.map((point) => `${point.x},${point.y}`).join(" ");
 }
@@ -300,9 +281,10 @@ function findCombatTarget(
   range: number
 ): RaidBattleRuntime["enemies"][number] | undefined {
   return enemies
+    .filter((enemy) => enemy.hp > 0 && enemy.progress >= -0.02)
     .map((enemy) => ({
       enemy,
-      distance: distanceBetween(slot, pointAlongPath(path, enemy.progress))
+      distance: distanceBetween(slot, pointAlongRaidPath(path, enemy.progress))
     }))
     .filter(({ distance }) => distance <= range * 115)
     .sort((left, right) => right.enemy.progress - left.enemy.progress)[0]?.enemy;
