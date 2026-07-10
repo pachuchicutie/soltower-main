@@ -46,6 +46,14 @@ export const raidRealtimeEventSchema = z.discriminatedUnion("kind", [
     sentAt: z.number().int().positive()
   }),
   z.object({
+    kind: z.literal("party_nudge"),
+    lobbyId: z.string().uuid(),
+    fromPlayerId: z.string().min(2).max(80),
+    fromDisplayName: z.string().min(1).max(24),
+    nudge: z.enum(["please_ready", "please_start"]),
+    sentAt: z.number().int().positive()
+  }),
+  z.object({
     kind: z.literal("combat_snapshot"),
     runId: z.string().uuid(),
     sequence: realtimeSequenceSchema,

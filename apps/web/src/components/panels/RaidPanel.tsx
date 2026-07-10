@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
+  Bell,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -85,6 +86,15 @@ interface ActiveRaid {
   startsAt: number;
 }
 
+interface PartyNudgeToast {
+  id: string;
+  message: string;
+  tone: "ready" | "start" | "info";
+  createdAt: number;
+}
+
+const PARTY_NUDGE_COOLDOWN_MS = 10_000;
+
 export function RaidPanel() {
   const queryClient = useQueryClient();
   const [chapterIndex, setChapterIndex] = useState(0);
@@ -97,7 +107,10 @@ export function RaidPanel() {
   const [now, setNow] = useState(() => Date.now());
   const [activeRaid, setActiveRaid] = useState<ActiveRaid | null>(null);
   const [lobbyActionError, setLobbyActionError] = useState<string | null>(null);
+  const [partyNudgeToasts, setPartyNudgeToasts] = useState<PartyNudgeToast[]>([]);
+  const [nudgeCooldownUntil, setNudgeCooldownUntil] = useState(0);
   const raidChannelRef = useRef<RealtimeChannel | null>(null);
+  const meDisplayNameRef = useRef("Guardian");
   const stagePageSize = useResponsiveStagePageSize();
 
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<PlayerMeResponse>("/api/player/me") });
@@ -116,6 +129,10 @@ export function RaidPanel() {
   const completedStageIds = useMemo(() => me.data?.player?.unlockedMaps ?? [], [me.data?.player?.unlockedMaps]);
   const selectedHeroId = me.data?.selectedHeroId ?? me.data?.profile?.selectedHero ?? "storm-archer";
   const currentPlayerId = me.data?.player?.id;
+  const currentDisplayName = me.data?.player?.displayName ?? "Guardian";
+  meDisplayNameRef.current = currentDisplayName;
+  const nudgeCooldownRemainingMs = Math.max(0, nudgeCooldownUntil - now);
+  const nudgeOnCooldown = nudgeCooldownRemainingMs > 0;
   const currentChapter = raidChapters[chapterIndex];
   const stagePageCount = Math.max(1, Math.ceil(currentChapter.stages.length / stagePageSize));
   const visibleStages = getPaginatedRaidStages(currentChapter.stages, stagePage, stagePageSize);
@@ -190,6 +207,19 @@ export function RaidPanel() {
   const activeRaidMembers = activeRaid ? getRaidBattleMembers(activeRaid.lobby, currentPlayerId) : [];
   const otherStagePartyCount = Math.max(0, validOpenLobbies.length - openLobbiesForStage.length);
 
+  const pushPartyNudgeToast = (message: string, tone: PartyNudgeToast["tone"]) => {
+    const toast: PartyNudgeToast = {
+      id: crypto.randomUUID(),
+      message,
+      tone,
+      createdAt: Date.now()
+    };
+    setPartyNudgeToasts((current) => [...current.slice(-4), toast]);
+    window.setTimeout(() => {
+      setPartyNudgeToasts((current) => current.filter((entry) => entry.id !== toast.id));
+    }, 5_500);
+  };
+
   useEffect(() => {
     const client = createBrowserSupabaseClient();
     const lobbyId = currentOpenLobbyRef.current?.id;
@@ -199,11 +229,32 @@ export function RaidPanel() {
     }
     const channel = client
       .channel(`raid:${lobbyId}`, {
-        config: { broadcast: { ack: false, self: false } }
+        config: { broadcast: { ack: false, self: true } }
       })
       .on("broadcast", { event: "raid_event" }, ({ payload }) => {
         const parsed = raidRealtimeEventSchema.safeParse(payload);
-        if (!parsed.success || parsed.data.kind !== "raid_start") {
+        if (!parsed.success) {
+          return;
+        }
+        if (parsed.data.kind === "party_nudge") {
+          const event = parsed.data;
+          const lobby = currentOpenLobbyRef.current;
+          if (!lobby || event.lobbyId !== lobby.id) {
+            return;
+          }
+          // Sender already sees a local confirmation — skip duplicate echo for them.
+          if (event.fromPlayerId === currentPlayerId) {
+            return;
+          }
+          playUiSound("interactionOpen", { throttleMs: 400 });
+          if (event.nudge === "please_ready") {
+            pushPartyNudgeToast(`${event.fromDisplayName}: Please ready up!`, "ready");
+          } else {
+            pushPartyNudgeToast(`${event.fromDisplayName}: Please start the raid!`, "start");
+          }
+          return;
+        }
+        if (parsed.data.kind !== "raid_start") {
           return;
         }
         const event = parsed.data;
@@ -237,7 +288,50 @@ export function RaidPanel() {
       raidChannelRef.current = null;
       void client.removeChannel(channel);
     };
-  }, [currentOpenLobby?.id]);
+  }, [currentOpenLobby?.id, currentPlayerId, queryClient]);
+
+  const sendPartyNudge = (lobby: Lobby, nudge: "please_ready" | "please_start") => {
+    if (!currentPlayerId) {
+      return;
+    }
+    const nowMs = Date.now();
+    if (nowMs < nudgeCooldownUntil) {
+      pushPartyNudgeToast(
+        `Wait ${Math.ceil((nudgeCooldownUntil - nowMs) / 1000)}s before sending another alert.`,
+        "info"
+      );
+      return;
+    }
+    if (!raidChannelRef.current) {
+      pushPartyNudgeToast("Party channel is still connecting — try again in a moment.", "info");
+      return;
+    }
+    const event: RaidRealtimeEvent = {
+      kind: "party_nudge",
+      lobbyId: lobby.id,
+      fromPlayerId: currentPlayerId,
+      fromDisplayName: meDisplayNameRef.current.slice(0, 24) || "Guardian",
+      nudge,
+      sentAt: nowMs
+    };
+    void raidChannelRef.current
+      .send({
+        type: "broadcast",
+        event: "raid_event",
+        payload: raidRealtimeEventSchema.parse(event)
+      })
+      .then(() => {
+        setNudgeCooldownUntil(nowMs + PARTY_NUDGE_COOLDOWN_MS);
+        playUiSound("interactionOpen", { throttleMs: 300 });
+        pushPartyNudgeToast(
+          nudge === "please_ready" ? "Ready alert sent to the party." : "Start alert sent to the host.",
+          "info"
+        );
+      })
+      .catch(() => {
+        pushPartyNudgeToast("Could not send party alert. Try again.", "info");
+      });
+  };
 
   const create = useMutation({
     mutationFn: (lobbyType: "PUBLIC" | "PRIVATE") => {
@@ -554,6 +648,16 @@ export function RaidPanel() {
 
   return (
     <div className="raid-board-v2" data-testid="raid-board">
+      {partyNudgeToasts.length > 0 ? (
+        <div className="raid-party-toast-stack" aria-live="polite" aria-atomic="false">
+          {partyNudgeToasts.map((toast) => (
+            <div key={toast.id} className={`raid-party-toast raid-party-toast-${toast.tone}`} role="status">
+              <Bell size={16} aria-hidden="true" />
+              <span>{toast.message}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {activeRaid ? (
         <RaidBattleOverlay
           stage={activeRaid.stage}
@@ -895,6 +999,10 @@ export function RaidPanel() {
                     setLobbyActionError(null);
                     beginLobbyRaid.mutate(lobby);
                   }}
+                  onNudgeReady={() => sendPartyNudge(lobby, "please_ready")}
+                  onNudgeStart={() => sendPartyNudge(lobby, "please_start")}
+                  nudgeOnCooldown={nudgeOnCooldown}
+                  nudgeCooldownSeconds={Math.ceil(nudgeCooldownRemainingMs / 1000)}
                   joining={quickJoin.isPending}
                   leaving={leaveLobby.isPending}
                   readying={setReadyState.isPending}
@@ -999,6 +1107,10 @@ function LobbyCard({
   onReady,
   onKick,
   onStart,
+  onNudgeReady,
+  onNudgeStart,
+  nudgeOnCooldown,
+  nudgeCooldownSeconds,
   joining,
   leaving,
   readying,
@@ -1016,6 +1128,10 @@ function LobbyCard({
   onReady: (ready: boolean) => void;
   onKick: (playerId: string) => void;
   onStart: () => void;
+  onNudgeReady: () => void;
+  onNudgeStart: () => void;
+  nudgeOnCooldown: boolean;
+  nudgeCooldownSeconds: number;
   joining: boolean;
   leaving: boolean;
   readying: boolean;
@@ -1028,7 +1144,10 @@ function LobbyCard({
   const alreadyJoined = lobby.members.some((member) => member.playerId === currentPlayerId);
   const inAnotherLobby = Boolean(currentOpenLobbyId && currentOpenLobbyId !== lobby.id);
   const nonHostMembersReady = lobby.members.every((member) => member.host || member.ready);
+  const someoneNotReady = lobby.members.some((member) => !member.host && !member.ready);
   const canStart = isHost && lobby.members.length >= 1 && nonHostMembersReady;
+  const canNudgeReady = alreadyJoined && someoneNotReady;
+  const canNudgeStart = alreadyJoined && !isHost;
   const lobbyType = lobby.lobbyType === "PRIVATE" ? "Private" : "Public";
   const hostName = safeGuardianName(host?.displayName, host?.playerId);
   const remainingNeededHeroIds = getRemainingNeededHeroIds(lobby);
@@ -1122,6 +1241,38 @@ function LobbyCard({
             {!isHost ? (
               <button type="button" disabled={readying} onClick={() => onReady(!currentMember?.ready)}>
                 <ShieldCheck size={15} /> {currentMember?.ready ? "Unready" : "Ready"}
+              </button>
+            ) : null}
+            {canNudgeReady ? (
+              <button
+                type="button"
+                className="raid-nudge-button"
+                disabled={nudgeOnCooldown}
+                onClick={onNudgeReady}
+                title={
+                  nudgeOnCooldown
+                    ? `Wait ${nudgeCooldownSeconds}s before sending another alert.`
+                    : "Ping party members who are not ready."
+                }
+              >
+                <Bell size={15} />{" "}
+                {nudgeOnCooldown ? `Ready ping (${nudgeCooldownSeconds}s)` : "Please Ready"}
+              </button>
+            ) : null}
+            {canNudgeStart ? (
+              <button
+                type="button"
+                className="raid-nudge-button"
+                disabled={nudgeOnCooldown}
+                onClick={onNudgeStart}
+                title={
+                  nudgeOnCooldown
+                    ? `Wait ${nudgeCooldownSeconds}s before sending another alert.`
+                    : "Ask the host to start the raid."
+                }
+              >
+                <Bell size={15} />{" "}
+                {nudgeOnCooldown ? `Start ping (${nudgeCooldownSeconds}s)` : "Please Start"}
               </button>
             ) : null}
             <button

@@ -84,4 +84,27 @@ describe("realtime multiplayer payloads", () => {
       }).success
     ).toBe(true);
   });
+
+  it("validates party ready/start nudge events", () => {
+    expect(
+      raidRealtimeEventSchema.safeParse({
+        kind: "party_nudge",
+        lobbyId: "00000000-0000-4000-8000-000000000003",
+        fromPlayerId: "player-marky",
+        fromDisplayName: "Marky",
+        nudge: "please_ready",
+        sentAt: Date.now()
+      }).success
+    ).toBe(true);
+    expect(
+      raidRealtimeEventSchema.safeParse({
+        kind: "party_nudge",
+        lobbyId: "00000000-0000-4000-8000-000000000003",
+        fromPlayerId: "player-marky",
+        fromDisplayName: "Marky",
+        nudge: "please_start",
+        sentAt: Date.now()
+      }).success
+    ).toBe(true);
+  });
 });
